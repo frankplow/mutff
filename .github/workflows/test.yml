@@ -1,0 +1,25 @@
+name: Test
+
+# Run if the Build workflow completes successfully
+# or if triggered manually.
+on:
+  workflow_run:
+    workflows: [Build]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  build:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up CMake
+        uses: jwlawson/actions-setup-cmake@v1.13
+      - name: Checkout main
+        uses: actions/checkout@v3
+      - name: Configure project
+        run: cmake -S . -B build -DBUILD_TESTS=ON -DBUILD_DOCS=OFF
+      - name: Build project
+        run: cmake --build build
+      - name: Run tests
+        run: cmake --build build --target test

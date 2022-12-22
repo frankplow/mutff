@@ -13,14 +13,9 @@ enable_testing()
 include(GoogleTest)
 include(CTest)
 
-
 configure_file(test.mov ${CMAKE_CURRENT_BINARY_DIR}/test.mov COPYONLY)
 
 set(test_executable_name ${PROJECT_NAME}_test)
 add_executable(${test_executable_name} mutff_test.cpp)
 target_link_libraries(${test_executable_name} ${PROJECT_NAME} GTest::gtest_main)
 gtest_discover_tests(${test_executable_name})
-add_custom_command(
-    TARGET ${test_executable_name} POST_BUILD
-    COMMAND ${CMAKE_CTEST_COMMAND}
-)
