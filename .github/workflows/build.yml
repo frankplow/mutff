@@ -1,5 +1,5 @@
 name: Build & test
-run-name: Build & test — ${{ github.event.head_commit.message }}
+run-name: Build & test — ${{ github.ref_name }}
 
 on:
   push:
