@@ -1,5 +1,6 @@
 name: Build & test
-run-name: Build & test — ${{ github.ref_name }}
+
+run-name: ${{ github.workflow }} — ${{ github.sha }}
 
 on:
   push:

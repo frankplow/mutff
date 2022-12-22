@@ -1,5 +1,5 @@
 name: Deploy documentation
-run-name: Deploy documentation — ${{ github.ref_name }}
+run-name: ${{ github.workflow }} — ${{ github.sha }}
 
 on:
   push:
