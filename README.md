@@ -1,9 +1,12 @@
-# µUTFF
+# µTFF
 ![Main Build Status](https://github.com/frankplow/mutff/actions/workflows/build.yml/badge.svg)
 
 A small QuickTime file format (QTFF) library.
 
 This library came out of a project I was doing where I needed a simple, relatively efficient QTFF library to run on a Cortex-M microcontroller. I discovered there were few QTFF libraries readily available and none which met my needs.
+
+## Documentation
+Documentation for the latest `main` as available on the [GitHub Pages site for this project](https://frankplow.github.io/mutff).
 
 ## Building from Source
 To configure, while in the project root, run:

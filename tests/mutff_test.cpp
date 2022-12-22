@@ -22,99 +22,44 @@ TEST_F(MuTFFTest, MovieFile) {
   ASSERT_EQ(err, MuTFFErrorNone) << "Error parsing movie file";
 
   EXPECT_EQ(movie_file.file_type_compatibility_count, 1);
-  EXPECT_EQ(movie_file.file_type_compatibility[0].header.offset, 0);
-  EXPECT_EQ(movie_file.file_type_compatibility[0].header.size, 0x14);
-
+  EXPECT_EQ(movie_file.file_type_compatibility[0].size, 0x14);
   EXPECT_EQ(movie_file.movie_count, 1);
-  EXPECT_EQ(movie_file.movie[0].header.offset, 28330);
-  EXPECT_EQ(movie_file.movie[0].header.size, 706);
-
+  EXPECT_EQ(movie_file.movie[0].size, 706);
   EXPECT_EQ(movie_file.movie_data_count, 1);
-  EXPECT_EQ(movie_file.movie_data[0].header.offset, 28);
-  EXPECT_EQ(movie_file.movie_data[0].header.size, 28302);
-
+  EXPECT_EQ(movie_file.movie_data[0].size, 28302);
   EXPECT_EQ(movie_file.free_count, 0);
-
   EXPECT_EQ(movie_file.skip_count, 0);
-
   EXPECT_EQ(movie_file.wide_count, 1);
-  EXPECT_EQ(movie_file.wide[0].header.offset, 20);
-  EXPECT_EQ(movie_file.wide[0].header.size, 8);
-
+  EXPECT_EQ(movie_file.wide[0].size, 8);
   EXPECT_EQ(movie_file.preview_count, 0);
 }
 
-TEST_F(MuTFFTest, FileTypeCompatibilityAtom) {
-  MuTFFFileTypeCompatibilityAtom file_type_compatibility_atom;
-  fseek(fd, 0, SEEK_SET);
-  const MuTFFError err = mutff_read_file_type_compatibility_atom(
-      fd, &file_type_compatibility_atom);
-  ASSERT_EQ(err, MuTFFErrorNone);
-
-  EXPECT_EQ(file_type_compatibility_atom.header.offset, 0);
-  EXPECT_EQ(MuTFF_ATOM_ID(file_type_compatibility_atom.header.type),
-            MuTFF_ATOM_ID("ftyp"));
-  EXPECT_EQ(file_type_compatibility_atom.header.size, 0x14);
-  EXPECT_EQ(file_type_compatibility_atom.major_brand, MuTFF_ATOM_ID("qt  "));
-  EXPECT_EQ(file_type_compatibility_atom.minor_version, 0x00000200);
-  EXPECT_EQ(file_type_compatibility_atom.compatible_brands_count, 1);
-  EXPECT_EQ(MuTFF_ATOM_ID(file_type_compatibility_atom.compatible_brands[0]),
-            MuTFF_ATOM_ID("qt  "));
-}
-
-TEST_F(MuTFFTest, MovieDataAtom) {
-  MuTFFMovieDataAtom movie_data_atom;
-  fseek(fd, 28, SEEK_SET);
-  const MuTFFError err = mutff_read_movie_data_atom(fd, &movie_data_atom);
-  ASSERT_EQ(err, MuTFFErrorNone);
-
-  EXPECT_EQ(movie_data_atom.header.offset, 28);
-  EXPECT_EQ(MuTFF_ATOM_ID(movie_data_atom.header.type), MuTFF_ATOM_ID("mdat"));
-  EXPECT_EQ(movie_data_atom.header.size, 28302);
-}
-
-TEST_F(MuTFFTest, WideAtom) {
-  MuTFFWideAtom wide_atom;
-  fseek(fd, 20, SEEK_SET);
-  const MuTFFError err = mutff_read_wide_atom(fd, &wide_atom);
-  ASSERT_EQ(err, MuTFFErrorNone);
-
-  EXPECT_EQ(wide_atom.header.offset, 20);
-  EXPECT_EQ(MuTFF_ATOM_ID(wide_atom.header.type), MuTFF_ATOM_ID("wide"));
-  EXPECT_EQ(wide_atom.header.size, 8);
-}
-
 TEST_F(MuTFFTest, MovieAtom) {
+  const size_t offset = 28330;
   MuTFFMovieAtom movie_atom;
-  fseek(fd, 28330, SEEK_SET);
+  fseek(fd, offset, SEEK_SET);
   const MuTFFError err = mutff_read_movie_atom(fd, &movie_atom);
   ASSERT_EQ(err, MuTFFErrorNone);
 
-  EXPECT_EQ(movie_atom.header.offset, 28330);
-  EXPECT_EQ(movie_atom.header.size, 0x02c2);
-  EXPECT_EQ(MuTFF_ATOM_ID(movie_atom.header.type), MuTFF_ATOM_ID("moov"));
-
-  EXPECT_EQ(movie_atom.movie_header.header.offset, 28338);
-  EXPECT_EQ(movie_atom.movie_header.header.size, 108);
-
+  EXPECT_EQ(movie_atom.size, 0x02c2);
+  EXPECT_EQ(MuTFF_ATOM_ID(movie_atom.type), MuTFF_ATOM_ID("moov"));
+  EXPECT_EQ(movie_atom.movie_header.size, 108);
   EXPECT_EQ(movie_atom.track_count, 1);
-  EXPECT_EQ(movie_atom.track[0].header.offset, 28446);
-  EXPECT_EQ(movie_atom.track[0].header.size, 557);
+  EXPECT_EQ(movie_atom.track[0].size, 557);
+  EXPECT_EQ(movie_atom.user_data.size, 33);
 
-  EXPECT_EQ(movie_atom.user_data.header.offset, 29003);
-  EXPECT_EQ(movie_atom.user_data.header.size, 33);
+  EXPECT_EQ(ftell(fd), offset + movie_atom.size);
 }
 
 TEST_F(MuTFFTest, MovieHeaderAtom) {
+  const size_t offset = 28338;
   MuTFFMovieHeaderAtom movie_header_atom;
-  fseek(fd, 28338, SEEK_SET);
+  fseek(fd, offset, SEEK_SET);
   const MuTFFError err = mutff_read_movie_header_atom(fd, &movie_header_atom);
   ASSERT_EQ(err, MuTFFErrorNone);
 
-  EXPECT_EQ(movie_header_atom.header.offset, 28338);
-  EXPECT_EQ(movie_header_atom.header.size, 0x6c);
-  EXPECT_EQ(MuTFF_ATOM_ID(movie_header_atom.header.type),
-            MuTFF_ATOM_ID("mvhd"));
+  EXPECT_EQ(movie_header_atom.size, 0x6c);
+  EXPECT_EQ(MuTFF_ATOM_ID(movie_header_atom.type), MuTFF_ATOM_ID("mvhd"));
   EXPECT_EQ(movie_header_atom.version, 0);
   EXPECT_EQ(movie_header_atom.flags[0], 0);
   EXPECT_EQ(movie_header_atom.flags[1], 0);
@@ -142,4 +87,57 @@ TEST_F(MuTFFTest, MovieHeaderAtom) {
   EXPECT_EQ(movie_header_atom.selection_time, 0);
   EXPECT_EQ(movie_header_atom.current_time, 0);
   EXPECT_EQ(movie_header_atom.next_track_id, 2);
+
+  EXPECT_EQ(ftell(fd), offset + movie_header_atom.size);
+}
+
+TEST_F(MuTFFTest, FileTypeCompatibilityAtom) {
+  const size_t offset = 0;
+  MuTFFFileTypeCompatibilityAtom file_type_compatibility_atom;
+  fseek(fd, offset, SEEK_SET);
+  const MuTFFError err = mutff_read_file_type_compatibility_atom(
+      fd, &file_type_compatibility_atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(MuTFF_ATOM_ID(file_type_compatibility_atom.type),
+            MuTFF_ATOM_ID("ftyp"));
+  EXPECT_EQ(file_type_compatibility_atom.size, 0x14);
+  EXPECT_EQ(file_type_compatibility_atom.major_brand, MuTFF_ATOM_ID("qt  "));
+  EXPECT_EQ(file_type_compatibility_atom.minor_version, 0x00000200);
+  EXPECT_EQ(file_type_compatibility_atom.compatible_brands_count, 1);
+  EXPECT_EQ(MuTFF_ATOM_ID(file_type_compatibility_atom.compatible_brands[0]),
+            MuTFF_ATOM_ID("qt  "));
+
+  EXPECT_EQ(ftell(fd), offset + file_type_compatibility_atom.size);
+}
+
+TEST_F(MuTFFTest, MovieDataAtom) {
+  const size_t offset = 28;
+  MuTFFMovieDataAtom movie_data_atom;
+  fseek(fd, offset, SEEK_SET);
+  const MuTFFError err = mutff_read_movie_data_atom(fd, &movie_data_atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(MuTFF_ATOM_ID(movie_data_atom.type), MuTFF_ATOM_ID("mdat"));
+  EXPECT_EQ(movie_data_atom.size, 28302);
+
+  EXPECT_EQ(ftell(fd), offset + movie_data_atom.size);
+}
+
+TEST_F(MuTFFTest, WideAtom) {
+  const size_t offset = 20;
+  MuTFFWideAtom wide_atom;
+  fseek(fd, offset, SEEK_SET);
+  const MuTFFError err = mutff_read_wide_atom(fd, &wide_atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(MuTFF_ATOM_ID(wide_atom.type), MuTFF_ATOM_ID("wide"));
+  EXPECT_EQ(wide_atom.size, 8);
+
+  EXPECT_EQ(ftell(fd), offset + wide_atom.size);
+}
+
+TEST_F(MuTFFTest, FixedAtomSizes) {
+  EXPECT_EQ(sizeof(MuTFFPreviewAtom), 20);
+  EXPECT_EQ(sizeof(MuTFFMovieHeaderAtom), 108);
 }

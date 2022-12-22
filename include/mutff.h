@@ -22,7 +22,7 @@
   ((str[0] << 24) + (str[1] << 16) + (str[2] << 8) + str[3])
 
 ///
-/// @brief A generic error in the MuTFF library.
+/// @brief A generic error in the MuTFF library
 ///
 typedef enum {
   MuTFFErrorNone = 0,
@@ -31,30 +31,69 @@ typedef enum {
   MuTFFErrorAtomTooLong,
   MuTFFErrorNotBasicAtomType,
   MuTFFErrorTooManyAtoms,
+  MuTFFErrorBadFormat,
 } MuTFFError;
 
+///
+/// @brief The size of a QuickTime atom
+///
 typedef uint32_t MuTFFAtomSize;
 
-// @TODO: static assert sizeof(MuTFFAtomType) == 32
+///
+/// @brief The type of a QuickTime atom
+///
 typedef char MuTFFAtomType[4];
 
-// Macintosh date format time
-// Time passed in seconds since 1904-01-01T00:00:00
+///
+/// @brief Read the type of an atom
+///
+/// The current file offset must be at the start of the type ID.
+///
+/// @param [in] fd    The file descriptor
+/// @param [out] out  Output
+/// @return           Whether or not the type was read successfully
+///
+MuTFFError mutff_read_atom_type(FILE *fd, MuTFFAtomType *out);
+
+///
+/// @brief Time given in the Macintosh/HFS+ format
+///
+///        Time is specified as seconds elapsed since 1904-01-01T00:00:00
+///
+/// @see
+/// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap4/qtff4.html#//apple_ref/doc/uid/TP40000939-CH206-CJBIBAAE
+///
 typedef uint32_t MacTime;
 
-// Quicktime movie time
-// Time since start of movie in time units (1/time_scale)s
+///
+/// @brief Time given in the QuickTime format
+///
+///        Time is specified as time units elapsed since the start of the movie.
+///        Time units are context dependent, defined as 1 second over the time
+///        scale in the current context.
+///
 typedef uint32_t QTTime;
-//
-// Quicktime movie duration
-// Measured in time units (1/time_scale)s
-typedef uint32_t QTDuration;
 
-// @TODO: assert sizeof(QTMatrix) = 36
-typedef float QTMatrix[9];
+///
+/// @brief A QuickTime 3x3 matrix
+///
+///        Each element is a 32-bit type and the elements are stored in
+///        row-major order.
+///
+/// @see
+/// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap4/qtff4.html#//apple_ref/doc/uid/TP40000939-CH206-BBCCEGCB
+/// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-BBCGFGJG
+///
+typedef float QTMatrix[3][3];
 
+///
+/// @brief The ID of a track in a QuickTime file
+///
 typedef uint32_t QTTrackID;
 
+///
+/// @brief The header + offset of a generic QuickTime atom
+///
 typedef struct {
   size_t offset;
   MuTFFAtomSize size;
@@ -70,17 +109,28 @@ typedef struct {
 /// @param [out] out  Output
 /// @return           Whether or not an atom was read successfully
 ///
-MuTFFError mutff_read_atom_header(FILE *fd, MuTFFAtomHeader *out);
+MuTFFError mutff_peek_atom_header(FILE *fd, MuTFFAtomHeader *out);
 
 ///
-/// @brief The maximum number of compatible brands .
+/// @brief The maximum number of compatible brands
 ///
 #define MuTFF_MAX_COMPATIBLE_BRANDS 4
 
 ///
-/// @brief QuickTime identifier for a file format.
+/// @brief QuickTime identifier for a file format
 ///
 typedef char QTFileFormat[4];
+
+///
+/// @brief Read the header of an atom
+///
+/// The current file offset must be at the start of the atom.
+///
+/// @param [in] fd    The file descriptor
+/// @param [out] out  Output
+/// @return           Whether or not an atom was read successfully
+///
+MuTFFError read_file_format(FILE *fd, QTFileFormat *out);
 
 ///
 /// @brief File type compatibility atom
@@ -88,7 +138,8 @@ typedef char QTFileFormat[4];
 /// https://developer.apple.com/library/archive/documentation/QuickTime/MuTFF/MuTFFChap1/mutff1.html#//apple_ref/doc/uid/TP40000939-CH203-CJBCBIFF
 ///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   uint32_t major_brand;
   uint32_t minor_version;
   size_t compatible_brands_count;
@@ -106,7 +157,8 @@ MuTFFError mutff_read_file_type_compatibility_atom(
     FILE *fd, MuTFFFileTypeCompatibilityAtom *out);
 
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
 } MuTFFMovieDataAtom;
 
 ///
@@ -124,7 +176,8 @@ MuTFFError mutff_read_movie_data_atom(FILE *fd, MuTFFMovieDataAtom *out);
 /// https://developer.apple.com/library/archive/documentation/QuickTime/MuTFF/MuTFFChap1/mutff1.html#//apple_ref/doc/uid/TP40000939-CH203-55464
 ///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
 } MuTFFFreeAtom;
 
 ///
@@ -142,7 +195,8 @@ MuTFFError mutff_read_free_atom(FILE *fd, MuTFFFreeAtom *out);
 /// https://developer.apple.com/library/archive/documentation/QuickTime/MuTFF/MuTFFChap1/mutff1.html#//apple_ref/doc/uid/TP40000939-CH203-55464
 ///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
 } MuTFFSkipAtom;
 
 ///
@@ -160,7 +214,8 @@ MuTFFError mutff_read_skip_atom(FILE *fd, MuTFFSkipAtom *out);
 /// https://developer.apple.com/library/archive/documentation/QuickTime/MuTFF/MuTFFChap1/mutff1.html#//apple_ref/doc/uid/TP40000939-CH203-55464
 ///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
 } MuTFFWideAtom;
 
 ///
@@ -178,7 +233,8 @@ MuTFFError mutff_read_wide_atom(FILE *fd, MuTFFWideAtom *out);
 /// https://developer.apple.com/library/archive/documentation/QuickTime/MuTFF/MuTFFChap1/mutff1.html#//apple_ref/doc/uid/TP40000939-CH203-38240
 ///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   MacTime modification_time;
   uint16_t version;
   MuTFFAtomType atom_type;
@@ -196,25 +252,27 @@ MuTFFError mutff_read_preview_atom(FILE *fd, MuTFFPreviewAtom *out);
 
 ///
 /// @brief Movie header atom.
+/// @see
+/// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-BBCGFGJG
 ///
-// @TODO: assert sizeof(MovieHeaderAtom) == 108
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   char version;
   char flags[3];
   MacTime creation_time;
   MacTime modification_time;
   uint32_t time_scale;
-  QTDuration duration;
+  QTTime duration;
   uint32_t preferred_rate;
   uint16_t preferred_volume;
   char _reserved[10];
   QTMatrix matrix_structure;
   QTTime preview_time;
-  QTDuration preview_duration;
+  QTTime preview_duration;
   QTTime poster_time;
   QTTime selection_time;
-  QTDuration selection_duration;
+  QTTime selection_duration;
   QTTime current_time;
   QTTrackID next_track_id;
 } MuTFFMovieHeaderAtom;
@@ -230,10 +288,12 @@ MuTFFError mutff_read_movie_header_atom(FILE *fd, MuTFFMovieHeaderAtom *out);
 
 ///
 /// @brief Clipping region atom
+/// @see
+/// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-BBCHDAIB
 ///
-// @TODO: clipping data field (variable size)
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   uint16_t region_size;
   uint64_t region_boundary_box;
 } MuTFFClippingRegionAtom;
@@ -250,9 +310,12 @@ MuTFFError mutff_read_clipping_region_atom(FILE *fd,
 
 ///
 /// @brief Clipping atom
+/// @see
+/// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-BBCIHBFG
 ///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   MuTFFClippingRegionAtom clipping_region;
 } MuTFFClippingAtom;
 
@@ -272,9 +335,12 @@ MuTFFError mutff_read_clipping_atom(FILE *fd, MuTFFClippingAtom *out);
 
 ///
 /// @brief Color table atom
+/// @see
+/// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-BBCBDJEB
 ///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   uint32_t color_table_seed;
   uint16_t color_table_flags;
   uint16_t color_table_size;
@@ -297,9 +363,12 @@ MuTFFError mutff_read_color_table_atom(FILE *fd, MuTFFColorTableAtom *out);
 
 ///
 /// @brief User data atom
+/// @see
+/// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-BBCCFFGD
 ///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   MuTFFAtomHeader user_data_list[MuTFF_MAX_USER_DATA_ITEMS];
 } MuTFFUserDataAtom;
 
@@ -312,8 +381,14 @@ typedef struct {
 ///
 MuTFFError mutff_read_user_data_atom(FILE *fd, MuTFFUserDataAtom *out);
 
+///
+/// @brief Track atom
+/// @see
+/// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-BBCBEAIF
+///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   /* MuTFFTrackHeaderAtom track_header; */
   /* MuTFFTrackApertureModeDimensionsAtom track_aperture_mode_dimensions; */
   /* MuTFFClippingAtom clipping; */
@@ -341,10 +416,13 @@ MuTFFError mutff_read_track_atom(FILE *fd, MuTFFTrackAtom *out);
 #define MuTFF_MAX_TRACK_ATOMS 4
 
 ///
-/// @brief Movie atom.
+/// @brief Movie atom
+/// @see
+/// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-SW1
 ///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   MuTFFMovieHeaderAtom movie_header;
   MuTFFClippingAtom clipping;
   MuTFFColorTableAtom color_table;
@@ -372,6 +450,8 @@ MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out);
 
 ///
 /// @brief A QuickTime movie file
+/// @see
+/// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap1/qtff1.html#//apple_ref/doc/uid/TP40000939-CH203-39025
 ///
 typedef struct {
   size_t file_type_compatibility_count;
