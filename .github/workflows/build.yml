@@ -4,6 +4,8 @@ run-name: Build & test — ${{ github.event.head_commit.message }}
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 env:
