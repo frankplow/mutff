@@ -31,12 +31,26 @@ typedef enum {
   MuTFFErrorAtomTooLong,
   MuTFFErrorNotBasicAtomType,
   MuTFFErrorTooManyAtoms,
+  MuTFFErrorBadFormat,
 } MuTFFError;
 
 typedef uint32_t MuTFFAtomSize;
 
-// @TODO: static assert sizeof(MuTFFAtomType) == 32
+///
+/// @brief The type of an atom
+///
 typedef char MuTFFAtomType[4];
+
+///
+/// @brief Read the type of an atom
+///
+/// The current file offset must be at the start of the type ID.
+///
+/// @param [in] fd    The file descriptor
+/// @param [out] out  Output
+/// @return           Whether or not the type was read successfully
+///
+MuTFFError mutff_read_atom_type(FILE *fd, MuTFFAtomType *out);
 
 // Macintosh date format time
 // Time passed in seconds since 1904-01-01T00:00:00
@@ -70,7 +84,7 @@ typedef struct {
 /// @param [out] out  Output
 /// @return           Whether or not an atom was read successfully
 ///
-MuTFFError mutff_read_atom_header(FILE *fd, MuTFFAtomHeader *out);
+MuTFFError mutff_peek_atom_header(FILE *fd, MuTFFAtomHeader *out);
 
 ///
 /// @brief The maximum number of compatible brands .
@@ -83,12 +97,24 @@ MuTFFError mutff_read_atom_header(FILE *fd, MuTFFAtomHeader *out);
 typedef char QTFileFormat[4];
 
 ///
+/// @brief Read the header of an atom
+///
+/// The current file offset must be at the start of the atom.
+///
+/// @param [in] fd    The file descriptor
+/// @param [out] out  Output
+/// @return           Whether or not an atom was read successfully
+///
+MuTFFError read_file_format(FILE *fd, QTFileFormat *out);
+
+///
 /// @brief File type compatibility atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/MuTFF/MuTFFChap1/mutff1.html#//apple_ref/doc/uid/TP40000939-CH203-CJBCBIFF
 ///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   uint32_t major_brand;
   uint32_t minor_version;
   size_t compatible_brands_count;
@@ -106,7 +132,8 @@ MuTFFError mutff_read_file_type_compatibility_atom(
     FILE *fd, MuTFFFileTypeCompatibilityAtom *out);
 
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
 } MuTFFMovieDataAtom;
 
 ///
@@ -124,7 +151,8 @@ MuTFFError mutff_read_movie_data_atom(FILE *fd, MuTFFMovieDataAtom *out);
 /// https://developer.apple.com/library/archive/documentation/QuickTime/MuTFF/MuTFFChap1/mutff1.html#//apple_ref/doc/uid/TP40000939-CH203-55464
 ///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
 } MuTFFFreeAtom;
 
 ///
@@ -142,7 +170,8 @@ MuTFFError mutff_read_free_atom(FILE *fd, MuTFFFreeAtom *out);
 /// https://developer.apple.com/library/archive/documentation/QuickTime/MuTFF/MuTFFChap1/mutff1.html#//apple_ref/doc/uid/TP40000939-CH203-55464
 ///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
 } MuTFFSkipAtom;
 
 ///
@@ -160,7 +189,8 @@ MuTFFError mutff_read_skip_atom(FILE *fd, MuTFFSkipAtom *out);
 /// https://developer.apple.com/library/archive/documentation/QuickTime/MuTFF/MuTFFChap1/mutff1.html#//apple_ref/doc/uid/TP40000939-CH203-55464
 ///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
 } MuTFFWideAtom;
 
 ///
@@ -178,7 +208,8 @@ MuTFFError mutff_read_wide_atom(FILE *fd, MuTFFWideAtom *out);
 /// https://developer.apple.com/library/archive/documentation/QuickTime/MuTFF/MuTFFChap1/mutff1.html#//apple_ref/doc/uid/TP40000939-CH203-38240
 ///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   MacTime modification_time;
   uint16_t version;
   MuTFFAtomType atom_type;
@@ -199,7 +230,8 @@ MuTFFError mutff_read_preview_atom(FILE *fd, MuTFFPreviewAtom *out);
 ///
 // @TODO: assert sizeof(MovieHeaderAtom) == 108
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   char version;
   char flags[3];
   MacTime creation_time;
@@ -233,7 +265,8 @@ MuTFFError mutff_read_movie_header_atom(FILE *fd, MuTFFMovieHeaderAtom *out);
 ///
 // @TODO: clipping data field (variable size)
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   uint16_t region_size;
   uint64_t region_boundary_box;
 } MuTFFClippingRegionAtom;
@@ -252,7 +285,8 @@ MuTFFError mutff_read_clipping_region_atom(FILE *fd,
 /// @brief Clipping atom
 ///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   MuTFFClippingRegionAtom clipping_region;
 } MuTFFClippingAtom;
 
@@ -274,7 +308,8 @@ MuTFFError mutff_read_clipping_atom(FILE *fd, MuTFFClippingAtom *out);
 /// @brief Color table atom
 ///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   uint32_t color_table_seed;
   uint16_t color_table_flags;
   uint16_t color_table_size;
@@ -299,7 +334,8 @@ MuTFFError mutff_read_color_table_atom(FILE *fd, MuTFFColorTableAtom *out);
 /// @brief User data atom
 ///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   MuTFFAtomHeader user_data_list[MuTFF_MAX_USER_DATA_ITEMS];
 } MuTFFUserDataAtom;
 
@@ -313,7 +349,8 @@ typedef struct {
 MuTFFError mutff_read_user_data_atom(FILE *fd, MuTFFUserDataAtom *out);
 
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   /* MuTFFTrackHeaderAtom track_header; */
   /* MuTFFTrackApertureModeDimensionsAtom track_aperture_mode_dimensions; */
   /* MuTFFClippingAtom clipping; */
@@ -344,7 +381,8 @@ MuTFFError mutff_read_track_atom(FILE *fd, MuTFFTrackAtom *out);
 /// @brief Movie atom.
 ///
 typedef struct {
-  MuTFFAtomHeader header;
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   MuTFFMovieHeaderAtom movie_header;
   MuTFFClippingAtom clipping;
   MuTFFColorTableAtom color_table;
