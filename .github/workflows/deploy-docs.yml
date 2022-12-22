@@ -1,26 +1,31 @@
 name: Deploy documentation
+run-name: Deploy documentation — ${{ github.event.workflow_run.head_commit.message }}
 
 # Run if the Build workflow completes successfully
 # or if triggered manually.
 on:
   workflow_run:
-    workflows: [Build]
+    workflows: ['Build & test']
     branches: [main]
     types: [completed]
   workflow_dispatch:
 
 permissions:
-  contents: read
   pages: write
   id-token: write
 
 jobs:
-  deploy-docs:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+  build:
+    if: ${{ !(github.event_name == 'workflow_run') || github.event.workflow_run.conclusion == 'success' }}
+
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout main
         uses: actions/checkout@v3
+
+      - name: Get Doxygen
+        run: sudo apt-get update && sudo apt-get install doxygen -y
 
       - name: Set up project
         uses: ./.github/actions/setup
@@ -39,5 +44,19 @@ jobs:
         with:
           path: build/docs/html/
 
+  deploy:
+    needs: build
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+
+    steps:
       - name: Deploy to GitHub pages
         uses: actions/deploy-pages@v1

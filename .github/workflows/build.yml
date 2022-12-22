@@ -1,4 +1,5 @@
-name: Build
+name: Build & test
+run-name: Build & test — ${{ github.event.head_commit.message }}
 
 on:
   push:
