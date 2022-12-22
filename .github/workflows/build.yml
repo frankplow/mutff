@@ -5,15 +5,24 @@ on:
     branches: [main]
   workflow_dispatch:
 
+env:
+  BUILD_TYPE: Release
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Set up CMake
-        uses: jwlawson/actions-setup-cmake@v1.13
       - name: Checkout main
         uses: actions/checkout@v3
+
+      - name: Set up project
+        uses: ./.github/actions/setup
+
       - name: Configure project
-        run: cmake -S . -B build -DBUILD_TESTS=OFF -DBUILD_DOCS=OFF
+        run: mkdir build && cd build && cmake ${{github.workspace}} -DBUILD_TESTS=ON -DBUILD_DOCS=OFF -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
       - name: Build project
         run: cmake --build build
+
+      - name: Test project
+        run: CTEST_OUTPUT_ON_FAILURE=ON cmake --build ${{github.workspace}}/build --target test

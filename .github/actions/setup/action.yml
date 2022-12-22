@@ -1,0 +1,10 @@
+name: Set up
+
+runs:
+  using: composite
+
+  steps:
+    - name: Get CMake
+      uses: jwlawson/actions-setup-cmake@v1.13
+      with:
+        cmake-version: "3.14.x"
