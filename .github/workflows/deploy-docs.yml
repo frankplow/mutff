@@ -1,5 +1,5 @@
 name: Deploy documentation
-run-name: Deploy documentation — ${{ github.event.head_commit.message }}
+run-name: ${{ github.workflow }} — ${{ github.sha }}
 
 on:
   push:
