@@ -6,6 +6,10 @@ project(MuTFF
     DESCRIPTION "A small QuickTime file format (QTFF) library"
 )
 
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+    cmake_policy(SET CMP0135 NEW)
+endif()
+
 option(BUILD_TESTS "Build ${PROJECT_NAME} tests" ON)
 option(BUILD_DOCS "Build ${PROJECT_NAME} documentation" OFF)
 
