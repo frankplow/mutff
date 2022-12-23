@@ -45,10 +45,10 @@ static uint64_t mutff_ntoh_64(uint64_t n) {
          ((uint64_t)np[6] << 8) | (uint64_t)np[7];
 }
 
-// Read a single 16-bit unsigned integer from the current offset in the file.
+// Read 8 bits from the current offset in the file.
 // Error handling and EOF detection are done by ferror and feof respectively.
 static MuTFFError mutff_read_8(FILE *fd, void *out) {
-  fread(&out, 1, 1, fd);
+  fread(out, 1, 1, fd);
   if (ferror(fd)) {
     return MuTFFErrorIOError;
   }
