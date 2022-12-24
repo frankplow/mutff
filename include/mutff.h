@@ -18,8 +18,7 @@
 /// @addtogroup MuTFF
 /// @{
 
-#define MuTFF_ATOM_ID(str) \
-  ((str[0] << 24) + (str[1] << 16) + (str[2] << 8) + str[3])
+#define MuTFF_FOUR_C(in) ((in[0] << 24) + (in[1] << 16) + (in[2] << 8) + in[3])
 
 ///
 /// @brief A generic error in the MuTFF library

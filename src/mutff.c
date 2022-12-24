@@ -413,8 +413,8 @@ MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out) {
 
   // read child atoms
   while (!(err = mutff_peek_atom_header(fd, &atom))) {
-    switch (MuTFF_ATOM_ID(atom.type)) {
-      /* case MuTFF_ATOM_ID("mvhd"): */
+    switch (MuTFF_FOUR_C(atom.type)) {
+      /* case MuTFF_FOUR_C("mvhd"): */
       case 0x6d766864:
         if (out->movie_header.size) {
           return MuTFFErrorTooManyAtoms;
@@ -426,7 +426,7 @@ MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out) {
         out->movie_header = movie_header;
         break;
 
-      /* case MuTFF_ATOM_ID("clip"): */
+      /* case MuTFF_FOUR_C("clip"): */
       case 0x636c6970:
         if (out->clipping.size) {
           return MuTFFErrorTooManyAtoms;
@@ -438,7 +438,7 @@ MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out) {
         out->clipping = clipping;
         break;
 
-      /* case MuTFF_ATOM_ID("trak"): */
+      /* case MuTFF_FOUR_C("trak"): */
       case 0x7472616b:
         if (out->track_count >= MuTFF_MAX_TRACK_ATOMS) {
           return MuTFFErrorTooManyAtoms;
@@ -451,7 +451,7 @@ MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out) {
         out->track_count++;
         break;
 
-      /* case MuTFF_ATOM_ID("udta"): */
+      /* case MuTFF_FOUR_C("udta"): */
       case 0x75647461:
         if (out->user_data.size) {
           return MuTFFErrorTooManyAtoms;
@@ -463,7 +463,7 @@ MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out) {
         out->user_data = user_data;
         break;
 
-      /* case MuTFF_ATOM_ID("ctab"): */
+      /* case MuTFF_FOUR_C("ctab"): */
       case 0x63746162:
         if (out->color_table.size) {
           return MuTFFErrorTooManyAtoms;
@@ -495,8 +495,8 @@ MuTFFError mutff_read_movie_file(FILE *fd, MuTFFMovieFile *out) {
   rewind(fd);
 
   while (!(err = mutff_peek_atom_header(fd, &atom))) {
-    switch (MuTFF_ATOM_ID(atom.type)) {
-      /* case MuTFF_ATOM_ID("ftyp"): */
+    switch (MuTFF_FOUR_C(atom.type)) {
+      /* case MuTFF_FOUR_C("ftyp"): */
       case 0x66747970:
         if (out->file_type_compatibility_count >=
             MuTFF_MAX_FILE_TYPE_COMPATIBILITY_ATOMS) {
@@ -513,7 +513,7 @@ MuTFFError mutff_read_movie_file(FILE *fd, MuTFFMovieFile *out) {
 
         break;
 
-      /* case MuTFF_ATOM_ID("moov"): */
+      /* case MuTFF_FOUR_C("moov"): */
       case 0x6d6f6f76:
         if (out->movie_count >= MuTFF_MAX_MOVIE_ATOMS) {
           return MuTFFErrorTooManyAtoms;
@@ -526,7 +526,7 @@ MuTFFError mutff_read_movie_file(FILE *fd, MuTFFMovieFile *out) {
         out->movie_count++;
         break;
 
-      /* case MuTFF_ATOM_ID("mdat"): */
+      /* case MuTFF_FOUR_C("mdat"): */
       case 0x6d646174:
         if (out->movie_data_count >= MuTFF_MAX_MOVIE_DATA_ATOMS) {
           return MuTFFErrorTooManyAtoms;
@@ -539,7 +539,7 @@ MuTFFError mutff_read_movie_file(FILE *fd, MuTFFMovieFile *out) {
         out->movie_data_count++;
         break;
 
-      /* case MuTFF_ATOM_ID("free"): */
+      /* case MuTFF_FOUR_C("free"): */
       case 0x66726565:
         if (out->free_count >= MuTFF_MAX_FREE_ATOMS) {
           return MuTFFErrorTooManyAtoms;
@@ -552,7 +552,7 @@ MuTFFError mutff_read_movie_file(FILE *fd, MuTFFMovieFile *out) {
         out->free_count++;
         break;
 
-      /* case MuTFF_ATOM_ID("skip"): */
+      /* case MuTFF_FOUR_C("skip"): */
       case 0x736b6970:
         if (out->skip_count >= MuTFF_MAX_SKIP_ATOMS) {
           return MuTFFErrorTooManyAtoms;
@@ -565,7 +565,7 @@ MuTFFError mutff_read_movie_file(FILE *fd, MuTFFMovieFile *out) {
         out->skip_count++;
         break;
 
-      /* case MuTFF_ATOM_ID("wide"): */
+      /* case MuTFF_FOUR_C("wide"): */
       case 0x77696465:
         if (out->wide_count >= MuTFF_MAX_WIDE_ATOMS) {
           return MuTFFErrorTooManyAtoms;
@@ -578,7 +578,7 @@ MuTFFError mutff_read_movie_file(FILE *fd, MuTFFMovieFile *out) {
         out->wide_count++;
         break;
 
-      /* case MuTFF_ATOM_ID("pnot"): */
+      /* case MuTFF_FOUR_C("pnot"): */
       case 0x706e6f74:
         if (out->preview_count >= MuTFF_MAX_WIDE_ATOMS) {
           return MuTFFErrorTooManyAtoms;
