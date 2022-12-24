@@ -287,6 +287,12 @@ typedef struct {
 MuTFFError mutff_read_movie_header_atom(FILE *fd, MuTFFMovieHeaderAtom *out);
 
 ///
+/// @brief Maximum size of the data in a clipping region atom
+/// @see MuTFFClippingRegionAtom
+///
+#define MuTFF_MAX_CLIPPING_REGION_DATA_SIZE 16
+
+///
 /// @brief Clipping region atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-BBCHDAIB
@@ -296,6 +302,7 @@ typedef struct {
   MuTFFAtomType type;
   uint16_t region_size;
   uint64_t region_boundary_box;
+  char clipping_region_data[MuTFF_MAX_CLIPPING_REGION_DATA_SIZE];
 } MuTFFClippingRegionAtom;
 
 ///
@@ -396,7 +403,7 @@ typedef struct {
   QTTrackID track_id;
   char _reserved_1[4];
   QTTime duration;
-  char _reserved_2[4];
+  char _reserved_2[8];
   uint16_t layer;
   uint16_t alternate_group;
   uint16_t volume;
@@ -493,6 +500,8 @@ MuTFFError mutff_read_track_encoded_pixels_dimensions_atom(
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-SW15
 ///
 typedef struct {
+  MuTFFAtomSize size;
+  MuTFFAtomType type;
   MuTFFTrackCleanApertureDimensionsAtom track_clean_aperture_dimension;
   MuTFFTrackProductionApertureDimensionsAtom
       track_production_aperture_dimension;
