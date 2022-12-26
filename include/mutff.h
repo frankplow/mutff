@@ -102,7 +102,7 @@ typedef uint32_t QTTime;
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap4/qtff4.html#//apple_ref/doc/uid/TP40000939-CH206-BBCCEGCB
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-BBCGFGJG
 ///
-typedef float QTMatrix[3][3];
+typedef uint32_t QTMatrix[3][3];
 
 ///
 /// @brief The ID of a track in a QuickTime file
@@ -148,7 +148,8 @@ typedef char QTFileFormat[4];
 /// @param [out] out  Output
 /// @return           Whether or not an atom was read successfully
 ///
-MuTFFError read_file_format(FILE *fd, QTFileFormat *out);
+MuTFFError mutff_read_file_format(FILE *fd, QTFileFormat *out);
+
 ///
 /// @brief A QuickDraw rectangle
 /// @see

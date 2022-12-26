@@ -319,8 +319,13 @@ MuTFFError mutff_read_movie_header_atom(FILE *fd, MuTFFMovieHeaderAtom *out) {
   if ((err = mutff_read(fd, &out->_reserved, 10))) {
     return err;
   }
-  if ((err = mutff_read(fd, &out->matrix_structure, 36))) {
-    return err;
+  for (size_t j = 0; j < 3; ++j) {
+    for (size_t i = 0; i < 3; ++i) {
+      if ((err = mutff_read(fd, &out->matrix_structure[j][i], 4))) {
+        return err;
+      }
+      out->matrix_structure[j][i] = mutff_ntoh_32(out->matrix_structure[j][i]);
+    }
   }
   if ((err = mutff_read(fd, &out->preview_time, 4))) {
     return err;
@@ -399,7 +404,31 @@ MuTFFError mutff_read_color_table_atom(FILE *fd, MuTFFColorTableAtom *out) {
   if ((err = mutff_read_atom_type(fd, &out->type))) {
     return err;
   }
-  fseek(fd, out->size - 8, SEEK_CUR);
+  if ((err = mutff_read(fd, &out->color_table_seed, 4))) {
+    return err;
+  }
+  out->color_table_seed = mutff_ntoh_32(out->color_table_seed);
+  if ((err = mutff_read(fd, &out->color_table_flags, 2))) {
+    return err;
+  }
+  out->color_table_flags = mutff_ntoh_16(out->color_table_flags);
+  if ((err = mutff_read(fd, &out->color_table_size, 2))) {
+    return err;
+  }
+  out->color_table_size = mutff_ntoh_16(out->color_table_size);
+  const size_t size = (out->color_table_size + 1) * 8;
+  if (size != out->size - 16) {
+    return MuTFFErrorBadFormat;
+  }
+  if ((err = mutff_read(fd, out->color_array, size))) {
+    return err;
+  }
+  for (size_t i = 0; i <= out->color_table_size; ++i) {
+    out->color_array[i][0] = mutff_ntoh_16(out->color_array[i][0]);
+    out->color_array[i][1] = mutff_ntoh_16(out->color_array[i][1]);
+    out->color_array[i][2] = mutff_ntoh_16(out->color_array[i][2]);
+    out->color_array[i][3] = mutff_ntoh_16(out->color_array[i][3]);
+  }
 
   return MuTFFErrorNone;
 }
@@ -414,7 +443,23 @@ MuTFFError mutff_read_user_data_atom(FILE *fd, MuTFFUserDataAtom *out) {
   if ((err = mutff_read_atom_type(fd, &out->type))) {
     return err;
   }
-  fseek(fd, out->size - 8, SEEK_CUR);
+  size_t i = 0;
+  size_t offset = 8;
+  while (offset < out->size) {
+    if (i > MuTFF_MAX_USER_DATA_ITEMS) {
+      return MuTFFErrorTooManyAtoms;
+    }
+    if ((err = mutff_read(fd, &out->user_data_list[i].size, 4))) {
+      return err;
+    }
+    out->user_data_list[i].size = mutff_ntoh_32(out->user_data_list[i].size);
+    if ((err = mutff_read_atom_type(fd, &out->user_data_list[i].type))) {
+      return err;
+    }
+    fseek(fd, out->user_data_list[i].size - 8, SEEK_CUR);
+    offset += out->user_data_list[i].size;
+    i++;
+  }
 
   return MuTFFErrorNone;
 }
