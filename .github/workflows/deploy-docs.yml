@@ -18,11 +18,11 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v3
 
-      - name: Get Doxygen
-        run: sudo apt-get update && sudo apt-get install doxygen -y
-
       - name: Set up project
         uses: ./.github/actions/setup
+
+      - name: Get Doxygen
+        run: sudo apt-get update && sudo apt-get install doxygen -y
 
       - name: Configure project
         run: mkdir build && cd build && cmake ${{github.workspace}} -DBUILD_TESTS=OFF -DBUILD_DOCS=ON -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}

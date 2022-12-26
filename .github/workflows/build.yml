@@ -4,7 +4,7 @@ run-name: ${{ github.workflow }} — ${{ github.sha }}
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -19,7 +19,7 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v3
 
-      - name: Set up project
+      - name: Set up
         uses: ./.github/actions/setup
 
       - name: Configure project
@@ -30,3 +30,9 @@ jobs:
 
       - name: Test project
         run: CTEST_OUTPUT_ON_FAILURE=ON cmake --build ${{github.workspace}}/build --target test
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: build
