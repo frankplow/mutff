@@ -11,6 +11,30 @@
 
 #include "mutff.h"
 
+///
+/// @brief Read data from a file, optionally converting from network order to
+/// host order
+///
+/// @param [in]  fd   The file descriptor to read from
+/// @param [out] dest Where to write the output data
+/// @param [in]  n    The number of bytes to read
+/// @param [in]  conv Whether to convert from network order to host order
+/// @return           Whether the data was read successfully
+///
+static MuTFFError mutff_read(FILE *fd, void *dest, size_t n) {
+  const size_t read_bytes = fread(dest, n, 1, fd);
+  if (read_bytes != n) {
+    if (ferror(fd)) {
+      return MuTFFErrorIOError;
+    }
+    if (feof(fd)) {
+      return MuTFFErrorEOF;
+    }
+    // @TODO: Should an unknown error be thrown here?
+  }
+  return MuTFFErrorNone;
+}
+
 // Convert a number from network (big) endian to host endian.
 // These must be implemented here as newlib does not provide the
 // standard library implementations ntohs & ntohl (arpa/inet.h).
@@ -45,75 +69,6 @@ static uint64_t mutff_ntoh_64(uint64_t n) {
          ((uint64_t)np[6] << 8) | (uint64_t)np[7];
 }
 
-// Read 8 bits from the current offset in the file.
-// Error handling and EOF detection are done by ferror and feof respectively.
-static MuTFFError mutff_read_8(FILE *fd, void *out) {
-  fread(out, 1, 1, fd);
-  if (ferror(fd)) {
-    return MuTFFErrorIOError;
-  }
-  if (feof(fd)) {
-    return MuTFFErrorEOF;
-  }
-  return MuTFFErrorNone;
-}
-
-// Read a single 16-bit unsigned integer from the current offset in the file.
-// Error handling and EOF detection are done by ferror and feof respectively.
-static MuTFFError mutff_read_16(FILE *fd, void *out) {
-  uint16_t n;
-  fread(&n, 2, 1, fd);
-  if (ferror(fd)) {
-    return MuTFFErrorIOError;
-  }
-  if (feof(fd)) {
-    return MuTFFErrorEOF;
-  }
-  *(uint16_t *)out = mutff_ntoh_16(n);
-  return MuTFFErrorNone;
-}
-
-static MuTFFError mutff_read_24(FILE *fd, void *out) {
-  uint32_t n;
-  fread(&n, 3, 1, fd);
-  if (ferror(fd)) {
-    return MuTFFErrorIOError;
-  }
-  if (feof(fd)) {
-    return MuTFFErrorEOF;
-  }
-  *(uint32_t *)out = mutff_ntoh_24(n);
-  return MuTFFErrorNone;
-}
-
-// Read a single 32-bit unsigned integer from the current offset in the file.
-// Error handling and EOF detection are done by ferror and feof respectively.
-static MuTFFError mutff_read_32(FILE *fd, void *out) {
-  uint32_t n;
-  fread(&n, 4, 1, fd);
-  if (ferror(fd)) {
-    return MuTFFErrorIOError;
-  }
-  if (feof(fd)) {
-    return MuTFFErrorEOF;
-  }
-  *(uint32_t *)out = mutff_ntoh_32(n);
-  return MuTFFErrorNone;
-}
-
-static MuTFFError mutff_read_64(FILE *fd, void *out) {
-  uint64_t n;
-  fread(&n, 8, 1, fd);
-  if (ferror(fd)) {
-    return MuTFFErrorIOError;
-  }
-  if (feof(fd)) {
-    return MuTFFErrorEOF;
-  }
-  *(uint64_t *)out = mutff_ntoh_64(n);
-  return MuTFFErrorNone;
-}
-
 MuTFFError mutff_read_atom_type(FILE *fd, MuTFFAtomType *out) {
   const size_t read_bytes = fread(out, 4, 1, fd);
   if (ferror(fd)) {
@@ -128,9 +83,10 @@ MuTFFError mutff_read_atom_type(FILE *fd, MuTFFAtomType *out) {
 MuTFFError mutff_peek_atom_header(FILE *fd, MuTFFAtomHeader *out) {
   MuTFFError err;
 
-  if ((err = mutff_read_32(fd, &out->size))) {
+  if ((err = mutff_read(fd, &out->size, 4))) {
     return err;
   }
+  out->size = mutff_ntoh_32(out->size);
   if ((err = mutff_read_atom_type(fd, &out->type))) {
     return err;
   }
@@ -139,20 +95,33 @@ MuTFFError mutff_peek_atom_header(FILE *fd, MuTFFAtomHeader *out) {
   return MuTFFErrorNone;
 }
 
+MuTFFError mutff_read_file_format(FILE *fd, QTFileFormat *out) {
+  const size_t read_bytes = fread(out, 4, 1, fd);
+  if (ferror(fd)) {
+    return MuTFFErrorIOError;
+  }
+  if (feof(fd)) {
+    return MuTFFErrorEOF;
+  }
+  return MuTFFErrorNone;
+}
+
 MuTFFError mutff_read_file_type_compatibility_atom(
     FILE *fd, MuTFFFileTypeCompatibilityAtom *out) {
   MuTFFError err;
 
-  if ((err = mutff_read_32(fd, &out->size))) {
+  if ((err = mutff_read(fd, &out->size, 4))) {
     return err;
   }
+  out->size = mutff_ntoh_32(out->size);
   if ((err = mutff_read_atom_type(fd, &out->type))) {
     return err;
   }
-  if ((err = mutff_read_32(fd, &out->major_brand))) {
+  if ((err = mutff_read(fd, &out->major_brand, 4))) {
     return err;
   }
-  if ((err = mutff_read_32(fd, &out->minor_version))) {
+  out->major_brand = mutff_ntoh_32(out->major_brand);
+  if ((err = mutff_read(fd, &out->minor_version, 4))) {
     return err;
   }
 
@@ -179,9 +148,10 @@ MuTFFError mutff_read_file_type_compatibility_atom(
 MuTFFError mutff_read_movie_data_atom(FILE *fd, MuTFFMovieDataAtom *out) {
   MuTFFError err;
 
-  if ((err = mutff_read_32(fd, &out->size))) {
+  if ((err = mutff_read(fd, &out->size, 4))) {
     return err;
   }
+  out->size = mutff_ntoh_32(out->size);
   if ((err = mutff_read_atom_type(fd, &out->type))) {
     return err;
   }
@@ -193,9 +163,10 @@ MuTFFError mutff_read_movie_data_atom(FILE *fd, MuTFFMovieDataAtom *out) {
 MuTFFError mutff_read_free_atom(FILE *fd, MuTFFFreeAtom *out) {
   MuTFFError err;
 
-  if ((err = mutff_read_32(fd, &out->size))) {
+  if ((err = mutff_read(fd, &out->size, 4))) {
     return err;
   }
+  out->size = mutff_ntoh_32(out->size);
   if ((err = mutff_read_atom_type(fd, &out->type))) {
     return err;
   }
@@ -207,9 +178,10 @@ MuTFFError mutff_read_free_atom(FILE *fd, MuTFFFreeAtom *out) {
 MuTFFError mutff_read_skip_atom(FILE *fd, MuTFFSkipAtom *out) {
   MuTFFError err;
 
-  if ((err = mutff_read_32(fd, &out->size))) {
+  if ((err = mutff_read(fd, &out->size, 4))) {
     return err;
   }
+  out->size = mutff_ntoh_32(out->size);
   if ((err = mutff_read_atom_type(fd, &out->type))) {
     return err;
   }
@@ -221,10 +193,10 @@ MuTFFError mutff_read_skip_atom(FILE *fd, MuTFFSkipAtom *out) {
 MuTFFError mutff_read_wide_atom(FILE *fd, MuTFFWideAtom *out) {
   MuTFFError err;
 
-  if ((err = mutff_read_32(fd, &out->size))) {
+  if ((err = mutff_read(fd, &out->size, 4))) {
     return err;
   }
-  printf("size %u\n", out->size);
+  out->size = mutff_ntoh_32(out->size);
   if ((err = mutff_read_atom_type(fd, &out->type))) {
     return err;
   }
@@ -236,24 +208,28 @@ MuTFFError mutff_read_wide_atom(FILE *fd, MuTFFWideAtom *out) {
 MuTFFError mutff_read_preview_atom(FILE *fd, MuTFFPreviewAtom *out) {
   MuTFFError err;
 
-  if ((err = mutff_read_32(fd, &out->size))) {
+  if ((err = mutff_read(fd, &out->size, 4))) {
     return err;
   }
+  out->size = mutff_ntoh_32(out->size);
   if ((err = mutff_read_atom_type(fd, &out->type))) {
     return err;
   }
-  if ((err = mutff_read_32(fd, &out->modification_time))) {
+  if ((err = mutff_read(fd, &out->modification_time, 4))) {
     return err;
   }
-  if ((err = mutff_read_16(fd, &out->version))) {
+  out->modification_time = mutff_ntoh_32(out->modification_time);
+  if ((err = mutff_read(fd, &out->version, 2))) {
     return err;
   }
-  if ((err = mutff_read_32(fd, &out->atom_type))) {
+  out->version = mutff_ntoh_16(out->version);
+  if ((err = mutff_read(fd, &out->atom_type, 4))) {
     return err;
   }
-  if ((err = mutff_read_16(fd, &out->atom_index))) {
+  if ((err = mutff_read(fd, &out->atom_index, 2))) {
     return err;
   }
+  out->atom_index = mutff_ntoh_16(out->atom_index);
 
   return MuTFFErrorNone;
 }
@@ -261,59 +237,78 @@ MuTFFError mutff_read_preview_atom(FILE *fd, MuTFFPreviewAtom *out) {
 MuTFFError mutff_read_movie_header_atom(FILE *fd, MuTFFMovieHeaderAtom *out) {
   MuTFFError err;
 
-  if ((err = mutff_read_32(fd, &out->size))) {
+  if ((err = mutff_read(fd, &out->size, 4))) {
     return err;
   }
+  out->size = mutff_ntoh_32(out->size);
   if ((err = mutff_read_atom_type(fd, &out->type))) {
     return err;
   }
-  if ((err = mutff_read_8(fd, &out->version))) {
+  if ((err = mutff_read(fd, &out->version, 1))) {
     return err;
   }
-  if ((err = mutff_read_24(fd, &out->flags))) {
+  if ((err = mutff_read(fd, &out->flags, 3))) {
     return err;
   }
-  if ((err = mutff_read_32(fd, &out->creation_time))) {
+  *out->flags = mutff_ntoh_24(*out->flags);
+  if ((err = mutff_read(fd, &out->creation_time, 4))) {
     return err;
   }
-  if ((err = mutff_read_32(fd, &out->modification_time))) {
+  out->creation_time = mutff_ntoh_32(out->creation_time);
+  if ((err = mutff_read(fd, &out->modification_time, 4))) {
     return err;
   }
-  if ((err = mutff_read_32(fd, &out->time_scale))) {
+  out->modification_time = mutff_ntoh_32(out->modification_time);
+  if ((err = mutff_read(fd, &out->time_scale, 4))) {
     return err;
   }
-  if ((err = mutff_read_32(fd, &out->duration))) {
+  out->time_scale = mutff_ntoh_32(out->time_scale);
+  if ((err = mutff_read(fd, &out->duration, 4))) {
     return err;
   }
-  if ((err = mutff_read_32(fd, &out->preferred_rate))) {
+  out->duration = mutff_ntoh_32(out->duration);
+  if ((err = mutff_read(fd, &out->preferred_rate, 4))) {
     return err;
   }
-  if ((err = mutff_read_16(fd, &out->preferred_volume))) {
+  out->preferred_rate = mutff_ntoh_32(out->preferred_rate);
+  if ((err = mutff_read(fd, &out->preferred_volume, 2))) {
     return err;
   }
-  fread(&out->_reserved, 1, 10, fd);
-  fread(&out->matrix_structure, 36, 1, fd);
-  if ((err = mutff_read_32(fd, &out->preview_time))) {
+  out->preferred_volume = mutff_ntoh_16(out->preferred_volume);
+  if ((err = mutff_read(fd, &out->_reserved, 10))) {
     return err;
   }
-  if ((err = mutff_read_32(fd, &out->preview_duration))) {
+  if ((err = mutff_read(fd, &out->matrix_structure, 36))) {
     return err;
   }
-  if ((err = mutff_read_32(fd, &out->poster_time))) {
+  if ((err = mutff_read(fd, &out->preview_time, 4))) {
     return err;
   }
-  if ((err = mutff_read_32(fd, &out->selection_time))) {
+  out->preview_time = mutff_ntoh_32(out->preview_time);
+  if ((err = mutff_read(fd, &out->preview_duration, 4))) {
     return err;
   }
-  if ((err = mutff_read_32(fd, &out->selection_duration))) {
+  out->preview_duration = mutff_ntoh_32(out->preview_duration);
+  if ((err = mutff_read(fd, &out->poster_time, 4))) {
     return err;
   }
-  if ((err = mutff_read_32(fd, &out->current_time))) {
+  out->poster_time = mutff_ntoh_32(out->poster_time);
+  if ((err = mutff_read(fd, &out->selection_time, 4))) {
     return err;
   }
-  if ((err = mutff_read_32(fd, &out->next_track_id))) {
+  out->selection_time = mutff_ntoh_32(out->selection_time);
+  if ((err = mutff_read(fd, &out->selection_duration, 4))) {
     return err;
   }
+  out->selection_duration = mutff_ntoh_32(out->selection_duration);
+  if ((err = mutff_read(fd, &out->current_time, 4))) {
+    return err;
+  }
+  out->current_time = mutff_ntoh_32(out->current_time);
+  if ((err = mutff_read(fd, &out->next_track_id, 4))) {
+    return err;
+  }
+  out->next_track_id = mutff_ntoh_32(out->next_track_id);
 
   return MuTFFErrorNone;
 }
@@ -322,16 +317,18 @@ MuTFFError mutff_read_clipping_region_atom(FILE *fd,
                                            MuTFFClippingRegionAtom *out) {
   MuTFFError err;
 
-  if ((err = mutff_read_32(fd, &out->size))) {
+  if ((err = mutff_read(fd, &out->size, 4))) {
     return err;
   }
+  out->size = mutff_ntoh_32(out->size);
   if ((err = mutff_read_atom_type(fd, &out->type))) {
     return err;
   }
-  if ((err = mutff_read_16(fd, &out->region_size))) {
+  if ((err = mutff_read(fd, &out->region_size, 2))) {
     return err;
   }
-  if ((err = mutff_read_64(fd, &out->region_boundary_box))) {
+  out->region_size = mutff_ntoh_16(out->region_size);
+  if ((err = mutff_read(fd, &out->region_boundary_box, 8))) {
     return err;
   }
   fseek(fd, out->size - 18, SEEK_CUR);
@@ -342,9 +339,10 @@ MuTFFError mutff_read_clipping_region_atom(FILE *fd,
 MuTFFError mutff_read_clipping_atom(FILE *fd, MuTFFClippingAtom *out) {
   MuTFFError err;
 
-  if ((err = mutff_read_32(fd, &out->size))) {
+  if ((err = mutff_read(fd, &out->size, 4))) {
     return err;
   }
+  out->size = mutff_ntoh_32(out->size);
   if ((err = mutff_read_atom_type(fd, &out->type))) {
     return err;
   }
@@ -359,9 +357,10 @@ MuTFFError mutff_read_clipping_atom(FILE *fd, MuTFFClippingAtom *out) {
 MuTFFError mutff_read_color_table_atom(FILE *fd, MuTFFColorTableAtom *out) {
   MuTFFError err;
 
-  if ((err = mutff_read_32(fd, &out->size))) {
+  if ((err = mutff_read(fd, &out->size, 4))) {
     return err;
   }
+  out->size = mutff_ntoh_32(out->size);
   if ((err = mutff_read_atom_type(fd, &out->type))) {
     return err;
   }
@@ -373,9 +372,10 @@ MuTFFError mutff_read_color_table_atom(FILE *fd, MuTFFColorTableAtom *out) {
 MuTFFError mutff_read_user_data_atom(FILE *fd, MuTFFUserDataAtom *out) {
   MuTFFError err;
 
-  if ((err = mutff_read_32(fd, &out->size))) {
+  if ((err = mutff_read(fd, &out->size, 4))) {
     return err;
   }
+  out->size = mutff_ntoh_32(out->size);
   if ((err = mutff_read_atom_type(fd, &out->type))) {
     return err;
   }
@@ -387,9 +387,10 @@ MuTFFError mutff_read_user_data_atom(FILE *fd, MuTFFUserDataAtom *out) {
 MuTFFError mutff_read_track_atom(FILE *fd, MuTFFTrackAtom *out) {
   MuTFFError err;
 
-  if ((err = mutff_read_32(fd, &out->size))) {
+  if ((err = mutff_read(fd, &out->size, 4))) {
     return err;
   }
+  out->size = mutff_ntoh_32(out->size);
   if ((err = mutff_read_atom_type(fd, &out->type))) {
     return err;
   }
@@ -404,9 +405,10 @@ MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out) {
   *out = (MuTFFMovieAtom){0};
 
   // read header
-  if ((err = mutff_read_32(fd, &out->size))) {
+  if ((err = mutff_read(fd, &out->size, 4))) {
     return err;
   }
+  out->size = mutff_ntoh_32(out->size);
   if ((err = mutff_read_atom_type(fd, &out->type))) {
     return err;
   }

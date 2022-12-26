@@ -140,7 +140,7 @@ typedef struct {
   MuTFFAtomSize size;
   MuTFFAtomType type;
   uint32_t major_brand;
-  uint32_t minor_version;
+  char minor_version[4];
   size_t compatible_brands_count;
   QTFileFormat compatible_brands[MuTFF_MAX_COMPATIBLE_BRANDS];
 } MuTFFFileTypeCompatibilityAtom;

@@ -103,7 +103,8 @@ TEST_F(MuTFFTest, FileTypeCompatibilityAtom) {
             MuTFF_FOUR_C("ftyp"));
   EXPECT_EQ(file_type_compatibility_atom.size, 0x14);
   EXPECT_EQ(file_type_compatibility_atom.major_brand, MuTFF_FOUR_C("qt  "));
-  EXPECT_EQ(file_type_compatibility_atom.minor_version, 0x00000200);
+  EXPECT_EQ(MuTFF_FOUR_C(file_type_compatibility_atom.minor_version),
+            MuTFF_FOUR_C(((char[]){00, 00, 02, 00})));
   EXPECT_EQ(file_type_compatibility_atom.compatible_brands_count, 1);
   EXPECT_EQ(MuTFF_FOUR_C(file_type_compatibility_atom.compatible_brands[0]),
             MuTFF_FOUR_C("qt  "));
