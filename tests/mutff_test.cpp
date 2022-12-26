@@ -60,10 +60,8 @@ TEST_F(MuTFFTest, MovieHeaderAtom) {
 
   EXPECT_EQ(movie_header_atom.size, 0x6c);
   EXPECT_EQ(MuTFF_FOUR_C(movie_header_atom.type), MuTFF_FOUR_C("mvhd"));
-  EXPECT_EQ(movie_header_atom.version, 0);
-  EXPECT_EQ(movie_header_atom.flags[0], 0);
-  EXPECT_EQ(movie_header_atom.flags[1], 0);
-  EXPECT_EQ(movie_header_atom.flags[2], 0);
+  EXPECT_EQ(movie_header_atom.version_flags.version, 0);
+  EXPECT_EQ(movie_header_atom.version_flags.flags, 0);
   EXPECT_EQ(movie_header_atom.creation_time, 0);
   EXPECT_EQ(movie_header_atom.modification_time, 0);
   EXPECT_EQ(movie_header_atom.time_scale, 1000);

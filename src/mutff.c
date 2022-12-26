@@ -50,7 +50,7 @@ static uint16_t mutff_ntoh_16(uint16_t n) {
 static uint32_t mutff_ntoh_24(uint32_t n) {
   unsigned char *np = (unsigned char *)&n;
 
-  return ((uint32_t)np[0] << 16) | ((uint32_t)np[0] << 8) | (uint32_t)np[1];
+  return ((uint32_t)np[0] << 16) | ((uint32_t)np[1] << 8) | (uint32_t)np[2];
 }
 
 static uint32_t mutff_ntoh_32(uint32_t n) {
@@ -77,6 +77,18 @@ MuTFFError mutff_read_atom_type(FILE *fd, MuTFFAtomType *out) {
   if (feof(fd)) {
     return MuTFFErrorEOF;
   }
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_atom_version_flags(FILE *fd, MuTFFAtomVersionFlags *out) {
+  const size_t read_bytes = fread(out, 4, 1, fd);
+  if (ferror(fd)) {
+    return MuTFFErrorIOError;
+  }
+  if (feof(fd)) {
+    return MuTFFErrorEOF;
+  }
+  out->flags = mutff_ntoh_24(out->flags);
   return MuTFFErrorNone;
 }
 
@@ -244,13 +256,9 @@ MuTFFError mutff_read_movie_header_atom(FILE *fd, MuTFFMovieHeaderAtom *out) {
   if ((err = mutff_read_atom_type(fd, &out->type))) {
     return err;
   }
-  if ((err = mutff_read(fd, &out->version, 1))) {
+  if ((err = mutff_read_atom_version_flags(fd, &out->version_flags))) {
     return err;
   }
-  if ((err = mutff_read(fd, &out->flags, 3))) {
-    return err;
-  }
-  *out->flags = mutff_ntoh_24(*out->flags);
   if ((err = mutff_read(fd, &out->creation_time, 4))) {
     return err;
   }
