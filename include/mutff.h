@@ -149,6 +149,57 @@ typedef char QTFileFormat[4];
 /// @return           Whether or not an atom was read successfully
 ///
 MuTFFError read_file_format(FILE *fd, QTFileFormat *out);
+///
+/// @brief A QuickDraw rectangle
+/// @see
+/// https://developer.apple.com/library/archive/documentation/mac/pdf/ImagingWithQuickDraw.pdf
+/// Section 2-6
+///
+typedef struct {
+  uint16_t top;
+  uint16_t left;
+  uint16_t bottom;
+  uint16_t right;
+} MuTFFQuickDrawRect;
+
+///
+/// @brief Read a QuickDraw rectangle
+///
+/// The current file offset must be at the start of the rectangle
+///
+/// @param [in] fd    The file descriptor
+/// @param [out] out  Output
+/// @return           Whether or not an atom was read successfully
+///
+MuTFFError mutff_read_quickdraw_rect(FILE *fd, MuTFFQuickDrawRect *out);
+
+///
+/// @brief Maximum size of the additional data in a QuickDraw region
+///
+#define MuTFF_MAX_QUICKDRAW_REGION_DATA_SIZE 8
+
+///
+/// @brief A QuickDraw region
+/// @see
+/// https://developer.apple.com/library/archive/documentation/mac/pdf/ImagingWithQuickDraw.pdf
+/// Section 2-7
+///
+typedef struct {
+  uint16_t size;
+  MuTFFQuickDrawRect rect;
+  char data[MuTFF_MAX_QUICKDRAW_REGION_DATA_SIZE];
+} MuTFFQuickDrawRegion;
+
+///
+/// @brief Read a QuickDraw region
+///
+/// The current file offset must be at the start of the region
+///
+/// @param [in] fd    The file descriptor
+/// @param [out] out  Output
+/// @return           Whether or not an atom was read successfully
+///
+MuTFFError mutff_read_quickdraw_region(FILE *fd, MuTFFQuickDrawRegion *out);
 
 ///
 /// @brief File type compatibility atom
@@ -304,22 +355,18 @@ typedef struct {
 MuTFFError mutff_read_movie_header_atom(FILE *fd, MuTFFMovieHeaderAtom *out);
 
 ///
-/// @brief Maximum size of the data in a clipping region atom
-/// @see MuTFFClippingRegionAtom
-///
-#define MuTFF_MAX_CLIPPING_REGION_DATA_SIZE 16
-
 ///
 /// @brief Clipping region atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-BBCHDAIB
+/// @see
+/// https://developer.apple.com/library/archive/documentation/mac/pdf/ImagingWithQuickDraw.pdf
+/// Section 2-7
 ///
 typedef struct {
   MuTFFAtomSize size;
   MuTFFAtomType type;
-  uint16_t region_size;
-  uint64_t region_boundary_box;
-  char clipping_region_data[MuTFF_MAX_CLIPPING_REGION_DATA_SIZE];
+  MuTFFQuickDrawRegion region;
 } MuTFFClippingRegionAtom;
 
 ///

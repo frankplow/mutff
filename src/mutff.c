@@ -118,6 +118,39 @@ MuTFFError mutff_read_file_format(FILE *fd, QTFileFormat *out) {
   return MuTFFErrorNone;
 }
 
+MuTFFError mutff_read_quickdraw_rect(FILE *fd, MuTFFQuickDrawRect *out) {
+  const size_t read_bytes = fread(out, 8, 1, fd);
+  if (read_bytes != 8) {
+    if (ferror(fd)) {
+      return MuTFFErrorIOError;
+    }
+    if (feof(fd)) {
+      return MuTFFErrorEOF;
+    }
+  }
+  out->top = mutff_ntoh_16(out->top);
+  out->left = mutff_ntoh_16(out->left);
+  out->bottom = mutff_ntoh_16(out->bottom);
+  out->right = mutff_ntoh_16(out->right);
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_quickdraw_region(FILE *fd, MuTFFQuickDrawRegion *out) {
+  const size_t read_bytes = fread(out, 2, 1, fd);
+  if (read_bytes != 2) {
+    if (ferror(fd)) {
+      return MuTFFErrorIOError;
+    }
+    if (feof(fd)) {
+      return MuTFFErrorEOF;
+    }
+  }
+  out->size = mutff_ntoh_16(out->size);
+  mutff_read_quickdraw_rect(fd, &out->rect);
+  fseek(fd, out->size - 10, SEEK_CUR);
+  return MuTFFErrorNone;
+}
+
 MuTFFError mutff_read_file_type_compatibility_atom(
     FILE *fd, MuTFFFileTypeCompatibilityAtom *out) {
   MuTFFError err;
@@ -332,14 +365,9 @@ MuTFFError mutff_read_clipping_region_atom(FILE *fd,
   if ((err = mutff_read_atom_type(fd, &out->type))) {
     return err;
   }
-  if ((err = mutff_read(fd, &out->region_size, 2))) {
+  if ((err = mutff_read_quickdraw_region(fd, &out->region))) {
     return err;
   }
-  out->region_size = mutff_ntoh_16(out->region_size);
-  if ((err = mutff_read(fd, &out->region_boundary_box, 8))) {
-    return err;
-  }
-  fseek(fd, out->size - 18, SEEK_CUR);
 
   return MuTFFErrorNone;
 }
@@ -357,7 +385,6 @@ MuTFFError mutff_read_clipping_atom(FILE *fd, MuTFFClippingAtom *out) {
   if ((err = mutff_read_clipping_region_atom(fd, &out->clipping_region))) {
     return err;
   }
-  fseek(fd, out->size - 8, SEEK_CUR);
 
   return MuTFFErrorNone;
 }
