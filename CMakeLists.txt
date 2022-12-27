@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.13)
 
 project(MuTFF
     LANGUAGES C
@@ -28,6 +28,18 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 if(BUILD_TESTS)
     enable_testing()
+    if(CMAKE_C_COMPILER_ID STREQUAL GNU)
+        add_compile_options(--coverage)
+        add_link_options(--coverage)
+    elseif(CMAKE_C_COMPILER_ID STREQUAL AppleClang)
+        add_compile_options(--coverage)
+        add_link_options(--coverage)
+    elseif(CMAKE_C_COMPILER_ID STREQUAL Clang)
+        add_compile_options(--coverage)
+        add_link_options(--coverage)
+    else()
+        message(WARNING "Unknown compiler. Unable to set flag to enable coverage generation.")
+    endif()
     add_subdirectory(tests)
 endif()
 
