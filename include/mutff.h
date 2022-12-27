@@ -800,7 +800,7 @@ typedef struct {
 /// @param [out] out  The parsed atom
 /// @return           Whether or not the atom was read successfully
 ///
-MuTFFError mutff_track_exclude_from_autoselection_atom(
+MuTFFError mutff_read_track_exclude_from_autoselection_atom(
     FILE *fd, MuTFFTrackExcludeFromAutoselectionAtom *out);
 
 ///
@@ -1037,6 +1037,15 @@ typedef struct {
   MuTFFAtomVersionFlags version_flags;
   char data[MuTFF_MAX_DATA_REFERENCE_DATA_SIZE];
 } MuTFFDataReference;
+
+///
+/// @brief Read a data reference
+///
+/// @param [in] fd    The file descriptor to read from
+/// @param [out] out  The parsed reference
+/// @return           Whether or not the reference was read successfully
+///
+MuTFFError mutff_read_data_reference(FILE *fd, MuTFFDataReference *out);
 
 ///
 /// @brief The maximum number of data references in a data reference atom
