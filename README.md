@@ -1,5 +1,6 @@
 # µTFF
 ![Main Build Status](https://github.com/frankplow/mutff/actions/workflows/build.yml/badge.svg)
+![Test Coverage](https://frankplow.github.io/mutff/badges/coverage.svg)
 
 A small QuickTime file format (QTFF) library.
 

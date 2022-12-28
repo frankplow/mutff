@@ -1,0 +1,31 @@
+name: Generate coverage report
+
+runs:
+  using: composite
+
+  steps:
+      # @TODO: This only works if this step is run immediately after building.
+      #        Make this work if tests have already been run
+      - name: Get baseline coverage data
+        shell: bash
+        run: cmake --build build --target coverage
+
+      - name: Build baseline coverage report
+        shell: bash
+        run: lcov -c -i -d ${{github.workspace}}/build/coverage -o ${{github.workspace}}/build/coverage/base.info
+
+      - name: Run tests
+        shell: bash
+        run: cmake --build build --target test
+
+      - name: Get test coverage data
+        shell: bash
+        run: cmake --build build --target coverage
+
+      - name: Build test coverage report
+        shell: bash
+        run: lcov -c -d ${{github.workspace}}/build/coverage -o ${{github.workspace}}/build/coverage/test.info
+
+      - name: Combine coverage reports
+        shell: bash
+        run: lcov -a ${{github.workspace}}/build/coverage/base.info -a ${{github.workspace}}/build/coverage/test.info -o ${{github.workspace}}/build/coverage/total.info

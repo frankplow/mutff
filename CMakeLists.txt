@@ -45,16 +45,16 @@ if(BUILD_COVERAGE)
     endif()
 
     set(object_dir ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${PROJECT_NAME}.dir)
+    set(coverage_dir ${CMAKE_CURRENT_BINARY_DIR}/coverage)
     get_property(lib_sources TARGET ${PROJECT_NAME} PROPERTY SOURCES)
     add_custom_target(coverage)
     add_custom_command(TARGET coverage PRE_BUILD
-        COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/coverage
+        COMMAND mkdir -p ${coverage_dir}
     )
     foreach(source ${lib_sources})
-        message("source=${source}")
         add_custom_command(TARGET coverage PRE_BUILD
-            COMMAND gcov ${object_dir}/${source}.gcno
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/coverage
+            COMMAND cp ${object_dir}/${source}.gcno ${coverage_dir}
+            COMMAND cp ${object_dir}/${source}.gcda ${coverage_dir}
         )
     endforeach()
 endif()
@@ -63,7 +63,6 @@ if(BUILD_DOCS)
     find_package(Doxygen)
     configure_file(Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
     add_custom_target(docs
-        ALL
         COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
         COMMENT "Generating documentation"
     )
