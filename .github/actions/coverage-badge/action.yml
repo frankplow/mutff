@@ -1,0 +1,29 @@
+name: Generate coverage badge
+
+inputs:
+  infofile:
+    description: "lcov coverage report path"
+    required: true
+
+  output:
+    description: "Where to store the badge"
+    required: true
+    default: build/badges/coverage.svg
+
+runs:
+  using: composite
+
+  steps:
+    - name: Get coverage percentage
+      id: coverage
+      shell: bash
+      run: COVERAGE=$(lcov --summary ${{inputs.infofile}} | awk '/lines/ {print $2}') && COVERAGE=${COVERAGE%\.[0-9]\%} && echo "COVERAGE=$COVERAGE" >> $GITHUB_OUTPUT
+
+    - name: Determine badge colour
+      id: colour
+      shell: bash
+      run: if (( ${{ steps.coverage.outputs.COVERAGE }} > 90 )); then COLOUR=brightgreen; elif (( ${{ steps.coverage.outputs.COVERAGE }} > 80 )); then COLOUR=green; elif (( ${{ steps.coverage.outputs.COVERAGE }} > 70 )); then COLOUR=yellowgreen; elif (( ${{ steps.coverage.outputs.COVERAGE }} > 60 )); then COLOUR=yellow; elif (( ${{ steps.coverage.outputs.COVERAGE }} > 50 )); then COLOUR=orange; else COLOUR=red; fi && echo "COLOUR=$COLOUR" >> $GITHUB_OUTPUT
+
+    - name: Get badge from shields.io
+      shell: bash
+      run: mkdir -p $(dirname ${{inputs.output}}) && curl -L https://img.shields.io/badge/coverage-${{ steps.coverage.outputs.COVERAGE }}%25-${{ steps.colour.outputs.COLOUR }} > ${{inputs.output}}
