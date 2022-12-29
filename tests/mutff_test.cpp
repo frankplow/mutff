@@ -314,7 +314,7 @@ TEST(MuTFF, ReadTrackInputMapAtom) {
 
   EXPECT_EQ(atom.size, data_size);
   EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("imap"));
-  EXPECT_EQ(atom.track_input_atoms[0].size, data_size);
+  EXPECT_EQ(atom.track_input_atoms[0].size, 44);
   EXPECT_EQ(MuTFF_FOUR_C(atom.track_input_atoms[0].type), MuTFF_FOUR_C("\0\0in"));
   EXPECT_EQ(atom.track_input_atoms[0].atom_id, 0x00010203);
   EXPECT_EQ(atom.track_input_atoms[0].child_count, 0x0002);
@@ -324,7 +324,7 @@ TEST(MuTFF, ReadTrackInputMapAtom) {
   EXPECT_EQ(atom.track_input_atoms[0].object_id_atom.size, 0x0c);
   EXPECT_EQ(MuTFF_FOUR_C(atom.track_input_atoms[0].object_id_atom.type), MuTFF_FOUR_C("obid"));
   EXPECT_EQ(atom.track_input_atoms[0].object_id_atom.object_id, 0x00010203);
-  EXPECT_EQ(atom.track_input_atoms[1].size, data_size);
+  EXPECT_EQ(atom.track_input_atoms[1].size, 44);
   EXPECT_EQ(MuTFF_FOUR_C(atom.track_input_atoms[1].type), MuTFF_FOUR_C("\0\0in"));
   EXPECT_EQ(atom.track_input_atoms[1].atom_id, 0x00010203);
   EXPECT_EQ(atom.track_input_atoms[1].child_count, 0x0002);
@@ -426,7 +426,7 @@ TEST(MuTFF, ReadTrackLoadSettingsAtom) {
   MuTFFError err;
   MuTFFTrackLoadSettingsAtom atom;
   FILE *fd = fopen("temp.mov", "w+b");
-  const char data_size = 108;
+  const char data_size = 24;
   // clang-format off
   char data[data_size] = {
     0x00, 0x00, 0x00, data_size,  // size
@@ -620,7 +620,7 @@ TEST(MuTFF, ReadEditListEntry) {
   MuTFFError err;
   MuTFFEditListEntry entry;
   FILE *fd = fopen("temp.mov", "w+b");
-  const char data_size = 108;
+  const char data_size = 12;
   // clang-format off
   char data[data_size] = {
     0x00, 0x01, 0x02, 0x03,  // track duration
@@ -920,7 +920,7 @@ TEST(MuTFF, ReadTrackHeaderAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("type"));
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("tkhd"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.creation_time, 0x00010203);

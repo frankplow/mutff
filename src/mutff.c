@@ -464,6 +464,567 @@ MuTFFError mutff_read_user_data_atom(FILE *fd, MuTFFUserDataAtom *out) {
   return MuTFFErrorNone;
 }
 
+MuTFFError mutff_read_track_header_atom(FILE *fd, MuTFFTrackHeaderAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 92))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->creation_time = mutff_ntoh_32(out->creation_time);
+  out->modification_time = mutff_ntoh_32(out->modification_time);
+  out->track_id = mutff_ntoh_32(out->track_id);
+  out->duration = mutff_ntoh_32(out->duration);
+  out->layer = mutff_ntoh_16(out->layer);
+  out->alternate_group = mutff_ntoh_16(out->alternate_group);
+  out->volume = mutff_ntoh_16(out->volume);
+  out->track_width = mutff_ntoh_32(out->track_width);
+  out->track_height = mutff_ntoh_32(out->track_height);
+  for (size_t j = 0; j < 3; ++j) {
+    for (size_t i = 0; i < 3; ++i) {
+      out->matrix_structure[j][i] = mutff_ntoh_32(out->matrix_structure[j][i]);
+    }
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_track_clean_aperture_dimensions_atom(
+    FILE *fd, MuTFFTrackCleanApertureDimensionsAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 20))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->width = mutff_ntoh_32(out->width);
+  out->height = mutff_ntoh_32(out->height);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_track_production_aperture_dimensions_atom(
+    FILE *fd, MuTFFTrackProductionApertureDimensionsAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 20))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->width = mutff_ntoh_32(out->width);
+  out->height = mutff_ntoh_32(out->height);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_track_encoded_pixels_dimensions_atom(
+    FILE *fd, MuTFFTrackEncodedPixelsDimensionsAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 20))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->width = mutff_ntoh_32(out->width);
+  out->height = mutff_ntoh_32(out->height);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_track_aperture_mode_dimensions_atom(
+    FILE *fd, MuTFFTrackApertureModeDimensionsAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 8))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+
+  // read children
+  size_t offset = 8;
+  MuTFFAtomHeader header;
+  while (offset < out->size) {
+    if ((err = mutff_peek_atom_header(fd, &header))) {
+      return err;
+    }
+    offset += header.size;
+    if (offset > out->size) {
+      return MuTFFErrorBadFormat;
+    }
+
+    switch (MuTFF_FOUR_C(header.type)) {
+      case MuTFF_FOUR_C("clef"):
+        mutff_read_track_clean_aperture_dimensions_atom(
+            fd, &out->track_clean_aperture_dimension);
+        break;
+      case MuTFF_FOUR_C("prof"):
+        mutff_read_track_production_aperture_dimensions_atom(
+            fd, &out->track_production_aperture_dimension);
+        break;
+      case MuTFF_FOUR_C("enof"):
+        mutff_read_track_encoded_pixels_dimensions_atom(
+            fd, &out->track_encoded_pixels_dimension);
+        break;
+      default:
+        // Unrecognised atom type, skip atom
+        fseek(fd, header.size, SEEK_CUR);
+    }
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_sample_description(FILE *fd, MuTFFSampleDescription *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 16))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->data_format = mutff_ntoh_32(out->data_format);
+  out->data_reference_index = mutff_ntoh_16(out->data_reference_index);
+
+  // read variable-length data
+  if ((err = mutff_read(fd, &out->additional_data, out->size - 16))) {
+    return err;
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_compressed_matte_atom(FILE *fd,
+                                            MuTFFCompressedMatteAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 12))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+
+  // read sample description
+  mutff_read_sample_description(fd, &out->matte_image_description_structure);
+
+  // read matte data
+  if ((err = mutff_read(
+           fd, out->matte_data,
+           out->size - 12 - out->matte_image_description_structure.size))) {
+    return err;
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_track_matte_atom(FILE *fd, MuTFFTrackMatteAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 8))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+
+  // read child atom
+  mutff_read_compressed_matte_atom(fd, &out->compressed_matte_atom);
+
+  // skip any remaining data
+  fseek(fd, out->size - out->compressed_matte_atom.size - 8, SEEK_CUR);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_edit_list_entry(FILE *fd, MuTFFEditListEntry *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 12))) {
+    return err;
+  }
+
+  // convert to host order
+  out->track_duration = mutff_ntoh_32(out->track_duration);
+  out->media_time = mutff_ntoh_32(out->media_time);
+  out->media_rate = mutff_ntoh_32(out->media_rate);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_edit_list_atom(FILE *fd, MuTFFEditListAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 16))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->number_of_entries = mutff_ntoh_32(out->number_of_entries);
+
+  // read edit list table
+  if (out->number_of_entries > MuTFF_MAX_EDIT_LIST_ENTRIES) {
+    return MuTFFErrorTooManyAtoms;
+  }
+  const size_t edit_list_table_size = out->size - 16;
+  if (edit_list_table_size != out->number_of_entries * 12) {
+    return MuTFFErrorBadFormat;
+  }
+  for (size_t i = 0; i < out->number_of_entries; ++i) {
+    mutff_read_edit_list_entry(fd, &out->edit_list_table[i]);
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_edit_atom(FILE *fd, MuTFFEditAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 8))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+
+  // read child atom
+  mutff_read_edit_list_atom(fd, &out->edit_list_atom);
+
+  // skip any remaining data
+  fseek(fd, out->size - out->edit_list_atom.size - 8, SEEK_CUR);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_track_reference_type_atom(
+    FILE *fd, MuTFFTrackReferenceTypeAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 8))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+
+  // read track references
+  if ((out->size - 8) % sizeof(QTTrackID) != 0) {
+    return MuTFFErrorBadFormat;
+  }
+  out->track_id_count = (out->size - 8) / sizeof(QTTrackID);
+  if (out->track_id_count > MuTFF_MAX_TRACK_REFERENCE_TYPE_TRACK_IDS) {
+    return MuTFFErrorTooManyAtoms;
+  }
+  if ((err = mutff_read(fd, out->track_ids, out->size - 8))) {
+    return err;
+  }
+
+  // convert to host order
+  for (unsigned int i = 0; i < out->track_id_count; ++i) {
+    out->track_ids[i] = mutff_ntoh_32(out->track_ids[i]);
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_track_reference_atom(FILE *fd,
+                                           MuTFFTrackReferenceAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 8))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+
+  // read children
+  size_t offset = 8;
+  size_t i = 0;
+  MuTFFAtomHeader header;
+  while (offset < out->size) {
+    if (i >= MuTFF_MAX_TRACK_REFERENCE_TYPE_ATOMS) {
+      return MuTFFErrorTooManyAtoms;
+    }
+    if ((err = mutff_peek_atom_header(fd, &header))) {
+      return err;
+    }
+    offset += header.size;
+    if (offset > out->size) {
+      return MuTFFErrorBadFormat;
+    }
+    mutff_read_track_reference_type_atom(fd, &out->track_reference_type[i]);
+    i++;
+  }
+  out->track_reference_type_count = i;
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_track_exclude_from_autoselection_atom(
+    FILE *fd, MuTFFTrackExcludeFromAutoselectionAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 8))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_track_load_settings_atom(FILE *fd,
+                                               MuTFFTrackLoadSettingsAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 24))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->preload_start_time = mutff_ntoh_32(out->preload_start_time);
+  out->preload_duration = mutff_ntoh_32(out->preload_duration);
+  out->preload_flags = mutff_ntoh_32(out->preload_flags);
+  out->default_hints = mutff_ntoh_32(out->default_hints);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_input_type_atom(FILE *fd, MuTFFInputTypeAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 12))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->input_type = mutff_ntoh_32(out->input_type);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_object_id_atom(FILE *fd, MuTFFObjectIDAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 12))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->object_id = mutff_ntoh_32(out->object_id);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_track_input_atom(FILE *fd, MuTFFTrackInputAtom *out) {
+  MuTFFError err;
+
+  // read data
+  if ((err = mutff_read(fd, out, 20))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->atom_id = mutff_ntoh_32(out->atom_id);
+  out->child_count = mutff_ntoh_16(out->child_count);
+
+  // read children
+  size_t offset = 20;
+  MuTFFAtomHeader header;
+  while (offset < out->size) {
+    if ((err = mutff_peek_atom_header(fd, &header))) {
+      return err;
+    }
+    offset += header.size;
+    if (offset > out->size) {
+      return MuTFFErrorBadFormat;
+    }
+    switch (MuTFF_FOUR_C(header.type)) {
+      case MuTFF_FOUR_C("\0\0ty"):
+        mutff_read_input_type_atom(fd, &out->input_type_atom);
+        break;
+      case MuTFF_FOUR_C("obid"):
+        mutff_read_object_id_atom(fd, &out->object_id_atom);
+        break;
+      default:
+        fseek(fd, header.size, SEEK_CUR);
+    }
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_track_input_map_atom(FILE *fd,
+                                           MuTFFTrackInputMapAtom *out) {
+  MuTFFError err;
+
+  // read data
+  if ((err = mutff_read(fd, out, 8))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+
+  // read children
+  size_t offset = 8;
+  size_t i = 0;
+  MuTFFAtomHeader header;
+  while (offset < out->size) {
+    if (i >= MuTFF_MAX_TRACK_REFERENCE_TYPE_ATOMS) {
+      return MuTFFErrorTooManyAtoms;
+    }
+    if ((err = mutff_peek_atom_header(fd, &header))) {
+      return err;
+    }
+    offset += header.size;
+    if (offset > out->size) {
+      return MuTFFErrorBadFormat;
+    }
+    if (MuTFF_FOUR_C(header.type) == MuTFF_FOUR_C("\0\0in")) {
+      mutff_read_track_input_atom(fd, &out->track_input_atoms[i]);
+      i++;
+    } else {
+      fseek(fd, header.size, SEEK_CUR);
+    }
+  }
+  out->track_input_atom_count = i;
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_media_header_atom(FILE *fd, MuTFFMediaHeaderAtom *out) {
+  MuTFFError err;
+
+  // read data
+  if ((err = mutff_read(fd, out, 32))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->creation_time = mutff_ntoh_32(out->creation_time);
+  out->modification_time = mutff_ntoh_32(out->modification_time);
+  out->time_scale = mutff_ntoh_32(out->time_scale);
+  out->duration = mutff_ntoh_32(out->duration);
+  out->language = mutff_ntoh_16(out->language);
+  out->quality = mutff_ntoh_16(out->quality);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_extended_language_tag_atom(
+    FILE *fd, MuTFFExtendedLanguageTagAtom *out) {
+  MuTFFError err;
+
+  // read data
+  if ((err = mutff_read(fd, out, 12))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+
+  // read variable-length data
+  const size_t tag_length = out->size - 12;
+  if (tag_length > MuTFF_MAX_LANGUAGE_TAG_LENGTH) {
+    return MuTFFErrorTooManyAtoms;
+  }
+  mutff_read(fd, out->language_tag_string, tag_length);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_handler_reference_atom(FILE *fd,
+                                             MuTFFHandlerReferenceAtom *out) {
+  MuTFFError err;
+
+  // read data
+  if ((err = mutff_read(fd, out, 32))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->component_type = mutff_ntoh_32(out->component_type);
+  out->component_subtype = mutff_ntoh_32(out->component_subtype);
+  out->component_manufacturer = mutff_ntoh_32(out->component_manufacturer);
+  out->component_flags = mutff_ntoh_32(out->component_flags);
+  out->component_flags_mask = mutff_ntoh_32(out->component_flags_mask);
+
+  // read variable-length data
+  const size_t name_length = out->size - 32;
+  if (name_length > MuTFF_MAX_LANGUAGE_TAG_LENGTH) {
+    return MuTFFErrorTooManyAtoms;
+  }
+  mutff_read(fd, out->component_name, name_length);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_video_media_information_header_atom(
+    FILE *fd, MuTFFVideoMediaInformationHeaderAtom *out) {
+  MuTFFError err;
+
+  // read data
+  if ((err = mutff_read(fd, out, 20))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->graphics_mode = mutff_ntoh_16(out->graphics_mode);
+  out->opcolor[0] = mutff_ntoh_16(out->opcolor[0]);
+  out->opcolor[1] = mutff_ntoh_16(out->opcolor[1]);
+  out->opcolor[2] = mutff_ntoh_16(out->opcolor[2]);
+
+  return MuTFFErrorNone;
+}
+
 MuTFFError mutff_read_track_atom(FILE *fd, MuTFFTrackAtom *out) {
   MuTFFError err;
 
