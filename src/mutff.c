@@ -572,15 +572,18 @@ MuTFFError mutff_read_track_aperture_mode_dimensions_atom(
     }
 
     switch (MuTFF_FOUR_C(header.type)) {
-      case MuTFF_FOUR_C("clef"):
+      /* case MuTFF_FOUR_C("clef"): */
+      case 0x636c6566:
         mutff_read_track_clean_aperture_dimensions_atom(
             fd, &out->track_clean_aperture_dimension);
         break;
-      case MuTFF_FOUR_C("prof"):
+      /* case MuTFF_FOUR_C("prof"): */
+      case 0x70726f66:
         mutff_read_track_production_aperture_dimensions_atom(
             fd, &out->track_production_aperture_dimension);
         break;
-      case MuTFF_FOUR_C("enof"):
+      /* case MuTFF_FOUR_C("enof"): */
+      case 0x656e6f66:
         mutff_read_track_encoded_pixels_dimensions_atom(
             fd, &out->track_encoded_pixels_dimension);
         break;
@@ -880,10 +883,12 @@ MuTFFError mutff_read_track_input_atom(FILE *fd, MuTFFTrackInputAtom *out) {
       return MuTFFErrorBadFormat;
     }
     switch (MuTFF_FOUR_C(header.type)) {
-      case MuTFF_FOUR_C("\0\0ty"):
+      /* case MuTFF_FOUR_C("\0\0ty"): */
+      case 0x00007479:
         mutff_read_input_type_atom(fd, &out->input_type_atom);
         break;
-      case MuTFF_FOUR_C("obid"):
+      /* case MuTFF_FOUR_C("obid"): */
+      case 0x6f626964:
         mutff_read_object_id_atom(fd, &out->object_id_atom);
         break;
       default:
