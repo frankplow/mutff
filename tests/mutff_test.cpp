@@ -2283,21 +2283,6 @@ TEST(MuTFF, ReadFileTypeCompatibilityAtom) {
   EXPECT_EQ(ftell(fd), data_size);
 }
 
-TEST(MuTFF, ReadFileFormat) {
-  MuTFFError err;
-  QTFileFormat file_format;
-  FILE *fd = fopen("temp.mov", "w+b");
-  const char data_size = 4;
-  char data[data_size] = {'a', 'b', 'c', 'd'};
-  fwrite(data, data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_file_format(fd, &file_format);
-  ASSERT_EQ(err, MuTFFErrorNone);
-
-  EXPECT_EQ(MuTFF_FOUR_C(file_format), MuTFF_FOUR_C("abcd"));
-  EXPECT_EQ(ftell(fd), data_size);
-}
-
 TEST(MuTFF, PeekAtomHeader) {
   MuTFFAtomHeader header;
   FILE *fd = fopen("temp.mov", "w+b");
@@ -2310,19 +2295,6 @@ TEST(MuTFF, PeekAtomHeader) {
   EXPECT_EQ(header.size, 0x01020304);
   EXPECT_EQ(MuTFF_FOUR_C(header.type), MuTFF_FOUR_C("abcd"));
   EXPECT_EQ(ftell(fd), 0);
-}
-
-TEST(MuTFF, ReadAtomType) {
-  MuTFFAtomType type;
-  FILE *fd = fopen("temp.mov", "w+b");
-  const char data_size = 4;
-  char data[data_size] = {'a', 'b', 'c', 'd'};
-  fwrite(data, data_size, 1, fd);
-  rewind(fd);
-  mutff_read_atom_type(fd, &type);
-
-  EXPECT_EQ(MuTFF_FOUR_C(type), MuTFF_FOUR_C("abcd"));
-  EXPECT_EQ(ftell(fd), data_size);
 }
 
 TEST(MuTFF, FixedAtomSizes) {
