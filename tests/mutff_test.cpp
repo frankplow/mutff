@@ -138,6 +138,256 @@ TEST_F(TestMov, WideAtom) {
   EXPECT_EQ(ftell(fd), offset + wide_atom.size);
 }
 
+TEST_F(TestMov, TrackAtom) {
+  const size_t offset = 28446;
+  MuTFFTrackAtom track_atom;
+  fseek(fd, offset, SEEK_SET);
+  const MuTFFError err = mutff_read_track_atom(fd, &track_atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(track_atom.size, 0x0000022d);
+  EXPECT_EQ(MuTFF_FOUR_C(track_atom.type), MuTFF_FOUR_C("trak"));
+
+  EXPECT_EQ(ftell(fd), offset + track_atom.size);
+}
+
+TEST_F(TestMov, TrackHeaderAtom) {
+  const size_t offset = 28454;
+  MuTFFTrackHeaderAtom atom;
+  fseek(fd, offset, SEEK_SET);
+  const MuTFFError err = mutff_read_track_header_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, 0x0000005c);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("tkhd"));
+  EXPECT_EQ(atom.version_flags.version, 0x00);
+  EXPECT_EQ(atom.version_flags.flags, 0x000003);
+  EXPECT_EQ(atom.creation_time, 0);
+  EXPECT_EQ(atom.modification_time, 0);
+  EXPECT_EQ(atom.track_id, 1);
+  EXPECT_EQ(atom.duration, 0x048f);
+  EXPECT_EQ(atom.layer, 0);
+  EXPECT_EQ(atom.alternate_group, 0);
+  EXPECT_EQ(atom.volume, 0);
+  EXPECT_EQ(atom.matrix_structure[0][0], 0x00010000);
+  EXPECT_EQ(atom.matrix_structure[0][1], 0);
+  EXPECT_EQ(atom.matrix_structure[0][2], 0);
+  EXPECT_EQ(atom.matrix_structure[1][0], 0);
+  EXPECT_EQ(atom.matrix_structure[1][1], 0x00010000);
+  EXPECT_EQ(atom.matrix_structure[1][2], 0);
+  EXPECT_EQ(atom.matrix_structure[2][0], 0);
+  EXPECT_EQ(atom.matrix_structure[2][1], 0);
+  EXPECT_EQ(atom.matrix_structure[2][2], 0x40000000);
+  EXPECT_EQ(atom.track_width, 0x02800000);
+  EXPECT_EQ(atom.track_height, 0x01e00000);
+
+  EXPECT_EQ(ftell(fd), offset + atom.size);
+}
+
+TEST_F(TestMov, EditAtom) {
+  const size_t offset = 28546;
+  MuTFFEditAtom atom;
+  fseek(fd, offset, SEEK_SET);
+  const MuTFFError err = mutff_read_edit_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, 0x00000024);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("edts"));
+  EXPECT_EQ(atom.edit_list_atom.size, 0x0000001c);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.edit_list_atom.type), MuTFF_FOUR_C("elst"));
+  EXPECT_EQ(atom.edit_list_atom.version_flags.version, 0x00);
+  EXPECT_EQ(atom.edit_list_atom.version_flags.flags, 0x000000);
+  EXPECT_EQ(atom.edit_list_atom.number_of_entries, 1);
+  EXPECT_EQ(atom.edit_list_atom.edit_list_table[0].track_duration, 0x048f);
+  EXPECT_EQ(atom.edit_list_atom.edit_list_table[0].media_time, 0);
+  EXPECT_EQ(atom.edit_list_atom.edit_list_table[0].media_rate, 0x00010000);
+
+  EXPECT_EQ(ftell(fd), offset + atom.size);
+}
+
+TEST_F(TestMov, MediaAtom) {
+  const size_t offset = 28582;
+  MuTFFMediaAtom atom;
+  fseek(fd, offset, SEEK_SET);
+  const MuTFFError err = mutff_read_media_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, 0x000001a5);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("mdia"));
+
+  EXPECT_EQ(ftell(fd), offset + atom.size);
+}
+
+TEST_F(TestMov, MediaHeaderAtom) {
+  const size_t offset = 28590;
+  MuTFFMediaHeaderAtom atom;
+  fseek(fd, offset, SEEK_SET);
+  const MuTFFError err = mutff_read_media_header_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, 0x00000020);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("mdhd"));
+
+  EXPECT_EQ(ftell(fd), offset + atom.size);
+}
+
+TEST_F(TestMov, MediaHandlerReferenceAtom) {
+  const size_t offset = 28622;
+  MuTFFHandlerReferenceAtom atom;
+  fseek(fd, offset, SEEK_SET);
+  const MuTFFError err = mutff_read_handler_reference_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, 0x0000002d);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("hdlr"));
+  EXPECT_EQ(atom.version_flags.version, 0x00);
+  EXPECT_EQ(atom.version_flags.flags, 0x000000);
+  EXPECT_EQ(atom.component_type, MuTFF_FOUR_C("mhlr"));
+  EXPECT_EQ(atom.component_subtype, MuTFF_FOUR_C("vide"));
+  EXPECT_EQ(atom.component_manufacturer, 0);
+  EXPECT_EQ(atom.component_flags, 0);
+  EXPECT_EQ(atom.component_flags_mask, 0);
+  const char *component_name = "\fVideoHandler";
+  for (size_t i = 0; i < 13; ++i) {
+    EXPECT_EQ(atom.component_name[i], component_name[i]);
+  }
+
+  EXPECT_EQ(ftell(fd), offset + atom.size);
+}
+
+TEST_F(TestMov, MediaInformationAtom) {
+  const size_t offset = 28667;
+  MuTFFMediaInformationAtom atom;
+  fseek(fd, offset, SEEK_SET);
+  const MuTFFError err = mutff_read_media_information_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.video.size, 0x00000150);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.video.type), MuTFF_FOUR_C("minf"));
+
+  EXPECT_EQ(ftell(fd), offset + atom.video.size);
+}
+
+TEST_F(TestMov, VideoMediaInformationHeader) {
+  const size_t offset = 28675;
+  MuTFFVideoMediaInformationHeaderAtom atom;
+  fseek(fd, offset, SEEK_SET);
+  const MuTFFError err =
+      mutff_read_video_media_information_header_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, 0x00000014);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("vmhd"));
+
+  EXPECT_EQ(ftell(fd), offset + atom.size);
+}
+
+TEST_F(TestMov, VideoMediaInformationHandlerReference) {
+  const size_t offset = 28695;
+  MuTFFHandlerReferenceAtom atom;
+  fseek(fd, offset, SEEK_SET);
+  const MuTFFError err = mutff_read_handler_reference_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, 0x0000002c);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("hdlr"));
+  EXPECT_EQ(atom.version_flags.version, 0x00);
+  EXPECT_EQ(atom.version_flags.flags, 0x000000);
+  EXPECT_EQ(atom.component_type, MuTFF_FOUR_C("dhlr"));
+  EXPECT_EQ(atom.component_subtype, MuTFF_FOUR_C("url "));
+  EXPECT_EQ(atom.component_manufacturer, 0);
+  EXPECT_EQ(atom.component_flags, 0);
+  EXPECT_EQ(atom.component_flags_mask, 0);
+  const char *component_name = "\vDataHandler";
+  for (size_t i = 0; i < 12; ++i) {
+    EXPECT_EQ(atom.component_name[i], component_name[i]);
+  }
+
+  EXPECT_EQ(ftell(fd), offset + atom.size);
+}
+
+TEST_F(TestMov, VideoMediaInformationDataInformation) {
+  const size_t offset = 28739;
+  MuTFFDataInformationAtom atom;
+  fseek(fd, offset, SEEK_SET);
+  const MuTFFError err = mutff_read_data_information_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, 0x00000024);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("dinf"));
+
+  EXPECT_EQ(ftell(fd), offset + atom.size);
+}
+
+TEST_F(TestMov, VideoMediaInformationSampleTable) {
+  const size_t offset = 28775;
+  MuTFFSampleTableAtom atom;
+  fseek(fd, offset, SEEK_SET);
+  const MuTFFError err = mutff_read_sample_table_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, 0x000000e4);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stbl"));
+
+  EXPECT_EQ(ftell(fd), offset + atom.size);
+}
+
+TEST_F(TestMov, VideoMediaInformationSampleTableDescription) {
+  const size_t offset = 28783;
+  MuTFFSampleDescriptionAtom atom;
+  fseek(fd, offset, SEEK_SET);
+  const MuTFFError err = mutff_read_sample_description_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, 0x00000080);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stsd"));
+
+  EXPECT_EQ(ftell(fd), offset + atom.size);
+}
+
+TEST_F(TestMov, TimeToSample) {
+  const size_t offset = 28911;
+  MuTFFTimeToSampleAtom atom;
+  fseek(fd, offset, SEEK_SET);
+  const MuTFFError err = mutff_read_time_to_sample_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, 0x18);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stts"));
+
+  EXPECT_EQ(ftell(fd), offset + atom.size);
+}
+
+TEST_F(TestMov, SampleToChunk) {
+  const size_t offset = 28935;
+  MuTFFSampleToChunkAtom atom;
+  fseek(fd, offset, SEEK_SET);
+  const MuTFFError err = mutff_read_sample_to_chunk_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, 0x1c);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stsc"));
+
+  EXPECT_EQ(ftell(fd), offset + atom.size);
+}
+
+TEST_F(TestMov, SampleSize) {
+  const size_t offset = 28963;
+  MuTFFSampleSizeAtom atom;
+  fseek(fd, offset, SEEK_SET);
+  const MuTFFError err = mutff_read_sample_size_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, 0x14);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stsz"));
+  EXPECT_EQ(atom.version_flags.version, 0x00);
+  EXPECT_EQ(atom.version_flags.flags, 0x000000);
+  EXPECT_EQ(atom.sample_size, 0x07e5);
+  EXPECT_EQ(atom.number_of_entries, 0x0e);
+
+  EXPECT_EQ(ftell(fd), offset + atom.size);
+}
+
 TEST(MuTFF, ReadSampleDependencyFlagsAtom) {
   MuTFFError err;
   MuTFFSampleDependencyFlagsAtom atom;
