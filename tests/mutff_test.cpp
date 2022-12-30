@@ -138,6 +138,763 @@ TEST_F(TestMov, WideAtom) {
   EXPECT_EQ(ftell(fd), offset + wide_atom.size);
 }
 
+TEST(MuTFF, ReadSampleDependencyFlagsAtom) {
+  MuTFFError err;
+  MuTFFSampleDependencyFlagsAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 14;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x00, 0x00, data_size,  // size
+    's', 'd', 't', 'p',           // type
+    0x00,                         // version
+    0x00, 0x01, 0x02,             // flags
+    0x10, 0x11,                   // sample size table
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_sample_dependency_flags_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, data_size);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("sdtp"));
+  EXPECT_EQ(atom.version_flags.version, 0x00);
+  EXPECT_EQ(atom.version_flags.flags, 0x000102);
+  EXPECT_EQ(atom.sample_dependency_flags_table[0], 0x10);
+  EXPECT_EQ(atom.sample_dependency_flags_table[1], 0x11);
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadChunkOffsetAtom) {
+  MuTFFError err;
+  MuTFFChunkOffsetAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 20;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x00, 0x00, data_size,  // size
+    's', 't', 'c', 'o',           // type
+    0x00,                         // version
+    0x00, 0x01, 0x02,             // flags
+    0x00, 0x00, 0x00, 0x01,       // number of entries
+    0x10, 0x11, 0x12, 0x13,       // sample size table
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_chunk_offset_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, data_size);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stco"));
+  EXPECT_EQ(atom.version_flags.version, 0x00);
+  EXPECT_EQ(atom.version_flags.flags, 0x000102);
+  EXPECT_EQ(atom.number_of_entries, 1);
+  EXPECT_EQ(atom.chunk_offset_table[0], 0x10111213);
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadSampleSizeAtom) {
+  MuTFFError err;
+  MuTFFSampleSizeAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 24;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x00, 0x00, data_size,  // size
+    's', 't', 's', 'z',           // type
+    0x00,                         // version
+    0x00, 0x01, 0x02,             // flags
+    0x00, 0x00, 0x00, 0x00,       // sample size
+    0x00, 0x00, 0x00, 0x01,       // number of entries
+    0x10, 0x11, 0x12, 0x13,       // sample size table
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_sample_size_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, data_size);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stsz"));
+  EXPECT_EQ(atom.version_flags.version, 0x00);
+  EXPECT_EQ(atom.version_flags.flags, 0x000102);
+  EXPECT_EQ(atom.sample_size, 0);
+  EXPECT_EQ(atom.number_of_entries, 1);
+  EXPECT_EQ(atom.sample_size_table[0], 0x10111213);
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadSampleToChunkAtom) {
+  MuTFFError err;
+  MuTFFSampleToChunkAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 40;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x00, 0x00, data_size,  // size
+    's', 't', 's', 'c',           // type
+    0x00,                         // version
+    0x00, 0x01, 0x02,             // flags
+    0x00, 0x00, 0x00, 0x02,       // number of entries
+    0x00, 0x01, 0x02, 0x03,       // table[0].first chunk
+    0x10, 0x11, 0x12, 0x13,       // table[0].samples per chunk
+    0x20, 0x21, 0x22, 0x23,       // table[0].sample description ID
+    0x30, 0x31, 0x32, 0x33,       // table[1].first chunk
+    0x40, 0x41, 0x42, 0x43,       // table[1].samples per chunk
+    0x50, 0x51, 0x52, 0x53,       // table[1].sample description ID
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_sample_to_chunk_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, data_size);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stsc"));
+  EXPECT_EQ(atom.version_flags.version, 0x00);
+  EXPECT_EQ(atom.version_flags.flags, 0x000102);
+  EXPECT_EQ(atom.number_of_entries, 2);
+  EXPECT_EQ(atom.sample_to_chunk_table[0].first_chunk, 0x00010203);
+  EXPECT_EQ(atom.sample_to_chunk_table[0].samples_per_chunk, 0x10111213);
+  EXPECT_EQ(atom.sample_to_chunk_table[0].sample_description_id, 0x20212223);
+  EXPECT_EQ(atom.sample_to_chunk_table[1].first_chunk, 0x30313233);
+  EXPECT_EQ(atom.sample_to_chunk_table[1].samples_per_chunk, 0x40414243);
+  EXPECT_EQ(atom.sample_to_chunk_table[1].sample_description_id, 0x50515253);
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadSampleToChunkTableEntry) {
+  MuTFFError err;
+  MuTFFSampleToChunkTableEntry entry;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 12;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x01, 0x02, 0x03,  // first chunk
+    0x10, 0x11, 0x12, 0x13,  // samples per chunk
+    0x20, 0x21, 0x22, 0x23,  // sample description ID
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_sample_to_chunk_table_entry(fd, &entry);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(entry.first_chunk, 0x00010203);
+  EXPECT_EQ(entry.samples_per_chunk, 0x10111213);
+  EXPECT_EQ(entry.sample_description_id, 0x20212223);
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadPartialSyncSampleAtom) {
+  MuTFFError err;
+  MuTFFPartialSyncSampleAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 24;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x00, 0x00, data_size,  // size
+    's', 't', 'p', 's',           // type
+    0x00,                         // version
+    0x00, 0x01, 0x02,             // flags
+    0x00, 0x00, 0x00, 0x02,       // number of entries
+    0x00, 0x01, 0x02, 0x03,       // table[0].sample count
+    0x10, 0x11, 0x12, 0x13,       // table[0].composition offset
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_partial_sync_sample_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, data_size);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stps"));
+  EXPECT_EQ(atom.version_flags.version, 0x00);
+  EXPECT_EQ(atom.version_flags.flags, 0x000102);
+  EXPECT_EQ(atom.entry_count, 2);
+  EXPECT_EQ(atom.partial_sync_sample_table[0], 0x00010203);
+  EXPECT_EQ(atom.partial_sync_sample_table[1], 0x10111213);
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadSyncSampleAtom) {
+  MuTFFError err;
+  MuTFFSyncSampleAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 24;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x00, 0x00, data_size,  // size
+    's', 't', 't', 's',           // type
+    0x00,                         // version
+    0x00, 0x01, 0x02,             // flags
+    0x00, 0x00, 0x00, 0x02,       // number of entries
+    0x00, 0x01, 0x02, 0x03,       // table[0].sample count
+    0x10, 0x11, 0x12, 0x13,       // table[0].composition offset
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_sync_sample_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, data_size);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stts"));
+  EXPECT_EQ(atom.version_flags.version, 0x00);
+  EXPECT_EQ(atom.version_flags.flags, 0x000102);
+  EXPECT_EQ(atom.number_of_entries, 2);
+  EXPECT_EQ(atom.sync_sample_table[0], 0x00010203);
+  EXPECT_EQ(atom.sync_sample_table[1], 0x10111213);
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadCompositionShiftLeastGreatestAtom) {
+  MuTFFError err;
+  MuTFFCompositionShiftLeastGreatestAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 32;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x00, 0x00, data_size,  // size
+    'c', 's', 'l', 'g',           // type
+    0x00,                         // version
+    0x00, 0x01, 0x02,             // flags
+    0x00, 0x01, 0x02, 0x03,       // composition offset to display offset shift
+    0x10, 0x11, 0x12, 0x13,       // least display offset
+    0x20, 0x21, 0x22, 0x23,       // greatest display offset
+    0x30, 0x31, 0x32, 0x33,       // start display time
+    0x40, 0x41, 0x42, 0x43,       // end display time
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_composition_shift_least_greatest_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, data_size);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("cslg"));
+  EXPECT_EQ(atom.version_flags.version, 0x00);
+  EXPECT_EQ(atom.version_flags.flags, 0x000102);
+  EXPECT_EQ(atom.composition_offset_to_display_offset_shift, 0x00010203);
+  EXPECT_EQ(atom.least_display_offset, 0x10111213);
+  EXPECT_EQ(atom.greatest_display_offset, 0x20212223);
+  EXPECT_EQ(atom.display_start_time, 0x30313233);
+  EXPECT_EQ(atom.display_end_time, 0x40414243);
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadCompositionOffsetAtom) {
+  MuTFFError err;
+  MuTFFCompositionOffsetAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 32;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x00, 0x00, data_size,  // size
+    'c', 't', 't', 's',           // type
+    0x00,                         // version
+    0x00, 0x01, 0x02,             // flags
+    0x00, 0x00, 0x00, 0x02,       // number of entries
+    0x00, 0x01, 0x02, 0x03,       // table[0].sample count
+    0x10, 0x11, 0x12, 0x13,       // table[0].composition offset
+    0x20, 0x21, 0x22, 0x23,       // table[1].sample count
+    0x30, 0x31, 0x32, 0x33,       // table[1].composition offset
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_composition_offset_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, data_size);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("ctts"));
+  EXPECT_EQ(atom.version_flags.version, 0x00);
+  EXPECT_EQ(atom.version_flags.flags, 0x000102);
+  EXPECT_EQ(atom.entry_count, 2);
+  EXPECT_EQ(atom.composition_offset_table[0].sample_count, 0x00010203);
+  EXPECT_EQ(atom.composition_offset_table[0].composition_offset, 0x10111213);
+  EXPECT_EQ(atom.composition_offset_table[1].sample_count, 0x20212223);
+  EXPECT_EQ(atom.composition_offset_table[1].composition_offset, 0x30313233);
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadCompositionOffsetTableEntry) {
+  MuTFFError err;
+  MuTFFCompositionOffsetTableEntry entry;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 8;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x01, 0x02, 0x03,  // sample count
+    0x10, 0x11, 0x12, 0x13,  // composition offset
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_composition_offset_table_entry(fd, &entry);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(entry.sample_count, 0x00010203);
+  EXPECT_EQ(entry.composition_offset, 0x10111213);
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadTimeToSampleAtom) {
+  MuTFFError err;
+  MuTFFTimeToSampleAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 32;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x00, 0x00, data_size,  // size
+    's', 't', 't', 's',           // type
+    0x00,                         // version
+    0x00, 0x01, 0x02,             // flags
+    0x00, 0x00, 0x00, 0x02,       // number of entries
+    0x00, 0x01, 0x02, 0x03,       // table[0].sample count
+    0x10, 0x11, 0x12, 0x13,       // table[0].sample duration
+    0x20, 0x21, 0x22, 0x23,       // table[1].sample count
+    0x30, 0x31, 0x32, 0x33,       // table[1].sample duration
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_time_to_sample_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, data_size);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stts"));
+  EXPECT_EQ(atom.version_flags.version, 0x00);
+  EXPECT_EQ(atom.version_flags.flags, 0x000102);
+  EXPECT_EQ(atom.number_of_entries, 2);
+  EXPECT_EQ(atom.time_to_sample_table[0].sample_count, 0x00010203);
+  EXPECT_EQ(atom.time_to_sample_table[0].sample_duration, 0x10111213);
+  EXPECT_EQ(atom.time_to_sample_table[1].sample_count, 0x20212223);
+  EXPECT_EQ(atom.time_to_sample_table[1].sample_duration, 0x30313233);
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadTimeToSampleTableEntry) {
+  MuTFFError err;
+  MuTFFTimeToSampleTableEntry entry;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 8;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x01, 0x02, 0x03,  // sample count
+    0x10, 0x11, 0x12, 0x13,  // sample duration
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_time_to_sample_table_entry(fd, &entry);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(entry.sample_count, 0x00010203);
+  EXPECT_EQ(entry.sample_duration, 0x10111213);
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadSampleDescriptionAtom) {
+  MuTFFError err;
+  MuTFFSampleDescriptionAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 56;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x00, 0x00, data_size,         // size
+    's', 't', 's', 'd',                  // type
+    0x00,                                // version
+    0x00, 0x01, 0x02,                    // flags
+    0x00, 0x00, 0x00, 0x02,              // number of entries
+    0x00, 0x00, 0x00, 20,                // sample_description table[0].size
+    'a', 'b', 'c', 'd',                  // sample_description table[0].data format
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // sample_description table[0].reserved
+    0x00, 0x01,                          // sample_description table[0].data reference index
+    0x00, 0x01, 0x02, 0x03,              // sample_description table[0].media-specific data
+    0x00, 0x00, 0x00, 20,                // sample_description table[1].size
+    'e', 'f', 'g', 'h',                  // sample_description table[1].data format
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // sample_description table[1].reserved
+    0x10, 0x11,                          // sample_description table[1].data reference index
+    0x10, 0x11, 0x12, 0x13,              // sample_description table[1].media-specific data
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_sample_description_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, data_size);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stsd"));
+  EXPECT_EQ(atom.version_flags.version, 0x00);
+  EXPECT_EQ(atom.version_flags.flags, 0x000102);
+  EXPECT_EQ(atom.number_of_entries, 2);
+  EXPECT_EQ(atom.sample_description_table[0].size, 20);
+  EXPECT_EQ(atom.sample_description_table[0].data_format, MuTFF_FOUR_C("abcd"));
+  EXPECT_EQ(atom.sample_description_table[0].data_reference_index, 0x0001);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.sample_description_table[0].additional_data),
+            0x00010203);
+  EXPECT_EQ(atom.sample_description_table[1].size, 20);
+  EXPECT_EQ(atom.sample_description_table[1].data_format, MuTFF_FOUR_C("efgh"));
+  EXPECT_EQ(atom.sample_description_table[1].data_reference_index, 0x1011);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.sample_description_table[1].additional_data),
+            0x10111213);
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadDataInformationAtom) {
+  MuTFFError err;
+  MuTFFDataInformationAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 56;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x00, 0x00, data_size,  // size
+    'd', 'i', 'n', 'f',           // type
+    0x00, 0x00, 0x00, 48,         // size
+    'd', 'r', 'e', 'f',           // type
+    0x00,                         // version
+    0x00, 0x01, 0x02,             // flag
+    0x00, 0x00, 0x00, 0x02,       // number of entries
+    0x00, 0x00, 0x00, 16,         // data references[0].size
+    'a', 'b', 'c', 'd',           // data references[0] type
+    0x00,                         // data references[0] version
+    0x00, 0x01, 0x02,             // data references[0] flags
+    0x00, 0x01, 0x02, 0x03,       // data references[0] data
+    0x00, 0x00, 0x00, 16,         // data references[1].size
+    'e', 'f', 'g', 'h',           // data references[1] type
+    0x10,                         // data references[1] version
+    0x10, 0x11, 0x12,             // data references[1] flags
+    0x10, 0x11, 0x12, 0x13,       // data references[1] data
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_data_information_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, data_size);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("dinf"));
+  EXPECT_EQ(atom.data_reference.size, 48);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.data_reference.type), MuTFF_FOUR_C("dref"));
+  EXPECT_EQ(atom.data_reference.number_of_entries, 2);
+  EXPECT_EQ(atom.data_reference.data_references[0].size, 16);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.data_reference.data_references[0].type), MuTFF_FOUR_C("abcd"));
+  EXPECT_EQ(atom.data_reference.data_references[0].version_flags.version, 0x00);
+  EXPECT_EQ(atom.data_reference.data_references[0].version_flags.flags, 0x000102);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.data_reference.data_references[0].data), 0x00010203);
+  EXPECT_EQ(atom.data_reference.data_references[1].size, 16);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.data_reference.data_references[1].type), MuTFF_FOUR_C("efgh"));
+  EXPECT_EQ(atom.data_reference.data_references[1].version_flags.version, 0x10);
+  EXPECT_EQ(atom.data_reference.data_references[1].version_flags.flags, 0x101112);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.data_reference.data_references[1].data), 0x10111213);
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadDataReferenceAtom) {
+  MuTFFError err;
+  MuTFFDataReferenceAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 48;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x00, 0x00, data_size,  // size
+    'd', 'r', 'e', 'f',           // type
+    0x00,                         // version
+    0x00, 0x01, 0x02,             // flag
+    0x00, 0x00, 0x00, 0x02,       // number of entries
+    0x00, 0x00, 0x00, 16,         // data references[0].size
+    'a', 'b', 'c', 'd',           // data references[0] type
+    0x00,                         // data references[0] version
+    0x00, 0x01, 0x02,             // data references[0] flags
+    0x00, 0x01, 0x02, 0x03,       // data references[0] data
+    0x00, 0x00, 0x00, 16,         // data references[1].size
+    'e', 'f', 'g', 'h',           // data references[1] type
+    0x10,                         // data references[1] version
+    0x10, 0x11, 0x12,             // data references[1] flags
+    0x10, 0x11, 0x12, 0x13,       // data references[1] data
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_data_reference_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, data_size);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("dref"));
+  EXPECT_EQ(atom.number_of_entries, 2);
+  EXPECT_EQ(atom.data_references[0].size, 16);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.data_references[0].type), MuTFF_FOUR_C("abcd"));
+  EXPECT_EQ(atom.data_references[0].version_flags.version, 0x00);
+  EXPECT_EQ(atom.data_references[0].version_flags.flags, 0x000102);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.data_references[0].data), 0x00010203);
+  EXPECT_EQ(atom.data_references[1].size, 16);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.data_references[1].type), MuTFF_FOUR_C("efgh"));
+  EXPECT_EQ(atom.data_references[1].version_flags.version, 0x10);
+  EXPECT_EQ(atom.data_references[1].version_flags.flags, 0x101112);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.data_references[1].data), 0x10111213);
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadDataReference) {
+  MuTFFError err;
+  MuTFFDataReference ref;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 16;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x00, 0x00, data_size,  // size
+    'a', 'b', 'c', 'd',           // type
+    0x00,                         // version
+    0x00, 0x01, 0x02,             // flags
+    0x00, 0x01, 0x02, 0x03,       // data
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_data_reference(fd, &ref);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(ref.size, data_size);
+  EXPECT_EQ(MuTFF_FOUR_C(ref.type), MuTFF_FOUR_C("abcd"));
+  EXPECT_EQ(ref.version_flags.version, 0x00);
+  EXPECT_EQ(ref.version_flags.flags, 0x000102);
+  EXPECT_EQ(MuTFF_FOUR_C(ref.data), 0x00010203);
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadBaseMediaInformationAtom) {
+  MuTFFError err;
+  MuTFFBaseMediaInformationAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 84;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x00, 0x00, data_size,  // size
+    'm', 'i', 'n', 'f',           // type
+    0x00, 0x00, 0x00, 76,         // size
+    'g', 'm', 'h', 'd',           // type
+    0x00, 0x00, 0x00, 24,         // size
+    'g', 'm', 'i', 'n',           // type
+    0x00,                         // version
+    0x00, 0x01, 0x02,             // flags
+    0x00, 0x01,                   // graphics mode
+    0x10, 0x11,                   // opcolor[0]
+    0x20, 0x21,                   // opcolor[1]
+    0x30, 0x31,                   // opcolor[2]
+    0x40, 0x41,                   // balance
+    0x50, 0x50,                   // reserved
+    0x00, 0x00, 0x00, 44,         // size
+    't', 'e', 'x', 't',           // type
+    0x01, 0x02, 0x03, 0x04,       // matrix[0][0]
+    0x05, 0x06, 0x07, 0x08,       // matrix[0][1]
+    0x09, 0x0a, 0x0b, 0x0c,       // matrix[0][2]
+    0x0d, 0x0e, 0x0f, 0x10,       // matrix[1][0]
+    0x11, 0x12, 0x13, 0x14,       // matrix[1][1]
+    0x15, 0x16, 0x17, 0x18,       // matrix[1][2]
+    0x19, 0x1a, 0x1b, 0x1c,       // matrix[2][0]
+    0x1d, 0x1e, 0x1f, 0x20,       // matrix[2][1]
+    0x21, 0x22, 0x23, 0x24,       // matrix[2][2]
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_base_media_information_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, data_size);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("minf"));
+  EXPECT_EQ(atom.base_media_information_header.size, 76);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.base_media_information_header.type), MuTFF_FOUR_C("gmhd"));
+  EXPECT_EQ(atom.base_media_information_header.base_media_info.size, 24);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.base_media_information_header.base_media_info.type), MuTFF_FOUR_C("gmin"));
+  EXPECT_EQ(atom.base_media_information_header.base_media_info.version_flags.version, 0x00);
+  EXPECT_EQ(atom.base_media_information_header.base_media_info.version_flags.flags, 0x000102);
+  EXPECT_EQ(atom.base_media_information_header.base_media_info.graphics_mode, 0x0001);
+  EXPECT_EQ(atom.base_media_information_header.base_media_info.opcolor[0], 0x1011);
+  EXPECT_EQ(atom.base_media_information_header.base_media_info.opcolor[1], 0x2021);
+  EXPECT_EQ(atom.base_media_information_header.base_media_info.opcolor[2], 0x3031);
+  EXPECT_EQ(atom.base_media_information_header.base_media_info.balance, 0x4041);
+  EXPECT_EQ(atom.base_media_information_header.text_media_information.size, 44);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.base_media_information_header.text_media_information.type), MuTFF_FOUR_C("text"));
+  for (size_t j = 0; j < 3; ++j) {
+    for (size_t i = 0; i < 3; ++i) {
+      const uint32_t exp_base = (3 * j + i) * 4 + 1;
+      const uint32_t exp = (exp_base << 24) + ((exp_base + 1) << 16) +
+                           ((exp_base + 2) << 8) + (exp_base + 3);
+      EXPECT_EQ(atom.base_media_information_header.text_media_information
+                    .matrix_structure[j][i],
+                exp);
+    }
+  }
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadBaseMediaInformationHeaderAtom) {
+  MuTFFError err;
+  MuTFFBaseMediaInformationHeaderAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 76;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x00, 0x00, data_size,  // size
+    'g', 'm', 'h', 'd',           // type
+    0x00, 0x00, 0x00, 24,         // size
+    'g', 'm', 'i', 'n',           // type
+    0x00,                         // version
+    0x00, 0x01, 0x02,             // flags
+    0x00, 0x01,                   // graphics mode
+    0x10, 0x11,                   // opcolor[0]
+    0x20, 0x21,                   // opcolor[1]
+    0x30, 0x31,                   // opcolor[2]
+    0x40, 0x41,                   // balance
+    0x50, 0x50,                   // reserved
+    0x00, 0x00, 0x00, 44,         // size
+    't', 'e', 'x', 't',           // type
+    0x01, 0x02, 0x03, 0x04,       // matrix[0][0]
+    0x05, 0x06, 0x07, 0x08,       // matrix[0][1]
+    0x09, 0x0a, 0x0b, 0x0c,       // matrix[0][2]
+    0x0d, 0x0e, 0x0f, 0x10,       // matrix[1][0]
+    0x11, 0x12, 0x13, 0x14,       // matrix[1][1]
+    0x15, 0x16, 0x17, 0x18,       // matrix[1][2]
+    0x19, 0x1a, 0x1b, 0x1c,       // matrix[2][0]
+    0x1d, 0x1e, 0x1f, 0x20,       // matrix[2][1]
+    0x21, 0x22, 0x23, 0x24,       // matrix[2][2]
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_base_media_information_header_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, data_size);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("gmhd"));
+  EXPECT_EQ(atom.base_media_info.size, 24);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.base_media_info.type), MuTFF_FOUR_C("gmin"));
+  EXPECT_EQ(atom.base_media_info.version_flags.version, 0x00);
+  EXPECT_EQ(atom.base_media_info.version_flags.flags, 0x000102);
+  EXPECT_EQ(atom.base_media_info.graphics_mode, 0x0001);
+  EXPECT_EQ(atom.base_media_info.opcolor[0], 0x1011);
+  EXPECT_EQ(atom.base_media_info.opcolor[1], 0x2021);
+  EXPECT_EQ(atom.base_media_info.opcolor[2], 0x3031);
+  EXPECT_EQ(atom.base_media_info.balance, 0x4041);
+  EXPECT_EQ(atom.text_media_information.size, 44);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.text_media_information.type), MuTFF_FOUR_C("text"));
+  for (size_t j = 0; j < 3; ++j) {
+    for (size_t i = 0; i < 3; ++i) {
+      const uint32_t exp_base = (3 * j + i) * 4 + 1;
+      const uint32_t exp = (exp_base << 24) + ((exp_base + 1) << 16) +
+                           ((exp_base + 2) << 8) + (exp_base + 3);
+      EXPECT_EQ(atom.text_media_information.matrix_structure[j][i], exp);
+    }
+  }
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadBaseMediaInfoAtom) {
+  MuTFFError err;
+  MuTFFBaseMediaInfoAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 24;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x00, 0x00, data_size,  // size
+    'g', 'm', 'i', 'n',           // type
+    0x00,                         // version
+    0x00, 0x01, 0x02,             // flags
+    0x00, 0x01,                   // graphics mode
+    0x10, 0x11,                   // opcolor[0]
+    0x20, 0x21,                   // opcolor[1]
+    0x30, 0x31,                   // opcolor[2]
+    0x40, 0x41,                   // balance
+    0x50, 0x50,                   // reserved
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_base_media_info_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, data_size);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("gmin"));
+  EXPECT_EQ(atom.version_flags.version, 0x00);
+  EXPECT_EQ(atom.version_flags.flags, 0x000102);
+  EXPECT_EQ(atom.graphics_mode, 0x0001);
+  EXPECT_EQ(atom.opcolor[0], 0x1011);
+  EXPECT_EQ(atom.opcolor[1], 0x2021);
+  EXPECT_EQ(atom.opcolor[2], 0x3031);
+  EXPECT_EQ(atom.balance, 0x4041);
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadTextMediaInformationAtom) {
+  MuTFFError err;
+  MuTFFTextMediaInformationAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 44;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x00, 0x00, data_size,  // size
+    't', 'e', 'x', 't',           // type
+    0x01, 0x02, 0x03, 0x04,       // matrix[0][0]
+    0x05, 0x06, 0x07, 0x08,       // matrix[0][1]
+    0x09, 0x0a, 0x0b, 0x0c,       // matrix[0][2]
+    0x0d, 0x0e, 0x0f, 0x10,       // matrix[1][0]
+    0x11, 0x12, 0x13, 0x14,       // matrix[1][1]
+    0x15, 0x16, 0x17, 0x18,       // matrix[1][2]
+    0x19, 0x1a, 0x1b, 0x1c,       // matrix[2][0]
+    0x1d, 0x1e, 0x1f, 0x20,       // matrix[2][1]
+    0x21, 0x22, 0x23, 0x24,       // matrix[2][2]
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_text_media_information_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, data_size);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("text"));
+  for (size_t j = 0; j < 3; ++j) {
+    for (size_t i = 0; i < 3; ++i) {
+      const uint32_t exp_base = (3 * j + i) * 4 + 1;
+      const uint32_t exp = (exp_base << 24) + ((exp_base + 1) << 16) +
+                           ((exp_base + 2) << 8) + (exp_base + 3);
+      EXPECT_EQ(atom.matrix_structure[j][i], exp);
+    }
+  }
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
+TEST(MuTFF, ReadSoundMediaInformationHeaderAtom) {
+  MuTFFError err;
+  MuTFFSoundMediaInformationHeaderAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  const char data_size = 16;
+  // clang-format off
+  char data[data_size] = {
+    0x00, 0x00, 0x00, data_size,  // size
+    's', 'm', 'h', 'd',           // type
+    0x00,                         // version
+    0x00, 0x01, 0x02,             // flags
+    0x10, 0x11,                   // balance
+    0x00, 0x00,                   // reserved
+  };
+  // clang-format on
+  fwrite(data, data_size, 1, fd);
+  rewind(fd);
+  err = mutff_read_sound_media_information_header_atom(fd, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+
+  EXPECT_EQ(atom.size, data_size);
+  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("smhd"));
+  EXPECT_EQ(atom.version_flags.version, 0x00);
+  EXPECT_EQ(atom.version_flags.flags, 0x000102);
+  EXPECT_EQ(atom.balance, 0x1011);
+  EXPECT_EQ(ftell(fd), data_size);
+}
+
 TEST(MuTFF, ReadVideoMediaInformationHeaderAtom) {
   MuTFFError err;
   MuTFFVideoMediaInformationHeaderAtom atom;
@@ -1334,7 +2091,7 @@ TEST(MuTFF, FixedAtomSizes) {
   EXPECT_EQ(sizeof(MuTFFVideoMediaInformationHeaderAtom), 20);
   EXPECT_EQ(sizeof(MuTFFTimeToSampleTableEntry), 8);
   EXPECT_EQ(sizeof(MuTFFCompositionOffsetTableEntry), 8);
-  EXPECT_EQ(sizeof(MuTFFCompositionShiftLeastGreatestAtom), 28);
+  EXPECT_EQ(sizeof(MuTFFCompositionShiftLeastGreatestAtom), 32);
   EXPECT_EQ(sizeof(MuTFFSampleToChunkTableEntry), 12);
   EXPECT_EQ(sizeof(MuTFFSoundMediaInformationHeaderAtom), 16);
   EXPECT_EQ(sizeof(MuTFFBaseMediaInfoAtom), 24);

@@ -970,7 +970,7 @@ MuTFFError mutff_read_extended_language_tag_atom(
 /// @brief Maximum component name length
 /// @see MuTFFHandlerReferenceAtom
 ///
-#define MuTFF_MAX_COMPONENT_NAME_LENGTH 16
+#define MuTFF_MAX_COMPONENT_NAME_LENGTH 24
 
 ///
 /// @brief Handler reference atom
@@ -1227,9 +1227,10 @@ typedef struct {
   MuTFFAtomType type;
   MuTFFAtomVersionFlags version_flags;
   uint32_t composition_offset_to_display_offset_shift;
-  uint32_t least_display_offset;
-  QTTime display_start_time;
-  QTTime display_end_time;
+  int32_t least_display_offset;
+  int32_t greatest_display_offset;
+  int32_t display_start_time;
+  int32_t display_end_time;
 } MuTFFCompositionShiftLeastGreatestAtom;
 
 ///
@@ -1306,6 +1307,16 @@ typedef struct {
   uint32_t samples_per_chunk;
   uint32_t sample_description_id;
 } MuTFFSampleToChunkTableEntry;
+
+///
+/// @brief Read a sample to chunk table entry
+///
+/// @param [in] fd    The file descriptor to read from
+/// @param [out] out  The parsed entry
+/// @return           Whether or not the entry was read successfully
+///
+MuTFFError mutff_read_sample_to_chunk_table_entry(
+    FILE *fd, MuTFFSampleToChunkTableEntry *out);
 
 ///
 /// @brief Maximum length of the sample-to-chunk table
@@ -1402,8 +1413,7 @@ MuTFFError mutff_read_chunk_offset_atom(FILE *fd, MuTFFChunkOffsetAtom *out);
 typedef struct {
   MuTFFAtomSize size;
   MuTFFAtomType type;
-  char version;
-  char flags;
+  MuTFFAtomVersionFlags version_flags;
   char sample_dependency_flags_table
       [MuTFF_MAX_SAMPLE_DEPENDENCY_FLAGS_TABLE_LEN];
 } MuTFFSampleDependencyFlagsAtom;
@@ -1505,6 +1515,7 @@ typedef struct {
   MuTFFAtomSize size;
   MuTFFAtomType type;
   MuTFFSoundMediaInformationHeaderAtom sound_media_information_header;
+  MuTFFHandlerReferenceAtom handler_reference;
   MuTFFDataInformationAtom data_information;
   MuTFFSampleTableAtom sample_table;
 } MuTFFSoundMediaInformationAtom;
@@ -1530,7 +1541,7 @@ typedef struct {
   MuTFFAtomSize size;
   MuTFFAtomType type;
   MuTFFAtomVersionFlags version_flags;
-  int16_t graphics_mode;
+  uint16_t graphics_mode;
   uint16_t opcolor[3];
   int16_t balance;
   char _reserved[2];
@@ -1622,6 +1633,15 @@ typedef union {
   MuTFFSoundMediaInformationAtom sound;
   MuTFFBaseMediaInformationAtom base;
 } MuTFFMediaInformationAtom;
+
+/// @brief Read a media information atom
+///
+/// @param [in] fd    The file descriptor to read from
+/// @param [out] out  The parsed atom
+/// @return           Whether or not the atom was read successfully
+///
+MuTFFError mutff_read_media_information_atom(FILE *fd,
+                                             MuTFFMediaInformationAtom *out);
 
 ///
 /// @brief Media atom

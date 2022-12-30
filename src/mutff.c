@@ -69,6 +69,19 @@ static uint64_t mutff_ntoh_64(uint64_t n) {
          ((uint64_t)np[6] << 8) | (uint64_t)np[7];
 }
 
+static int16_t mutff_ntoh_i16(int16_t n) {
+  unsigned char *np = (unsigned char *)&n;
+
+  return (((np[0] & 0x7F) << 8) | np[1]) - ((np[0] & 0x80) << 8);
+}
+
+static int32_t mutff_ntoh_i32(int32_t n) {
+  unsigned char *np = (unsigned char *)&n;
+
+  return (((np[0] & 0x7F) << 24) | (np[1] << 16) | (np[2] << 8) | np[3]) -
+         ((np[0] & 0x80) << 24);
+}
+
 MuTFFError mutff_read_atom_type(FILE *fd, MuTFFAtomType *out) {
   const size_t read_bytes = fread(out, 4, 1, fd);
   if (ferror(fd)) {
@@ -482,13 +495,13 @@ MuTFFError mutff_read_track_header_atom(FILE *fd, MuTFFTrackHeaderAtom *out) {
   out->layer = mutff_ntoh_16(out->layer);
   out->alternate_group = mutff_ntoh_16(out->alternate_group);
   out->volume = mutff_ntoh_16(out->volume);
-  out->track_width = mutff_ntoh_32(out->track_width);
-  out->track_height = mutff_ntoh_32(out->track_height);
   for (size_t j = 0; j < 3; ++j) {
     for (size_t i = 0; i < 3; ++i) {
       out->matrix_structure[j][i] = mutff_ntoh_32(out->matrix_structure[j][i]);
     }
   }
+  out->track_width = mutff_ntoh_32(out->track_width);
+  out->track_height = mutff_ntoh_32(out->track_height);
 
   return MuTFFErrorNone;
 }
@@ -1002,7 +1015,7 @@ MuTFFError mutff_read_handler_reference_atom(FILE *fd,
 
   // read variable-length data
   const size_t name_length = out->size - 32;
-  if (name_length > MuTFF_MAX_LANGUAGE_TAG_LENGTH) {
+  if (name_length > MuTFF_MAX_COMPONENT_NAME_LENGTH) {
     return MuTFFErrorTooManyAtoms;
   }
   mutff_read(fd, out->component_name, name_length);
@@ -1030,24 +1043,1049 @@ MuTFFError mutff_read_video_media_information_header_atom(
   return MuTFFErrorNone;
 }
 
-MuTFFError mutff_read_track_atom(FILE *fd, MuTFFTrackAtom *out) {
+MuTFFError mutff_read_data_reference(FILE *fd, MuTFFDataReference *out) {
   MuTFFError err;
 
-  if ((err = mutff_read(fd, &out->size, 4))) {
+  // read data
+  if ((err = mutff_read(fd, out, 12))) {
     return err;
   }
+
+  // convert to host order
   out->size = mutff_ntoh_32(out->size);
-  if ((err = mutff_read_atom_type(fd, &out->type))) {
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+
+  // read variable-length data
+  const size_t data_size = out->size - 12;
+  if (data_size > MuTFF_MAX_DATA_REFERENCE_DATA_SIZE) {
+    return MuTFFErrorTooManyAtoms;
+  }
+  if ((err = mutff_read(fd, out->data, data_size))) {
     return err;
   }
-  fseek(fd, out->size - 8, SEEK_CUR);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_data_reference_atom(FILE *fd,
+                                          MuTFFDataReferenceAtom *out) {
+  MuTFFError err;
+  MuTFFAtomHeader header;
+  size_t offset;
+
+  // read data
+  if ((err = mutff_read(fd, out, 16))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->number_of_entries = mutff_ntoh_32(out->number_of_entries);
+
+  // read child atoms
+  if (out->number_of_entries > MuTFF_MAX_DATA_REFERENCES) {
+    return MuTFFErrorTooManyAtoms;
+  }
+  offset = 16;
+  for (size_t i = 0; i < out->number_of_entries; ++i) {
+    if ((err = mutff_peek_atom_header(fd, &header))) {
+      return err;
+    }
+    offset += header.size;
+    if (offset > out->size) {
+      return MuTFFErrorBadFormat;
+    }
+    if ((err = mutff_read_data_reference(fd, &out->data_references[i]))) {
+      return err;
+    }
+  }
+
+  // skip any remaining space
+  fseek(fd, out->size - offset, SEEK_CUR);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_data_information_atom(FILE *fd,
+                                            MuTFFDataInformationAtom *out) {
+  MuTFFError err;
+
+  // read data
+  if ((err = mutff_read(fd, out, 8))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+
+  // read child atom
+  if ((err = mutff_read_data_reference_atom(fd, &out->data_reference))) {
+    return err;
+  }
+
+  // skip any remaining space
+  fseek(fd, out->size - out->data_reference.size - 8, SEEK_CUR);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_sample_description_atom(FILE *fd,
+                                              MuTFFSampleDescriptionAtom *out) {
+  MuTFFError err;
+  MuTFFAtomHeader header;
+  size_t offset;
+
+  // read data
+  if ((err = mutff_read(fd, out, 16))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->number_of_entries = mutff_ntoh_32(out->number_of_entries);
+
+  // read child atoms
+  if (out->number_of_entries > MuTFF_MAX_SAMPLE_DESCRIPTION_TABLE_LEN) {
+    return MuTFFErrorTooManyAtoms;
+  }
+  offset = 16;
+  for (size_t i = 0; i < out->number_of_entries; ++i) {
+    if ((err = mutff_peek_atom_header(fd, &header))) {
+      return err;
+    }
+    offset += header.size;
+    if (offset > out->size) {
+      return MuTFFErrorBadFormat;
+    }
+    if ((err = mutff_read_sample_description(fd, &out->sample_description_table[i]))) {
+      return err;
+    }
+  }
+
+  // skip any remaining space
+  fseek(fd, out->size - offset, SEEK_CUR);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_time_to_sample_table_entry(
+    FILE *fd, MuTFFTimeToSampleTableEntry *out) {
+  MuTFFError err;
+
+  // read data
+  if ((err = mutff_read(fd, out, 8))) {
+    return err;
+  }
+
+  // convert to host order
+  out->sample_count = mutff_ntoh_32(out->sample_count);
+  out->sample_duration = mutff_ntoh_32(out->sample_duration);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_time_to_sample_atom(FILE *fd, MuTFFTimeToSampleAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 16))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->number_of_entries = mutff_ntoh_32(out->number_of_entries);
+
+  // read time to sample table
+  if (out->number_of_entries > MuTFF_MAX_TIME_TO_SAMPLE_TABLE_LEN) {
+    return MuTFFErrorTooManyAtoms;
+  }
+  const size_t table_size = out->size - 16;
+  if (table_size != out->number_of_entries * 8) {
+    return MuTFFErrorBadFormat;
+  }
+  for (size_t i = 0; i < out->number_of_entries; ++i) {
+    if ((err = mutff_read_time_to_sample_table_entry(fd, &out->time_to_sample_table[i]))) {
+      return err;
+    };
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_composition_offset_table_entry(
+    FILE *fd, MuTFFCompositionOffsetTableEntry *out) {
+  MuTFFError err;
+
+  // read data
+  if ((err = mutff_read(fd, out, 8))) {
+    return err;
+  }
+
+  // convert to host order
+  out->sample_count = mutff_ntoh_32(out->sample_count);
+  out->composition_offset = mutff_ntoh_32(out->composition_offset);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_composition_offset_atom(FILE *fd,
+                                              MuTFFCompositionOffsetAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 16))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->entry_count = mutff_ntoh_32(out->entry_count);
+
+  // read composition offset table
+  if (out->entry_count > MuTFF_MAX_COMPOSITION_OFFSET_TABLE_LEN) {
+    return MuTFFErrorTooManyAtoms;
+  }
+  const size_t table_size = out->size - 16;
+  if (table_size != out->entry_count * 8) {
+    return MuTFFErrorBadFormat;
+  }
+  for (size_t i = 0; i < out->entry_count; ++i) {
+    if ((err = mutff_read_composition_offset_table_entry(
+             fd, &out->composition_offset_table[i]))) {
+      return err;
+    };
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_composition_shift_least_greatest_atom(
+    FILE *fd, MuTFFCompositionShiftLeastGreatestAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 32))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->composition_offset_to_display_offset_shift =
+      mutff_ntoh_32(out->composition_offset_to_display_offset_shift);
+  out->least_display_offset = mutff_ntoh_i32(out->least_display_offset);
+  out->greatest_display_offset = mutff_ntoh_i32(out->greatest_display_offset);
+  out->display_start_time = mutff_ntoh_i32(out->display_start_time);
+  out->display_end_time = mutff_ntoh_i32(out->display_end_time);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_sync_sample_atom(FILE *fd, MuTFFSyncSampleAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 16))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->number_of_entries = mutff_ntoh_32(out->number_of_entries);
+
+  // read sync sample table
+  if (out->number_of_entries > MuTFF_MAX_SYNC_SAMPLE_TABLE_LEN) {
+    return MuTFFErrorTooManyAtoms;
+  }
+  const size_t table_size = out->size - 16;
+  if (table_size != out->number_of_entries * 4) {
+    return MuTFFErrorBadFormat;
+  }
+  if ((err = mutff_read(fd, out->sync_sample_table, table_size))) {
+    return err;
+  }
+  for (size_t i = 0; i < out->number_of_entries; ++i) {
+    out->sync_sample_table[i] = mutff_ntoh_32(out->sync_sample_table[i]);
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_partial_sync_sample_atom(
+    FILE *fd, MuTFFPartialSyncSampleAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 16))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->entry_count = mutff_ntoh_32(out->entry_count);
+
+  // read partial sync sample table
+  if (out->entry_count > MuTFF_MAX_PARTIAL_SYNC_SAMPLE_TABLE_LEN) {
+    return MuTFFErrorTooManyAtoms;
+  }
+  const size_t table_size = out->size - 16;
+  if (table_size != out->entry_count * 4) {
+    return MuTFFErrorBadFormat;
+  }
+  if ((err = mutff_read(fd, out->partial_sync_sample_table, table_size))) {
+    return err;
+  }
+  for (size_t i = 0; i < out->entry_count; ++i) {
+    out->partial_sync_sample_table[i] =
+        mutff_ntoh_32(out->partial_sync_sample_table[i]);
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_sample_to_chunk_table_entry(
+    FILE *fd, MuTFFSampleToChunkTableEntry *out) {
+  MuTFFError err;
+
+  // read data
+  if ((err = mutff_read(fd, out, 12))) {
+    return err;
+  }
+
+  // convert to host order
+  out->first_chunk = mutff_ntoh_32(out->first_chunk);
+  out->samples_per_chunk = mutff_ntoh_32(out->samples_per_chunk);
+  out->sample_description_id = mutff_ntoh_32(out->sample_description_id);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_sample_to_chunk_atom(FILE *fd,
+                                           MuTFFSampleToChunkAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 16))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->number_of_entries = mutff_ntoh_32(out->number_of_entries);
+
+  // read table
+  if (out->number_of_entries > MuTFF_MAX_SAMPLE_TO_CHUNK_TABLE_LEN) {
+    return MuTFFErrorTooManyAtoms;
+  }
+  const size_t table_size = out->size - 16;
+  if (table_size != out->number_of_entries * 12) {
+    return MuTFFErrorBadFormat;
+  }
+  for (size_t i = 0; i < out->number_of_entries; ++i) {
+    if ((err = mutff_read_sample_to_chunk_table_entry(fd, &out->sample_to_chunk_table[i]))) {
+      return err;
+    }
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_sample_size_atom(FILE *fd, MuTFFSampleSizeAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 20))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->sample_size = mutff_ntoh_32(out->sample_size);
+  out->number_of_entries = mutff_ntoh_32(out->number_of_entries);
+
+  if (out->sample_size == 0) {
+    // read table
+    if (out->number_of_entries > MuTFF_MAX_SAMPLE_SIZE_TABLE_LEN) {
+      return MuTFFErrorTooManyAtoms;
+    }
+    const size_t table_size = out->size - 20;
+    if (table_size != out->number_of_entries * 4) {
+      return MuTFFErrorBadFormat;
+    }
+    if ((err = mutff_read(fd, out->sample_size_table, table_size))) {
+      return err;
+    }
+    for (size_t i = 0; i < out->number_of_entries; ++i) {
+      out->sample_size_table[i] = mutff_ntoh_32(out->sample_size_table[i]);
+    }
+  } else {
+    // skip table
+    fseek(fd, out->size - 20, SEEK_CUR);
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_chunk_offset_atom(FILE *fd, MuTFFChunkOffsetAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 16))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->number_of_entries = mutff_ntoh_32(out->number_of_entries);
+
+  // read table
+  if (out->number_of_entries > MuTFF_MAX_CHUNK_OFFSET_TABLE_LEN) {
+    return MuTFFErrorTooManyAtoms;
+  }
+  const size_t table_size = out->size - 16;
+  if (table_size != out->number_of_entries * 4) {
+    return MuTFFErrorBadFormat;
+  }
+  if ((err = mutff_read(fd, out->chunk_offset_table, table_size))) {
+    return err;
+  }
+  for (size_t i = 0; i < out->number_of_entries; ++i) {
+    out->chunk_offset_table[i] = mutff_ntoh_32(out->chunk_offset_table[i]);
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_sample_dependency_flags_atom(
+    FILE *fd, MuTFFSampleDependencyFlagsAtom *out) {
+  MuTFFError err;
+
+  // read content
+  if ((err = mutff_read(fd, out, 12))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+
+  // read table
+  const size_t table_size = out->size - 12;
+  if (table_size > MuTFF_MAX_SAMPLE_DEPENDENCY_FLAGS_TABLE_LEN) {
+    return MuTFFErrorTooManyAtoms;
+  }
+  if ((err = mutff_read(fd, out->sample_dependency_flags_table, table_size))) {
+    return err;
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_sample_table_atom(FILE *fd, MuTFFSampleTableAtom *out) {
+  MuTFFError err;
+  MuTFFAtomHeader header;
+  size_t offset;
+  
+  // read data
+  if ((err = mutff_read(fd, out, 8))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+
+  // read child atoms
+  offset = 8;
+  while (offset < out->size) {
+    if ((err = mutff_peek_atom_header(fd, &header))) {
+      return err;
+    }
+    offset += header.size;
+    if (offset > out->size) {
+      return MuTFFErrorBadFormat;
+    }
+
+    switch (MuTFF_FOUR_C(header.type)) {
+      /* case MuTFF_FOUR_C("stsd"): */
+      case 0x73747364:
+        if ((err = mutff_read_sample_description_atom(
+                 fd, &out->sample_description))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("stts"): */
+      case 0x73747473:
+        if ((err = mutff_read_time_to_sample_atom(
+                fd, &out->time_to_sample))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("ctts"): */
+      case 0x63747473:
+        if ((err = mutff_read_composition_offset_atom(
+                 fd, &out->composition_offset))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("cslg"): */
+      case 0x63736c67:
+        if ((err = mutff_read_composition_shift_least_greatest_atom(
+                 fd, &out->composition_shift_least_greatest))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("stss"): */
+      case 0x73747373:
+        if ((err = mutff_read_sync_sample_atom(fd, &out->sync_sample))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("stps"): */
+      case 0x73747073:
+        if ((err = mutff_read_partial_sync_sample_atom(
+                 fd, &out->partial_sync_sample))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("stsc"): */
+      case 0x73747363:
+        if ((err =
+                 mutff_read_sample_to_chunk_atom(fd, &out->sample_to_chunk))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("stsz"): */
+      case 0x7374737a:
+        if ((err = mutff_read_sample_size_atom(fd, &out->sample_size))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("stco"): */
+      case 0x7374636f:
+        if ((err = mutff_read_chunk_offset_atom(fd, &out->chunk_offset))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("sdtp"): */
+      case 0x73647470:
+        if ((err = mutff_read_sample_dependency_flags_atom(
+                 fd, &out->sample_dependency_flags))) {
+          return err;
+        }
+        break;
+      // reserved for future use
+      /* /1* case MuTFF_FOUR_C("stsh"): *1/ */
+      /* case 0x73747368: */
+      /*   break; */
+      /* /1* case MuTFF_FOUR_C("sgpd"): *1/ */
+      /* case 0x73677064: */
+      /*   break; */
+      /* /1* case MuTFF_FOUR_C("sbgp"): *1/ */
+      /* case 0x73626770: */
+      /*   break; */
+      default:
+        fseek(fd, header.size, SEEK_CUR);
+    }
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_video_media_information_atom(
+    FILE *fd, MuTFFVideoMediaInformationAtom *out) {
+  MuTFFError err;
+  MuTFFAtomHeader header;
+  size_t offset;
+
+  // read data
+  if ((err = mutff_read(fd, out, 8))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+
+  // read child atoms
+  offset = 8;
+  while (offset < out->size) {
+    if ((err = mutff_peek_atom_header(fd, &header))) {
+      return err;
+    }
+    offset += header.size;
+    if (offset > out->size) {
+      return MuTFFErrorBadFormat;
+    }
+
+    switch (MuTFF_FOUR_C(header.type)) {
+      /* case MuTFF_FOUR_C("vmhd"): */
+      case 0x766d6864:
+        if ((err = mutff_read_video_media_information_header_atom(
+                 fd, &out->video_media_information_header))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("hdlr"): */
+      case 0x68646c72:
+        if ((err = mutff_read_handler_reference_atom(
+                 fd, &out->handler_reference))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("dinf"): */
+      case 0x64696e66:
+        if ((err = mutff_read_data_information_atom(fd,
+                                                    &out->data_information))) {
+          return err;
+        }
+        break;
+      /* case MUTFF_FOUR_C("stbl"): */
+      case 0x7374626c:
+        if ((err = mutff_read_sample_table_atom(fd, &out->sample_table))) {
+          return err;
+        }
+        break;
+      default:
+        fseek(fd, header.size, SEEK_CUR);
+    }
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_sound_media_information_header_atom(
+    FILE *fd, MuTFFSoundMediaInformationHeaderAtom *out) {
+  MuTFFError err;
+
+  // read data
+  if ((err = mutff_read(fd, out, 16))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->balance = mutff_ntoh_i16(out->balance);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_sound_media_information_atom(
+    FILE *fd, MuTFFSoundMediaInformationAtom *out) {
+  MuTFFError err;
+  MuTFFAtomHeader header;
+  size_t offset;
+
+  // read data
+  if ((err = mutff_read(fd, out, 8))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+
+  // read child atoms
+  offset = 8;
+  while (offset < out->size) {
+    if ((err = mutff_peek_atom_header(fd, &header))) {
+      return err;
+    }
+    offset += header.size;
+    if (offset > out->size) {
+      return MuTFFErrorBadFormat;
+    }
+
+    switch (MuTFF_FOUR_C(header.type)) {
+      /* case MuTFF_FOUR_C("smhd"): */
+      case 0x736d6864:
+        if ((err = mutff_read_sound_media_information_header_atom(
+                 fd, &out->sound_media_information_header))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("hdlr"): */
+      case 0x68646c72:
+        if ((err = mutff_read_handler_reference_atom(
+                 fd, &out->handler_reference))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("dinf"): */
+      case 0x64696e66:
+        if ((err = mutff_read_data_information_atom(fd,
+                                                    &out->data_information))) {
+          return err;
+        }
+        break;
+      /* case MUTFF_FOUR_C("stbl"): */
+      case 0x7374626c:
+        if ((err = mutff_read_sample_table_atom(fd, &out->sample_table))) {
+          return err;
+        }
+        break;
+      default:
+        fseek(fd, header.size, SEEK_CUR);
+    }
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_base_media_info_atom(FILE *fd,
+                                           MuTFFBaseMediaInfoAtom *out) {
+  MuTFFError err;
+
+  // read data
+  if ((err = mutff_read(fd, out, 24))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  out->version_flags.flags = mutff_ntoh_24(out->version_flags.flags);
+  out->graphics_mode = mutff_ntoh_16(out->graphics_mode);
+  out->opcolor[0] = mutff_ntoh_16(out->opcolor[0]);
+  out->opcolor[1] = mutff_ntoh_16(out->opcolor[1]);
+  out->opcolor[2] = mutff_ntoh_16(out->opcolor[2]);
+  out->balance = mutff_ntoh_i16(out->balance);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_text_media_information_atom(
+    FILE *fd, MuTFFTextMediaInformationAtom *out) {
+  MuTFFError err;
+
+  // read data
+  if ((err = mutff_read(fd, out, 44))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+  for (size_t j = 0; j < 3; ++j) {
+    for (size_t i = 0; i < 3; ++i) {
+      out->matrix_structure[j][i] = mutff_ntoh_32(out->matrix_structure[j][i]);
+    }
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_base_media_information_header_atom(
+    FILE *fd, MuTFFBaseMediaInformationHeaderAtom *out) {
+  MuTFFError err;
+  MuTFFAtomHeader header;
+  size_t offset;
+
+  // read data
+  if ((err = mutff_read(fd, out, 8))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+
+  // read child atoms
+  offset = 8;
+  while (offset < out->size) {
+    if ((err = mutff_peek_atom_header(fd, &header))) {
+      return err;
+    }
+    offset += header.size;
+    if (offset > out->size) {
+      return MuTFFErrorBadFormat;
+    }
+
+    switch (MuTFF_FOUR_C(header.type)) {
+      /* case MuTFF_FOUR_C("gmin"): */
+      case 0x676d696e:
+        if ((err =
+                 mutff_read_base_media_info_atom(fd, &out->base_media_info))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("text"): */
+      case 0x74657874:
+        if ((err = mutff_read_text_media_information_atom(
+                 fd, &out->text_media_information))) {
+          return err;
+        }
+        break;
+      default:
+        fseek(fd, header.size, SEEK_CUR);
+    }
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_base_media_information_atom(
+    FILE *fd, MuTFFBaseMediaInformationAtom *out) {
+  MuTFFError err;
+  // read data
+  if ((err = mutff_read(fd, out, 8))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+
+  // read child atom
+  if ((err = mutff_read_base_media_information_header_atom(fd, &out->base_media_information_header))) {
+    return err;
+  }
+
+  // skip remaining space
+  fseek(fd, out->size - out->base_media_information_header.size - 8, SEEK_CUR);
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_media_information_atom(FILE *fd,
+                                             MuTFFMediaInformationAtom *out) {
+  MuTFFError err;
+  MuTFFAtomHeader header;
+  size_t offset;
+  uint32_t size;
+
+  const size_t start_offset = ftell(fd);
+
+  // read size
+  if ((err = mutff_read(fd, &size, 4))) {
+    return err;
+  }
+  
+  // convert to host order
+  size = mutff_ntoh_32(size);
+
+  // skip type
+  fseek(fd, 4, SEEK_CUR);
+
+  // iterate over children
+  offset = 8;
+  while (offset < size) {
+    if ((err = mutff_peek_atom_header(fd, &header))) {
+      return err;
+    }
+    offset += header.size;
+    if (offset > size) {
+      return MuTFFErrorBadFormat;
+    }
+
+    switch (MuTFF_FOUR_C(header.type)) {
+      /* case MuTFF_FOUR_C("vmhd"): */
+      case 0x766d6864:
+        fseek(fd, start_offset, SEEK_SET);
+        if ((err = mutff_read_video_media_information_atom(fd, &out->video))) {
+          return err;
+        }
+        return MuTFFErrorNone;
+      /* case MuTFF_FOUR_C("smhd"): */
+      case 0x736d6864:
+        fseek(fd, start_offset, SEEK_SET);
+        if ((err = mutff_read_sound_media_information_atom(fd, &out->sound))) {
+          return err;
+        }
+        return MuTFFErrorNone;
+      /* case MuTFF_FOUR_C("gmhd"): */
+      case 0x676d6864:
+        fseek(fd, start_offset, SEEK_SET);
+        if ((err = mutff_read_base_media_information_atom(fd, &out->base))) {
+          return err;
+        }
+        return MuTFFErrorNone;
+      default:
+        fseek(fd, header.size, SEEK_CUR);
+    }
+  }
+
+  return MuTFFErrorBadFormat;
+}
+
+MuTFFError mutff_read_media_atom(FILE *fd, MuTFFMediaAtom *out) {
+  MuTFFError err;
+  MuTFFAtomHeader header;
+  size_t offset;
+
+  // read data
+  if ((err = mutff_read(fd, out, 8))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+
+  // read child atoms
+  offset = 8;
+  while (offset < out->size) {
+    if ((err = mutff_peek_atom_header(fd, &header))) {
+      return err;
+    }
+    offset += header.size;
+    if (offset > out->size) {
+      return MuTFFErrorBadFormat;
+    }
+
+    switch (MuTFF_FOUR_C(header.type)) {
+      /* case MuTFF_FOUR_C("mdhd"): */
+      case 0x6d646864:
+        if ((err = mutff_read_media_header_atom(fd, &out->media_header))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("elng"): */
+      case 0x656c6e67:
+        if ((err = mutff_read_extended_language_tag_atom(
+                 fd, &out->extended_language_tag))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("hdlr"): */
+      case 0x68646c72:
+        if ((err = mutff_read_handler_reference_atom(
+                 fd, &out->handler_reference))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("minf"): */
+      case 0x6d696e66:
+        if ((err = mutff_read_media_information_atom(
+                 fd, &out->media_information))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("udta"): */
+      case 0x75647461:
+        if ((err = mutff_read_user_data_atom(fd, &out->user_data))) {
+          return err;
+        }
+        break;
+      default:
+        fseek(fd, header.size, SEEK_CUR);
+    }
+  }
+
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_track_atom(FILE *fd, MuTFFTrackAtom *out) {
+  MuTFFError err;
+  MuTFFAtomHeader header;
+  size_t offset;
+
+  // read data
+  if ((err = mutff_read(fd, out, 8))) {
+    return err;
+  }
+
+  // convert to host order
+  out->size = mutff_ntoh_32(out->size);
+
+  // read child atoms
+  offset = 8;
+  while (offset < out->size) {
+    if ((err = mutff_peek_atom_header(fd, &header))) {
+      return err;
+    }
+    offset += header.size;
+    if (offset > out->size) {
+      return MuTFFErrorBadFormat;
+    }
+
+    switch (MuTFF_FOUR_C(header.type)) {
+      /* case MuTFF_FOUR_C("tkhd"): */
+      case 0x746b6864:
+        if ((err = mutff_read_track_header_atom(fd, &out->track_header))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("tapt"): */
+      case 0x74617074:
+        if ((err = mutff_read_track_aperture_mode_dimensions_atom(
+                fd, &out->track_aperture_mode_dimensions))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("clip"): */
+      case 0x636c6970:
+        if ((err = mutff_read_clipping_atom(fd, &out->clipping))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("matt"): */
+      case 0x6d617474:
+        if ((err = mutff_read_track_matte_atom(fd, &out->track_matte))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("edts"): */
+      case 0x65647473:
+        if ((err = mutff_read_edit_atom(fd, &out->edit))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("tref"): */
+      case 0x74726566:
+        if ((err =
+                 mutff_read_track_reference_atom(fd, &out->track_reference))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("txas"): */
+      case 0x74786173:
+        if ((err = mutff_read_track_exclude_from_autoselection_atom(
+                 fd, &out->track_exclude_from_autoselection))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("load"): */
+      case 0x6c6f6164:
+        if ((err = mutff_read_track_load_settings_atom(
+                 fd, &out->track_load_settings))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("imap"): */
+      case 0x696d6170:
+        if ((err =
+                 mutff_read_track_input_map_atom(fd, &out->track_input_map))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("mdia"): */
+      case 0x6d646961:
+        if ((err = mutff_read_media_atom(fd, &out->media))) {
+          return err;
+        }
+        break;
+      /* case MuTFF_FOUR_C("udta"): */
+      case 0x75647461:
+        if ((err = mutff_read_user_data_atom(fd, &out->user_data))) {
+          return err;
+        }
+        break;
+      default:
+        fseek(fd, header.size, SEEK_CUR);
+    }
+  }
 
   return MuTFFErrorNone;
 }
 
 MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out) {
   MuTFFError err;
-  MuTFFAtomHeader atom;
+  MuTFFAtomHeader header;
+  size_t offset;
   *out = (MuTFFMovieAtom){0};
 
   // read header
@@ -1060,8 +2098,17 @@ MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out) {
   }
 
   // read child atoms
-  while (!(err = mutff_peek_atom_header(fd, &atom))) {
-    switch (MuTFF_FOUR_C(atom.type)) {
+  offset = 8;
+  while (offset < out->size) {
+    if ((err = mutff_peek_atom_header(fd, &header))) {
+      return err;
+    }
+    offset += header.size;
+    if (offset > out->size) {
+      return MuTFFErrorBadFormat;
+    }
+
+    switch (MuTFF_FOUR_C(header.type)) {
       /* case MuTFF_FOUR_C("mvhd"): */
       case 0x6d766864:
         if (out->movie_header.size) {
@@ -1125,7 +2172,7 @@ MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out) {
 
       default:
         // unrecognised atom type - skip as per spec
-        fseek(fd, atom.size, SEEK_CUR);
+        fseek(fd, header.size, SEEK_CUR);
         break;
     }
   }
