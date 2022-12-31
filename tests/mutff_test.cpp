@@ -43,7 +43,7 @@ TEST_F(TestMov, MovieAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(movie_atom.size, 0x02c2);
-  EXPECT_EQ(MuTFF_FOUR_C(movie_atom.type), MuTFF_FOUR_C("moov"));
+  EXPECT_EQ(movie_atom.type, MuTFF_FOUR_C("moov"));
   EXPECT_EQ(movie_atom.movie_header.size, 108);
   EXPECT_EQ(movie_atom.track_count, 1);
   EXPECT_EQ(movie_atom.track[0].size, 557);
@@ -60,7 +60,7 @@ TEST_F(TestMov, MovieHeaderAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(movie_header_atom.size, 0x6c);
-  EXPECT_EQ(MuTFF_FOUR_C(movie_header_atom.type), MuTFF_FOUR_C("mvhd"));
+  EXPECT_EQ(movie_header_atom.type, MuTFF_FOUR_C("mvhd"));
   EXPECT_EQ(movie_header_atom.version_flags.version, 0);
   EXPECT_EQ(movie_header_atom.version_flags.flags, 0);
   EXPECT_EQ(movie_header_atom.creation_time, 0);
@@ -98,15 +98,13 @@ TEST_F(TestMov, FileTypeCompatibilityAtom) {
       fd, &file_type_compatibility_atom);
   ASSERT_EQ(err, MuTFFErrorNone);
 
-  EXPECT_EQ(MuTFF_FOUR_C(file_type_compatibility_atom.type),
-            MuTFF_FOUR_C("ftyp"));
+  EXPECT_EQ(file_type_compatibility_atom.type, MuTFF_FOUR_C("ftyp"));
   EXPECT_EQ(file_type_compatibility_atom.size, 0x14);
   EXPECT_EQ(file_type_compatibility_atom.major_brand, MuTFF_FOUR_C("qt  "));
   EXPECT_EQ(MuTFF_FOUR_C(file_type_compatibility_atom.minor_version),
             MuTFF_FOUR_C(((char[]){00, 00, 02, 00})));
   EXPECT_EQ(file_type_compatibility_atom.compatible_brands_count, 1);
-  EXPECT_EQ(MuTFF_FOUR_C(file_type_compatibility_atom.compatible_brands[0]),
-            MuTFF_FOUR_C("qt  "));
+  EXPECT_EQ(file_type_compatibility_atom.compatible_brands[0], MuTFF_FOUR_C("qt  "));
 
   EXPECT_EQ(ftell(fd), offset + file_type_compatibility_atom.size);
 }
@@ -119,7 +117,7 @@ TEST_F(TestMov, MovieDataAtom) {
   const MuTFFError err = mutff_read_movie_data_atom(fd, &movie_data_atom);
   ASSERT_EQ(err, MuTFFErrorNone);
 
-  EXPECT_EQ(MuTFF_FOUR_C(movie_data_atom.type), MuTFF_FOUR_C("mdat"));
+  EXPECT_EQ(movie_data_atom.type, MuTFF_FOUR_C("mdat"));
   EXPECT_EQ(movie_data_atom.size, 28302);
 
   EXPECT_EQ(ftell(fd), offset + movie_data_atom.size);
@@ -132,7 +130,7 @@ TEST_F(TestMov, WideAtom) {
   const MuTFFError err = mutff_read_wide_atom(fd, &wide_atom);
   ASSERT_EQ(err, MuTFFErrorNone);
 
-  EXPECT_EQ(MuTFF_FOUR_C(wide_atom.type), MuTFF_FOUR_C("wide"));
+  EXPECT_EQ(wide_atom.type, MuTFF_FOUR_C("wide"));
   EXPECT_EQ(wide_atom.size, 8);
 
   EXPECT_EQ(ftell(fd), offset + wide_atom.size);
@@ -146,7 +144,7 @@ TEST_F(TestMov, TrackAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(track_atom.size, 0x0000022d);
-  EXPECT_EQ(MuTFF_FOUR_C(track_atom.type), MuTFF_FOUR_C("trak"));
+  EXPECT_EQ(track_atom.type, MuTFF_FOUR_C("trak"));
 
   EXPECT_EQ(ftell(fd), offset + track_atom.size);
 }
@@ -159,7 +157,7 @@ TEST_F(TestMov, TrackHeaderAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, 0x0000005c);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("tkhd"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("tkhd"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000003);
   EXPECT_EQ(atom.creation_time, 0);
@@ -192,9 +190,9 @@ TEST_F(TestMov, EditAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, 0x00000024);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("edts"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("edts"));
   EXPECT_EQ(atom.edit_list_atom.size, 0x0000001c);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.edit_list_atom.type), MuTFF_FOUR_C("elst"));
+  EXPECT_EQ(atom.edit_list_atom.type, MuTFF_FOUR_C("elst"));
   EXPECT_EQ(atom.edit_list_atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.edit_list_atom.version_flags.flags, 0x000000);
   EXPECT_EQ(atom.edit_list_atom.number_of_entries, 1);
@@ -213,7 +211,7 @@ TEST_F(TestMov, MediaAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, 0x000001a5);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("mdia"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("mdia"));
 
   EXPECT_EQ(ftell(fd), offset + atom.size);
 }
@@ -226,7 +224,7 @@ TEST_F(TestMov, MediaHeaderAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, 0x00000020);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("mdhd"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("mdhd"));
 
   EXPECT_EQ(ftell(fd), offset + atom.size);
 }
@@ -239,7 +237,7 @@ TEST_F(TestMov, MediaHandlerReferenceAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, 0x0000002d);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("hdlr"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("hdlr"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000000);
   EXPECT_EQ(atom.component_type, MuTFF_FOUR_C("mhlr"));
@@ -263,7 +261,7 @@ TEST_F(TestMov, MediaInformationAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.video.size, 0x00000150);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.video.type), MuTFF_FOUR_C("minf"));
+  EXPECT_EQ(atom.video.type, MuTFF_FOUR_C("minf"));
 
   EXPECT_EQ(ftell(fd), offset + atom.video.size);
 }
@@ -277,7 +275,7 @@ TEST_F(TestMov, VideoMediaInformationHeader) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, 0x00000014);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("vmhd"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("vmhd"));
 
   EXPECT_EQ(ftell(fd), offset + atom.size);
 }
@@ -290,7 +288,7 @@ TEST_F(TestMov, VideoMediaInformationHandlerReference) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, 0x0000002c);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("hdlr"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("hdlr"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000000);
   EXPECT_EQ(atom.component_type, MuTFF_FOUR_C("dhlr"));
@@ -314,7 +312,7 @@ TEST_F(TestMov, VideoMediaInformationDataInformation) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, 0x00000024);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("dinf"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("dinf"));
 
   EXPECT_EQ(ftell(fd), offset + atom.size);
 }
@@ -327,7 +325,7 @@ TEST_F(TestMov, VideoMediaInformationSampleTable) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, 0x000000e4);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stbl"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("stbl"));
 
   EXPECT_EQ(ftell(fd), offset + atom.size);
 }
@@ -340,7 +338,7 @@ TEST_F(TestMov, VideoMediaInformationSampleTableDescription) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, 0x00000080);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stsd"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("stsd"));
 
   EXPECT_EQ(ftell(fd), offset + atom.size);
 }
@@ -353,7 +351,7 @@ TEST_F(TestMov, TimeToSample) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, 0x18);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stts"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("stts"));
 
   EXPECT_EQ(ftell(fd), offset + atom.size);
 }
@@ -366,7 +364,7 @@ TEST_F(TestMov, SampleToChunk) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, 0x1c);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stsc"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("stsc"));
 
   EXPECT_EQ(ftell(fd), offset + atom.size);
 }
@@ -379,7 +377,7 @@ TEST_F(TestMov, SampleSize) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, 0x14);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stsz"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("stsz"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000000);
   EXPECT_EQ(atom.sample_size, 0x07e5);
@@ -408,7 +406,7 @@ TEST(MuTFF, ReadSampleDependencyFlagsAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("sdtp"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("sdtp"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.sample_dependency_flags_table[0], 0x10);
@@ -437,7 +435,7 @@ TEST(MuTFF, ReadChunkOffsetAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stco"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("stco"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.number_of_entries, 1);
@@ -467,7 +465,7 @@ TEST(MuTFF, ReadSampleSizeAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stsz"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("stsz"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.sample_size, 0);
@@ -502,7 +500,7 @@ TEST(MuTFF, ReadSampleToChunkAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stsc"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("stsc"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.number_of_entries, 2);
@@ -560,7 +558,7 @@ TEST(MuTFF, ReadPartialSyncSampleAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stps"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("stps"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.entry_count, 2);
@@ -591,7 +589,7 @@ TEST(MuTFF, ReadSyncSampleAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stts"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("stts"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.number_of_entries, 2);
@@ -624,7 +622,7 @@ TEST(MuTFF, ReadCompositionShiftLeastGreatestAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("cslg"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("cslg"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.composition_offset_to_display_offset_shift, 0x00010203);
@@ -659,7 +657,7 @@ TEST(MuTFF, ReadCompositionOffsetAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("ctts"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("ctts"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.entry_count, 2);
@@ -715,7 +713,7 @@ TEST(MuTFF, ReadTimeToSampleAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stts"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("stts"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.number_of_entries, 2);
@@ -777,7 +775,7 @@ TEST(MuTFF, ReadSampleDescriptionAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("stsd"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("stsd"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.number_of_entries, 2);
@@ -826,17 +824,17 @@ TEST(MuTFF, ReadDataInformationAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("dinf"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("dinf"));
   EXPECT_EQ(atom.data_reference.size, 48);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.data_reference.type), MuTFF_FOUR_C("dref"));
+  EXPECT_EQ(atom.data_reference.type, MuTFF_FOUR_C("dref"));
   EXPECT_EQ(atom.data_reference.number_of_entries, 2);
   EXPECT_EQ(atom.data_reference.data_references[0].size, 16);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.data_reference.data_references[0].type), MuTFF_FOUR_C("abcd"));
+  EXPECT_EQ(atom.data_reference.data_references[0].type, MuTFF_FOUR_C("abcd"));
   EXPECT_EQ(atom.data_reference.data_references[0].version_flags.version, 0x00);
   EXPECT_EQ(atom.data_reference.data_references[0].version_flags.flags, 0x000102);
   EXPECT_EQ(MuTFF_FOUR_C(atom.data_reference.data_references[0].data), 0x00010203);
   EXPECT_EQ(atom.data_reference.data_references[1].size, 16);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.data_reference.data_references[1].type), MuTFF_FOUR_C("efgh"));
+  EXPECT_EQ(atom.data_reference.data_references[1].type, MuTFF_FOUR_C("efgh"));
   EXPECT_EQ(atom.data_reference.data_references[1].version_flags.version, 0x10);
   EXPECT_EQ(atom.data_reference.data_references[1].version_flags.flags, 0x101112);
   EXPECT_EQ(MuTFF_FOUR_C(atom.data_reference.data_references[1].data), 0x10111213);
@@ -873,15 +871,15 @@ TEST(MuTFF, ReadDataReferenceAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("dref"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("dref"));
   EXPECT_EQ(atom.number_of_entries, 2);
   EXPECT_EQ(atom.data_references[0].size, 16);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.data_references[0].type), MuTFF_FOUR_C("abcd"));
+  EXPECT_EQ(atom.data_references[0].type, MuTFF_FOUR_C("abcd"));
   EXPECT_EQ(atom.data_references[0].version_flags.version, 0x00);
   EXPECT_EQ(atom.data_references[0].version_flags.flags, 0x000102);
   EXPECT_EQ(MuTFF_FOUR_C(atom.data_references[0].data), 0x00010203);
   EXPECT_EQ(atom.data_references[1].size, 16);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.data_references[1].type), MuTFF_FOUR_C("efgh"));
+  EXPECT_EQ(atom.data_references[1].type, MuTFF_FOUR_C("efgh"));
   EXPECT_EQ(atom.data_references[1].version_flags.version, 0x10);
   EXPECT_EQ(atom.data_references[1].version_flags.flags, 0x101112);
   EXPECT_EQ(MuTFF_FOUR_C(atom.data_references[1].data), 0x10111213);
@@ -908,7 +906,7 @@ TEST(MuTFF, ReadDataReference) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(ref.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(ref.type), MuTFF_FOUR_C("abcd"));
+  EXPECT_EQ(ref.type, MuTFF_FOUR_C("abcd"));
   EXPECT_EQ(ref.version_flags.version, 0x00);
   EXPECT_EQ(ref.version_flags.flags, 0x000102);
   EXPECT_EQ(MuTFF_FOUR_C(ref.data), 0x00010203);
@@ -955,11 +953,11 @@ TEST(MuTFF, ReadBaseMediaInformationAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("minf"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("minf"));
   EXPECT_EQ(atom.base_media_information_header.size, 76);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.base_media_information_header.type), MuTFF_FOUR_C("gmhd"));
+  EXPECT_EQ(atom.base_media_information_header.type, MuTFF_FOUR_C("gmhd"));
   EXPECT_EQ(atom.base_media_information_header.base_media_info.size, 24);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.base_media_information_header.base_media_info.type), MuTFF_FOUR_C("gmin"));
+  EXPECT_EQ(atom.base_media_information_header.base_media_info.type, MuTFF_FOUR_C("gmin"));
   EXPECT_EQ(atom.base_media_information_header.base_media_info.version_flags.version, 0x00);
   EXPECT_EQ(atom.base_media_information_header.base_media_info.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.base_media_information_header.base_media_info.graphics_mode, 0x0001);
@@ -968,7 +966,7 @@ TEST(MuTFF, ReadBaseMediaInformationAtom) {
   EXPECT_EQ(atom.base_media_information_header.base_media_info.opcolor[2], 0x3031);
   EXPECT_EQ(atom.base_media_information_header.base_media_info.balance, 0x4041);
   EXPECT_EQ(atom.base_media_information_header.text_media_information.size, 44);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.base_media_information_header.text_media_information.type), MuTFF_FOUR_C("text"));
+  EXPECT_EQ(atom.base_media_information_header.text_media_information.type, MuTFF_FOUR_C("text"));
   for (size_t j = 0; j < 3; ++j) {
     for (size_t i = 0; i < 3; ++i) {
       const uint32_t exp_base = (3 * j + i) * 4 + 1;
@@ -1020,9 +1018,9 @@ TEST(MuTFF, ReadBaseMediaInformationHeaderAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("gmhd"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("gmhd"));
   EXPECT_EQ(atom.base_media_info.size, 24);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.base_media_info.type), MuTFF_FOUR_C("gmin"));
+  EXPECT_EQ(atom.base_media_info.type, MuTFF_FOUR_C("gmin"));
   EXPECT_EQ(atom.base_media_info.version_flags.version, 0x00);
   EXPECT_EQ(atom.base_media_info.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.base_media_info.graphics_mode, 0x0001);
@@ -1031,7 +1029,7 @@ TEST(MuTFF, ReadBaseMediaInformationHeaderAtom) {
   EXPECT_EQ(atom.base_media_info.opcolor[2], 0x3031);
   EXPECT_EQ(atom.base_media_info.balance, 0x4041);
   EXPECT_EQ(atom.text_media_information.size, 44);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.text_media_information.type), MuTFF_FOUR_C("text"));
+  EXPECT_EQ(atom.text_media_information.type, MuTFF_FOUR_C("text"));
   for (size_t j = 0; j < 3; ++j) {
     for (size_t i = 0; i < 3; ++i) {
       const uint32_t exp_base = (3 * j + i) * 4 + 1;
@@ -1068,7 +1066,7 @@ TEST(MuTFF, ReadBaseMediaInfoAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("gmin"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("gmin"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.graphics_mode, 0x0001);
@@ -1105,7 +1103,7 @@ TEST(MuTFF, ReadTextMediaInformationAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("text"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("text"));
   for (size_t j = 0; j < 3; ++j) {
     for (size_t i = 0; i < 3; ++i) {
       const uint32_t exp_base = (3 * j + i) * 4 + 1;
@@ -1138,7 +1136,7 @@ TEST(MuTFF, ReadSoundMediaInformationHeaderAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("smhd"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("smhd"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.balance, 0x1011);
@@ -1168,7 +1166,7 @@ TEST(MuTFF, ReadVideoMediaInformationHeaderAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("vmhd"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("vmhd"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.graphics_mode, 0x0001);
@@ -1203,7 +1201,7 @@ TEST(MuTFF, ReadHandlerReferenceAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("hdlr"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("hdlr"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.component_type, 0x00010203);
@@ -1235,7 +1233,7 @@ TEST(MuTFF, ReadExtendedLanguageTagAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("elng"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("elng"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_STREQ(atom.language_tag_string, "en-US");
@@ -1267,7 +1265,7 @@ TEST(MuTFF, ReadMediaHeaderAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("mdhd"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("mdhd"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.creation_time, 0x00010203);
@@ -1320,26 +1318,26 @@ TEST(MuTFF, ReadTrackInputMapAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("imap"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("imap"));
   EXPECT_EQ(atom.track_input_atoms[0].size, 44);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.track_input_atoms[0].type), MuTFF_FOUR_C("\0\0in"));
+  EXPECT_EQ(atom.track_input_atoms[0].type, MuTFF_FOUR_C("\0\0in"));
   EXPECT_EQ(atom.track_input_atoms[0].atom_id, 0x00010203);
   EXPECT_EQ(atom.track_input_atoms[0].child_count, 0x0002);
   EXPECT_EQ(atom.track_input_atoms[0].input_type_atom.size, 0x0c);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.track_input_atoms[0].input_type_atom.type), MuTFF_FOUR_C("\0\0ty"));
+  EXPECT_EQ(atom.track_input_atoms[0].input_type_atom.type, MuTFF_FOUR_C("\0\0ty"));
   EXPECT_EQ(atom.track_input_atoms[0].input_type_atom.input_type, 0x00010203);
   EXPECT_EQ(atom.track_input_atoms[0].object_id_atom.size, 0x0c);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.track_input_atoms[0].object_id_atom.type), MuTFF_FOUR_C("obid"));
+  EXPECT_EQ(atom.track_input_atoms[0].object_id_atom.type, MuTFF_FOUR_C("obid"));
   EXPECT_EQ(atom.track_input_atoms[0].object_id_atom.object_id, 0x00010203);
   EXPECT_EQ(atom.track_input_atoms[1].size, 44);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.track_input_atoms[1].type), MuTFF_FOUR_C("\0\0in"));
+  EXPECT_EQ(atom.track_input_atoms[1].type, MuTFF_FOUR_C("\0\0in"));
   EXPECT_EQ(atom.track_input_atoms[1].atom_id, 0x00010203);
   EXPECT_EQ(atom.track_input_atoms[1].child_count, 0x0002);
   EXPECT_EQ(atom.track_input_atoms[1].input_type_atom.size, 0x0c);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.track_input_atoms[1].input_type_atom.type), MuTFF_FOUR_C("\0\0ty"));
+  EXPECT_EQ(atom.track_input_atoms[1].input_type_atom.type, MuTFF_FOUR_C("\0\0ty"));
   EXPECT_EQ(atom.track_input_atoms[1].input_type_atom.input_type, 0x00010203);
   EXPECT_EQ(atom.track_input_atoms[1].object_id_atom.size, 0x0c);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.track_input_atoms[1].object_id_atom.type), MuTFF_FOUR_C("obid"));
+  EXPECT_EQ(atom.track_input_atoms[1].object_id_atom.type, MuTFF_FOUR_C("obid"));
   EXPECT_EQ(atom.track_input_atoms[1].object_id_atom.object_id, 0x00010203);
   EXPECT_EQ(ftell(fd), data_size);
 }
@@ -1371,14 +1369,14 @@ TEST(MuTFF, ReadTrackInputAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("\0\0in"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("\0\0in"));
   EXPECT_EQ(atom.atom_id, 0x00010203);
   EXPECT_EQ(atom.child_count, 0x0002);
   EXPECT_EQ(atom.input_type_atom.size, 0x0c);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.input_type_atom.type), MuTFF_FOUR_C("\0\0ty"));
+  EXPECT_EQ(atom.input_type_atom.type, MuTFF_FOUR_C("\0\0ty"));
   EXPECT_EQ(atom.input_type_atom.input_type, 0x00010203);
   EXPECT_EQ(atom.object_id_atom.size, 0x0c);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.object_id_atom.type), MuTFF_FOUR_C("obid"));
+  EXPECT_EQ(atom.object_id_atom.type, MuTFF_FOUR_C("obid"));
   EXPECT_EQ(atom.object_id_atom.object_id, 0x00010203);
   EXPECT_EQ(ftell(fd), data_size);
 }
@@ -1401,7 +1399,7 @@ TEST(MuTFF, ReadObjectIDAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("obid"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("obid"));
   EXPECT_EQ(atom.object_id, 0x00010203);
   EXPECT_EQ(ftell(fd), data_size);
 }
@@ -1424,7 +1422,7 @@ TEST(MuTFF, ReadInputTypeAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("\0\0ty"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("\0\0ty"));
   EXPECT_EQ(atom.input_type, 0x00010203);
   EXPECT_EQ(ftell(fd), data_size);
 }
@@ -1450,7 +1448,7 @@ TEST(MuTFF, ReadTrackLoadSettingsAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("load"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("load"));
   EXPECT_EQ(atom.preload_start_time, 0x00010203);
   EXPECT_EQ(atom.preload_duration, 0x10111213);
   EXPECT_EQ(atom.preload_flags, 0x20212223);
@@ -1475,7 +1473,7 @@ TEST(MuTFF, ReadTrackExcludeFromAutoselectionAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("txas"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("txas"));
   EXPECT_EQ(ftell(fd), data_size);
 }
 
@@ -1504,13 +1502,13 @@ TEST(MuTFF, ReadTrackReferenceAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("tref"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("tref"));
   EXPECT_EQ(atom.track_reference_type[0].size, 0x10);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.track_reference_type[0].type), MuTFF_FOUR_C("abcd"));
+  EXPECT_EQ(atom.track_reference_type[0].type, MuTFF_FOUR_C("abcd"));
   EXPECT_EQ(atom.track_reference_type[0].track_ids[0], 0x00010203);
   EXPECT_EQ(atom.track_reference_type[0].track_ids[1], 0x10111213);
   EXPECT_EQ(atom.track_reference_type[1].size, 0x10);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.track_reference_type[1].type), MuTFF_FOUR_C("efgh"));
+  EXPECT_EQ(atom.track_reference_type[1].type, MuTFF_FOUR_C("efgh"));
   EXPECT_EQ(atom.track_reference_type[1].track_ids[0], 0x20212223);
   EXPECT_EQ(atom.track_reference_type[1].track_ids[1], 0x30313233);
   EXPECT_EQ(ftell(fd), data_size);
@@ -1535,7 +1533,7 @@ TEST(MuTFF, ReadTrackReferenceTypeAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("abcd"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("abcd"));
   EXPECT_EQ(atom.track_ids[0], 0x00010203);
   EXPECT_EQ(atom.track_ids[1], 0x10111213);
   EXPECT_EQ(ftell(fd), data_size);
@@ -1569,9 +1567,9 @@ TEST(MuTFF, ReadEditAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("edts"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("edts"));
   EXPECT_EQ(atom.edit_list_atom.size, data_size - 8);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.edit_list_atom.type), MuTFF_FOUR_C("elst"));
+  EXPECT_EQ(atom.edit_list_atom.type, MuTFF_FOUR_C("elst"));
   EXPECT_EQ(atom.edit_list_atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.edit_list_atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.edit_list_atom.number_of_entries, 0x00000002);
@@ -1610,7 +1608,7 @@ TEST(MuTFF, ReadEditListAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("elst"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("elst"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.number_of_entries, 0x00000002);
@@ -1673,9 +1671,9 @@ TEST(MuTFF, ReadTrackMatteAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("matt"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("matt"));
   EXPECT_EQ(atom.compressed_matte_atom.size, data_size - 8);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.compressed_matte_atom.type), MuTFF_FOUR_C("kmat"));
+  EXPECT_EQ(atom.compressed_matte_atom.type, MuTFF_FOUR_C("kmat"));
   EXPECT_EQ(atom.compressed_matte_atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.compressed_matte_atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.compressed_matte_atom.matte_image_description_structure.size, 0x14);
@@ -1714,7 +1712,7 @@ TEST(MuTFF, ReadCompressedMatteAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("kmat"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("kmat"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.matte_image_description_structure.size, 0x14);
@@ -1789,12 +1787,12 @@ TEST(MuTFF, ReadTrackApertureModeDimensionsAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("tapt"));
-  EXPECT_EQ(MuTFF_FOUR_C(atom.track_clean_aperture_dimension.type),
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("tapt"));
+  EXPECT_EQ(atom.track_clean_aperture_dimension.type,
             MuTFF_FOUR_C("clef"));
-  EXPECT_EQ(MuTFF_FOUR_C(atom.track_production_aperture_dimension.type),
+  EXPECT_EQ(atom.track_production_aperture_dimension.type,
             MuTFF_FOUR_C("prof"));
-  EXPECT_EQ(MuTFF_FOUR_C(atom.track_encoded_pixels_dimension.type),
+  EXPECT_EQ(atom.track_encoded_pixels_dimension.type,
             MuTFF_FOUR_C("enof"));
   EXPECT_EQ(ftell(fd), data_size);
 }
@@ -1820,7 +1818,7 @@ TEST(MuTFF, ReadTrackEncodedPixelsDimensionsAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("enof"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("enof"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.width, 0x00010203);
@@ -1849,7 +1847,7 @@ TEST(MuTFF, ReadTrackProductionApertureDimensionsAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("prof"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("prof"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.width, 0x00010203);
@@ -1878,7 +1876,7 @@ TEST(MuTFF, ReadTrackCleanApertureDimensionsAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("clef"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("clef"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.width, 0x00010203);
@@ -1927,7 +1925,7 @@ TEST(MuTFF, ReadTrackHeaderAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("tkhd"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("tkhd"));
   EXPECT_EQ(atom.version_flags.version, 0x00);
   EXPECT_EQ(atom.version_flags.flags, 0x000102);
   EXPECT_EQ(atom.creation_time, 0x00010203);
@@ -1970,11 +1968,11 @@ TEST(MuTFF, ReadUserDataAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("udta"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("udta"));
   EXPECT_EQ(atom.user_data_list[0].size, 12);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.user_data_list[0].type), MuTFF_FOUR_C("abcd"));
+  EXPECT_EQ(atom.user_data_list[0].type, MuTFF_FOUR_C("abcd"));
   EXPECT_EQ(atom.user_data_list[1].size, 8);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.user_data_list[1].type), MuTFF_FOUR_C("ijkl"));
+  EXPECT_EQ(atom.user_data_list[1].type, MuTFF_FOUR_C("ijkl"));
   EXPECT_EQ(ftell(fd), data_size);
 }
 
@@ -2000,7 +1998,7 @@ TEST(MuTFF, ReadColorTableAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("ctab"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("ctab"));
   EXPECT_EQ(atom.color_table_seed, 0x00010203);
   EXPECT_EQ(atom.color_table_flags, 0x0001);
   EXPECT_EQ(atom.color_table_size, 0x0001);
@@ -2036,9 +2034,9 @@ TEST(MuTFF, ReadClippingAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("clip"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("clip"));
   EXPECT_EQ(atom.clipping_region.size, data_size - 8);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.clipping_region.type), MuTFF_FOUR_C("crgn"));
+  EXPECT_EQ(atom.clipping_region.type, MuTFF_FOUR_C("crgn"));
   EXPECT_EQ(atom.clipping_region.region.size, 0x000a);
   EXPECT_EQ(atom.clipping_region.region.rect.top, 0x0001);
   EXPECT_EQ(atom.clipping_region.region.rect.left, 0x0203);
@@ -2066,7 +2064,7 @@ TEST(MuTFF, ReadClippingRegionAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("crgn"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("crgn"));
   EXPECT_EQ(atom.region.size, 0x000a);
   EXPECT_EQ(atom.region.rect.top, 0x0001);
   EXPECT_EQ(atom.region.rect.left, 0x0203);
@@ -2118,7 +2116,7 @@ TEST(MuTFF, ReadMovieHeaderAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("mvhd"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("mvhd"));
   EXPECT_EQ(atom.version_flags.version, 0x01);
   EXPECT_EQ(atom.version_flags.flags, 0x010203);
   EXPECT_EQ(atom.creation_time, 0x01020304);
@@ -2164,10 +2162,10 @@ TEST(MuTFF, ReadPreviewAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, data_size);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("pnot"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("pnot"));
   EXPECT_EQ(atom.modification_time, 0x01020304);
   EXPECT_EQ(atom.version, 0x0102);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.atom_type), MuTFF_FOUR_C("abcd"));
+  EXPECT_EQ(atom.atom_type, MuTFF_FOUR_C("abcd"));
   EXPECT_EQ(atom.atom_index, 0x0102);
   EXPECT_EQ(ftell(fd), data_size);
 }
@@ -2189,7 +2187,7 @@ TEST(MuTFF, ReadWideAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, 0x10);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("wide"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("wide"));
   EXPECT_EQ(ftell(fd), data_size);
 }
 
@@ -2210,7 +2208,7 @@ TEST(MuTFF, ReadSkipAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, 0x10);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("skip"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("skip"));
   EXPECT_EQ(ftell(fd), data_size);
 }
 
@@ -2231,7 +2229,7 @@ TEST(MuTFF, ReadFreeAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, 0x10);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("free"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("free"));
   EXPECT_EQ(ftell(fd), data_size);
 }
 
@@ -2252,7 +2250,7 @@ TEST(MuTFF, ReadMovieDataAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, 0x10);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("mdat"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("mdat"));
   EXPECT_EQ(ftell(fd), data_size);
 }
 
@@ -2274,12 +2272,12 @@ TEST(MuTFF, ReadFileTypeCompatibilityAtom) {
   ASSERT_EQ(err, MuTFFErrorNone);
 
   EXPECT_EQ(atom.size, 0x14);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.type), MuTFF_FOUR_C("ftyp"));
+  EXPECT_EQ(atom.type, MuTFF_FOUR_C("ftyp"));
   EXPECT_EQ(atom.major_brand, MuTFF_FOUR_C("qt  "));
   EXPECT_EQ(MuTFF_FOUR_C(atom.minor_version),
             MuTFF_FOUR_C(((char[]){20, 04, 06, 00})));
   EXPECT_EQ(atom.compatible_brands_count, 1);
-  EXPECT_EQ(MuTFF_FOUR_C(atom.compatible_brands[0]), MuTFF_FOUR_C("qt  "));
+  EXPECT_EQ(atom.compatible_brands[0], MuTFF_FOUR_C("qt  "));
   EXPECT_EQ(ftell(fd), data_size);
 }
 
@@ -2293,7 +2291,7 @@ TEST(MuTFF, PeekAtomHeader) {
   mutff_peek_atom_header(fd, &header);
 
   EXPECT_EQ(header.size, 0x01020304);
-  EXPECT_EQ(MuTFF_FOUR_C(header.type), MuTFF_FOUR_C("abcd"));
+  EXPECT_EQ(header.type, MuTFF_FOUR_C("abcd"));
   EXPECT_EQ(ftell(fd), 0);
 }
 
