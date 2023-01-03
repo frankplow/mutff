@@ -42,15 +42,13 @@ typedef struct {
 } MuTFFAtomVersionFlags;
 
 ///
-/// @brief Read the version and flags of an atom
-///
-/// The current file offset must be at the start of the version.
+/// @brief Write the version and flags of an atom
 ///
 /// @param [in] fd    The file descriptor
-/// @param [out] out  Output
-/// @return           Whether or not the type was read successfully
+/// @param [in] in    Input
+/// @return           Whether or not the type was written successfully
 ///
-MuTFFError mutff_read_atom_version_flags(FILE *fd, MuTFFAtomVersionFlags *out);
+MuTFFError mutff_write_atom_version_flags(FILE *fd, const MuTFFAtomVersionFlags *in);
 
 ///
 /// @brief The header + offset of a generic QuickTime atom
@@ -91,9 +89,18 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor
 /// @param [out] out  Output
-/// @return           Whether or not an atom was read successfully
+/// @return           Whether or not a rectangle was read successfully
 ///
 MuTFFError mutff_read_quickdraw_rect(FILE *fd, MuTFFQuickDrawRect *out);
+
+///
+/// @brief Write a QuickDraw rectangle
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the rectangle was written successfully
+///
+MuTFFError mutff_write_quickdraw_rect(FILE *fd, const MuTFFQuickDrawRect *in);
 
 ///
 /// @brief Maximum size of the additional data in a QuickDraw region
@@ -124,6 +131,15 @@ typedef struct {
 MuTFFError mutff_read_quickdraw_region(FILE *fd, MuTFFQuickDrawRegion *out);
 
 ///
+/// @brief Write a QuickDraw region
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the region was written successfully
+///
+MuTFFError mutff_write_quickdraw_region(FILE *fd, const MuTFFQuickDrawRegion *in);
+
+///
 /// @brief The maximum number of compatible brands
 ///
 #define MuTFF_MAX_COMPATIBLE_BRANDS 4
@@ -137,7 +153,7 @@ typedef struct {
   uint32_t size;
   uint32_t type;
   uint32_t major_brand;
-  char minor_version[4];
+  uint32_t minor_version;
   size_t compatible_brands_count;
   uint32_t compatible_brands[MuTFF_MAX_COMPATIBLE_BRANDS];
 } MuTFFFileTypeCompatibilityAtom;
@@ -152,6 +168,16 @@ typedef struct {
 MuTFFError mutff_read_file_type_compatibility_atom(
     FILE *fd, MuTFFFileTypeCompatibilityAtom *out);
 
+///
+/// @brief Write a file type compatibility atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_file_type_compatibility_atom(
+    FILE *fd, const MuTFFFileTypeCompatibilityAtom *in);
+
 typedef struct {
   uint32_t size;
   uint32_t type;
@@ -165,6 +191,15 @@ typedef struct {
 /// @return           Whether or not the atom was read successfully
 ///
 MuTFFError mutff_read_movie_data_atom(FILE *fd, MuTFFMovieDataAtom *out);
+
+///
+/// @brief Write a movie data atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_movie_data_atom(FILE *fd, const MuTFFMovieDataAtom *in);
 
 ///
 /// @brief Free (unused) space atom
@@ -186,6 +221,15 @@ typedef struct {
 MuTFFError mutff_read_free_atom(FILE *fd, MuTFFFreeAtom *out);
 
 ///
+/// @brief Write a free atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_free_atom(FILE *fd, const MuTFFFreeAtom *in);
+
+///
 /// @brief Skip (unused) space atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/MuTFF/MuTFFChap1/mutff1.html#//apple_ref/doc/uid/TP40000939-CH203-55464
@@ -205,6 +249,15 @@ typedef struct {
 MuTFFError mutff_read_skip_atom(FILE *fd, MuTFFSkipAtom *out);
 
 ///
+/// @brief Write a skip atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_skip_atom(FILE *fd, const MuTFFSkipAtom *in);
+
+///
 /// @brief Wide (reserved) space atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/MuTFF/MuTFFChap1/mutff1.html#//apple_ref/doc/uid/TP40000939-CH203-55464
@@ -222,6 +275,15 @@ typedef struct {
 /// @return           Whether or not the atom was read successfully
 ///
 MuTFFError mutff_read_wide_atom(FILE *fd, MuTFFWideAtom *out);
+
+///
+/// @brief Write a wide atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_wide_atom(FILE *fd, const MuTFFWideAtom *in);
 
 ///
 /// @brief Preview atom
@@ -247,6 +309,15 @@ typedef struct {
 /// @return           Whether or not the atom was read successfully
 ///
 MuTFFError mutff_read_preview_atom(FILE *fd, MuTFFPreviewAtom *out);
+
+///
+/// @brief Write a preview atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_preview_atom(FILE *fd, const MuTFFPreviewAtom *in);
 
 ///
 /// @brief Movie header atom.
@@ -284,6 +355,16 @@ typedef struct {
 MuTFFError mutff_read_movie_header_atom(FILE *fd, MuTFFMovieHeaderAtom *out);
 
 ///
+/// @brief Write a movie header atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_movie_header_atom(FILE *fd,
+                                         const MuTFFMovieHeaderAtom *in);
+
+///
 ///
 /// @brief Clipping region atom
 /// @see
@@ -309,6 +390,16 @@ MuTFFError mutff_read_clipping_region_atom(FILE *fd,
                                            MuTFFClippingRegionAtom *out);
 
 ///
+/// @brief Write a clipping region atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_clipping_region_atom(FILE *fd,
+                                            const MuTFFClippingRegionAtom *in);
+
+///
 /// @brief Clipping atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-BBCIHBFG
@@ -327,6 +418,15 @@ typedef struct {
 /// @return           Whether or not the atom was read successfully
 ///
 MuTFFError mutff_read_clipping_atom(FILE *fd, MuTFFClippingAtom *out);
+
+///
+/// @brief Write a clipping atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_clipping_atom(FILE *fd, const MuTFFClippingAtom *in);
 
 ///
 /// @brief The maximum number of entries in the color table
@@ -357,6 +457,47 @@ typedef struct {
 MuTFFError mutff_read_color_table_atom(FILE *fd, MuTFFColorTableAtom *out);
 
 ///
+/// @brief Write a color table atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_color_table_atom(FILE *fd,
+                                        const MuTFFColorTableAtom *in);
+
+///
+/// @brief The maximum size of the data in an entry of a user data list
+///
+#define MuTFF_MAX_USER_DATA_ENTRY_SIZE 64
+
+typedef struct {
+  uint32_t size;
+  uint32_t type;
+  char data[MuTFF_MAX_USER_DATA_ENTRY_SIZE];
+} MuTFFUserDataListEntry;
+
+///
+/// @brief Read an entry in a user data list
+///
+/// @param [in] fd    The file descriptor to read from
+/// @param [out] out  The parsed entry
+/// @return           Whether or not the entry was read successfully
+///
+MuTFFError mutff_read_user_data_list_entry(FILE *fd,
+                                           MuTFFUserDataListEntry *out);
+
+///
+/// @brief Write an entry in a user data list
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the entry was written successfully
+///
+MuTFFError mutff_write_user_data_list_entry(FILE *fd,
+                                            const MuTFFUserDataListEntry *in);
+
+///
 /// @brief The maximum number of entries in the user data list
 ///
 #define MuTFF_MAX_USER_DATA_ITEMS 16
@@ -369,7 +510,7 @@ MuTFFError mutff_read_color_table_atom(FILE *fd, MuTFFColorTableAtom *out);
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomHeader user_data_list[MuTFF_MAX_USER_DATA_ITEMS];
+  MuTFFUserDataListEntry user_data_list[MuTFF_MAX_USER_DATA_ITEMS];
 } MuTFFUserDataAtom;
 
 ///
@@ -380,6 +521,15 @@ typedef struct {
 /// @return           Whether or not the atom was read successfully
 ///
 MuTFFError mutff_read_user_data_atom(FILE *fd, MuTFFUserDataAtom *out);
+
+///
+/// @brief Write a user data atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_user_data_atom(FILE *fd, const MuTFFUserDataAtom *in);
 
 ///
 /// @brief Track header atom
@@ -415,6 +565,16 @@ typedef struct {
 MuTFFError mutff_read_track_header_atom(FILE *fd, MuTFFTrackHeaderAtom *out);
 
 ///
+/// @brief Write a track header atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_track_header_atom(FILE *fd,
+                                         const MuTFFTrackHeaderAtom *in);
+
+///
 /// @brief Track clean aperture dimensions atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-SW3
@@ -436,6 +596,16 @@ typedef struct {
 ///
 MuTFFError mutff_read_track_clean_aperture_dimensions_atom(
     FILE *fd, MuTFFTrackCleanApertureDimensionsAtom *out);
+
+///
+/// @brief Write a track clean aperture dimensions atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_track_clean_aperture_dimensions_atom(
+    FILE *fd, const MuTFFTrackCleanApertureDimensionsAtom *in);
 
 ///
 /// @brief Track production aperture dimensions atom
@@ -461,6 +631,16 @@ MuTFFError mutff_read_track_production_aperture_dimensions_atom(
     FILE *fd, MuTFFTrackProductionApertureDimensionsAtom *out);
 
 ///
+/// @brief Write a track production aperture dimensions atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_track_production_aperture_dimensions_atom(
+    FILE *fd, const MuTFFTrackProductionApertureDimensionsAtom *in);
+
+///
 /// @brief Track encoded pixels dimensions atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-SW14
@@ -482,6 +662,16 @@ typedef struct {
 ///
 MuTFFError mutff_read_track_encoded_pixels_dimensions_atom(
     FILE *fd, MuTFFTrackEncodedPixelsDimensionsAtom *out);
+
+///
+/// @brief Write a track encoded pixels dimensions atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_track_encoded_pixels_dimensions_atom(
+    FILE *fd, const MuTFFTrackEncodedPixelsDimensionsAtom *in);
 
 ///
 /// @brief Track aperture mode dimensions atom
@@ -508,6 +698,16 @@ MuTFFError mutff_read_track_aperture_mode_dimensions_atom(
     FILE *fd, MuTFFTrackApertureModeDimensionsAtom *out);
 
 ///
+/// @brief Write a track aperture mode dimensions atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_track_aperture_mode_dimensions_atom(
+    FILE *fd, const MuTFFTrackApertureModeDimensionsAtom *in);
+
+///
 /// @brief The maximum length of the format-specific data in a sample
 ///        description
 /// @see MuTFFSampleDescription
@@ -532,10 +732,19 @@ typedef struct {
 /// @brief Read a sample description
 ///
 /// @param [in] fd    The file descriptor to read from
-/// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @param [out] out  The parsed description
+/// @return           Whether or not the description was read successfully
 ///
 MuTFFError mutff_read_sample_description(FILE *fd, MuTFFSampleDescription *out);
+
+///
+/// @brief Write a sample description
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the description was written successfully
+///
+MuTFFError mutff_write_sample_description(FILE *fd, const MuTFFSampleDescription *in);
 
 ///
 /// @brief The maximum length of the data in a compressed matte atom
@@ -568,6 +777,16 @@ MuTFFError mutff_read_compressed_matte_atom(FILE *fd,
                                             MuTFFCompressedMatteAtom *out);
 
 ///
+/// @brief Write a compressed matte atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_compressed_matte_atom(
+    FILE *fd, const MuTFFCompressedMatteAtom *in);
+
+///
 /// @brief Track matte atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-25567
@@ -586,6 +805,16 @@ typedef struct {
 /// @return           Whether or not the atom was read successfully
 ///
 MuTFFError mutff_read_track_matte_atom(FILE *fd, MuTFFTrackMatteAtom *out);
+
+///
+/// @brief Write a track matte atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_track_matte_atom(FILE *fd,
+                                        const MuTFFTrackMatteAtom *in);
 
 ///
 /// @brief Entry an an edit list
@@ -607,6 +836,15 @@ typedef struct {
 /// @return           Whether or not the atom was read successfully
 ///
 MuTFFError mutff_read_edit_list_entry(FILE *fd, MuTFFEditListEntry *out);
+
+///
+/// @brief Write a movie data atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_edit_list_entry(FILE *fd, const MuTFFEditListEntry *in);
 
 ///
 /// @brief The maximum number of entries in an edit list atom
@@ -637,6 +875,15 @@ typedef struct {
 MuTFFError mutff_read_edit_list_atom(FILE *fd, MuTFFEditListAtom *out);
 
 ///
+/// @brief Write an edit list atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_edit_list_atom(FILE *fd, const MuTFFEditListAtom *in);
+
+///
 /// @brief Edit atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-BBCCFBEF
@@ -655,6 +902,15 @@ typedef struct {
 /// @return           Whether or not the atom was read successfully
 ///
 MuTFFError mutff_read_edit_atom(FILE *fd, MuTFFEditAtom *out);
+
+///
+/// @brief Write an edit atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_edit_atom(FILE *fd, const MuTFFEditAtom *in);
 
 ///
 /// @brief The maximum track IDs in a track reference type atom
@@ -685,6 +941,16 @@ MuTFFError mutff_read_track_reference_type_atom(
     FILE *fd, MuTFFTrackReferenceTypeAtom *out);
 
 ///
+/// @brief Write a track reference type atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_track_reference_type_atom(
+    FILE *fd, const MuTFFTrackReferenceTypeAtom *in);
+
+///
 /// @brief The maximum reference type atoms in a track reference atom
 /// @see MuTFFTrackReferenceAtom
 ///
@@ -713,6 +979,16 @@ MuTFFError mutff_read_track_reference_atom(FILE *fd,
                                            MuTFFTrackReferenceAtom *out);
 
 ///
+/// @brief Write a track reference atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_track_reference_atom(FILE *fd,
+                                            const MuTFFTrackReferenceAtom *in);
+
+///
 /// @brief Track exclude from autoselection atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-SW47
@@ -730,6 +1006,16 @@ typedef struct {
 ///
 MuTFFError mutff_read_track_exclude_from_autoselection_atom(
     FILE *fd, MuTFFTrackExcludeFromAutoselectionAtom *out);
+
+///
+/// @brief Write a track exclude from autoselection atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_track_exclude_from_autoselection_atom(
+    FILE *fd, const MuTFFTrackExcludeFromAutoselectionAtom *in);
 
 ///
 /// @brief Track load settings atom
@@ -755,6 +1041,16 @@ MuTFFError mutff_read_track_load_settings_atom(FILE *fd,
                                                MuTFFTrackLoadSettingsAtom *out);
 
 ///
+/// @brief Write a track load settings atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_track_load_settings_atom(
+    FILE *fd, const MuTFFTrackLoadSettingsAtom *in);
+
+///
 /// @brief Input type atom
 ///
 typedef struct {
@@ -772,6 +1068,15 @@ typedef struct {
 MuTFFError mutff_read_input_type_atom(FILE *fd, MuTFFInputTypeAtom *out);
 
 ///
+/// @brief Write an input type atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_input_type_atom(FILE *fd, const MuTFFInputTypeAtom *in);
+
+///
 /// @brief Object ID atom
 ///
 typedef struct {
@@ -787,6 +1092,15 @@ typedef struct {
 /// @return           Whether or not the atom was read successfully
 ///
 MuTFFError mutff_read_object_id_atom(FILE *fd, MuTFFObjectIDAtom *out);
+
+///
+/// @brief Write an object ID atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_object_id_atom(FILE *fd, const MuTFFObjectIDAtom *in);
 
 ///
 /// @brief Track input atom
@@ -813,6 +1127,16 @@ typedef struct {
 MuTFFError mutff_read_track_input_atom(FILE *fd, MuTFFTrackInputAtom *out);
 
 ///
+/// @brief Write a track input atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_track_input_atom(FILE *fd,
+                                        const MuTFFTrackInputAtom *in);
+
+///
 /// @brief Maximum entries in a track input map
 /// @see MuTFFTrackInputMapAtom
 ///
@@ -831,7 +1155,7 @@ typedef struct {
 } MuTFFTrackInputMapAtom;
 
 ///
-/// @brief Read track input atom
+/// @brief Read track input map atom
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
@@ -839,6 +1163,16 @@ typedef struct {
 ///
 MuTFFError mutff_read_track_input_map_atom(FILE *fd,
                                            MuTFFTrackInputMapAtom *out);
+
+///
+/// @brief Write a track input map atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_track_input_map_atom(FILE *fd,
+                                            const MuTFFTrackInputMapAtom *in);
 
 ///
 /// @brief Media header atom
@@ -867,6 +1201,16 @@ typedef struct {
 MuTFFError mutff_read_media_header_atom(FILE *fd, MuTFFMediaHeaderAtom *out);
 
 ///
+/// @brief Write a media header atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_media_header_atom(FILE *fd,
+                                         const MuTFFMediaHeaderAtom *in);
+
+///
 /// @brief Maximum language tag length
 /// @see MuTFFExtendedLanguageTagAtom
 ///
@@ -893,6 +1237,16 @@ typedef struct {
 ///
 MuTFFError mutff_read_extended_language_tag_atom(
     FILE *fd, MuTFFExtendedLanguageTagAtom *out);
+
+///
+/// @brief Write an extended language tag atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_extended_language_tag_atom(
+    FILE *fd, const MuTFFExtendedLanguageTagAtom *in);
 
 ///
 /// @brief Maximum component name length
@@ -927,6 +1281,16 @@ MuTFFError mutff_read_handler_reference_atom(FILE *fd,
                                              MuTFFHandlerReferenceAtom *out);
 
 ///
+/// @brief Write a handler reference atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_handler_reference_atom(
+    FILE *fd, const MuTFFHandlerReferenceAtom *in);
+
+///
 /// @brief Video media information header atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-BBCFDGIG
@@ -947,6 +1311,16 @@ typedef struct {
 ///
 MuTFFError mutff_read_video_media_information_header_atom(
     FILE *fd, MuTFFVideoMediaInformationHeaderAtom *out);
+
+///
+/// @brief Write a video media information header atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_video_media_information_header_atom(
+    FILE *fd, const MuTFFVideoMediaInformationHeaderAtom *in);
 
 ///
 /// @brief The maximum size of the data in a data reference
@@ -974,6 +1348,15 @@ typedef struct {
 /// @return           Whether or not the reference was read successfully
 ///
 MuTFFError mutff_read_data_reference(FILE *fd, MuTFFDataReference *out);
+
+///
+/// @brief Write a data reference
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_data_reference(FILE *fd, const MuTFFDataReference *in);
 
 ///
 /// @brief The maximum number of data references in a data reference atom
@@ -1005,6 +1388,16 @@ MuTFFError mutff_read_data_reference_atom(FILE *fd,
                                           MuTFFDataReferenceAtom *out);
 
 ///
+/// @brief Write a data reference atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_data_reference_atom(FILE *fd,
+                                           const MuTFFDataReferenceAtom *in);
+
+///
 /// @brief Data information atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-BBCIFAIC
@@ -1024,6 +1417,16 @@ typedef struct {
 ///
 MuTFFError mutff_read_data_information_atom(FILE *fd,
                                             MuTFFDataInformationAtom *out);
+
+///
+/// @brief Write a data information atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_data_information_atom(
+    FILE *fd, const MuTFFDataInformationAtom *in);
 
 #define MuTFF_MAX_SAMPLE_DESCRIPTION_TABLE_LEN 8
 
@@ -1052,6 +1455,16 @@ MuTFFError mutff_read_sample_description_atom(FILE *fd,
                                               MuTFFSampleDescriptionAtom *out);
 
 ///
+/// @brief Write a sample description atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_sample_description_atom(
+    FILE *fd, const MuTFFSampleDescriptionAtom *in);
+
+///
 /// @brief Entry in the time-to-sample table
 /// @see MuTFFTimeToSampleAtom
 ///
@@ -1069,6 +1482,16 @@ typedef struct {
 ///
 MuTFFError mutff_read_time_to_sample_table_entry(
     FILE *fd, MuTFFTimeToSampleTableEntry *out);
+
+///
+/// @brief Write a time-to-sample table entry
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_time_to_sample_table_entry(
+    FILE *fd, const MuTFFTimeToSampleTableEntry *in);
 
 ///
 /// @brief Maximum number of entries in a time-to-sample atom
@@ -1100,6 +1523,16 @@ typedef struct {
 MuTFFError mutff_read_time_to_sample_atom(FILE *fd, MuTFFTimeToSampleAtom *out);
 
 ///
+/// @brief Write a time-to-sample atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_time_to_sample_atom(FILE *fd,
+                                           const MuTFFTimeToSampleAtom *in);
+
+///
 /// @brief Entry in the composition offset table
 ///
 typedef struct {
@@ -1116,6 +1549,16 @@ typedef struct {
 ///
 MuTFFError mutff_read_composition_offset_table_entry(
     FILE *fd, MuTFFCompositionOffsetTableEntry *out);
+
+///
+/// @brief Write a composition offset table entry
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_composition_offset_table_entry(
+    FILE *fd, const MuTFFCompositionOffsetTableEntry *in);
 
 ///
 /// @brief Maximum length of the composition offset table
@@ -1146,6 +1589,16 @@ MuTFFError mutff_read_composition_offset_atom(FILE *fd,
                                               MuTFFCompositionOffsetAtom *out);
 
 ///
+/// @brief Write a composition offset atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_composition_offset_atom(
+    FILE *fd, const MuTFFCompositionOffsetAtom *in);
+
+///
 /// @brief Composition shift least greatest atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-SW20
@@ -1170,6 +1623,16 @@ typedef struct {
 ///
 MuTFFError mutff_read_composition_shift_least_greatest_atom(
     FILE *fd, MuTFFCompositionShiftLeastGreatestAtom *out);
+
+///
+/// @brief Write a composition shift least greatest atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_composition_shift_least_greatest_atom(
+    FILE *fd, const MuTFFCompositionShiftLeastGreatestAtom *in);
 
 ///
 /// @brief Maximum length of the sync sample table
@@ -1197,6 +1660,16 @@ typedef struct {
 /// @return           Whether or not the atom was read successfully
 ///
 MuTFFError mutff_read_sync_sample_atom(FILE *fd, MuTFFSyncSampleAtom *out);
+
+///
+/// @brief Write a sync sample atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_sync_sample_atom(FILE *fd,
+                                        const MuTFFSyncSampleAtom *in);
 
 ///
 /// @brief Maximum length of the partial sync sample table
@@ -1227,6 +1700,16 @@ MuTFFError mutff_read_partial_sync_sample_atom(FILE *fd,
                                                MuTFFPartialSyncSampleAtom *out);
 
 ///
+/// @brief Write a partial sync sample atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_partial_sync_sample_atom(
+    FILE *fd, const MuTFFPartialSyncSampleAtom *in);
+
+///
 /// @brief Entry in the sample-to-chunk table
 /// @see MuTFFSampleToChunkAtom
 ///
@@ -1245,6 +1728,16 @@ typedef struct {
 ///
 MuTFFError mutff_read_sample_to_chunk_table_entry(
     FILE *fd, MuTFFSampleToChunkTableEntry *out);
+
+///
+/// @brief Write a sample-to-chunk table entry
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_sample_to_chunk_table_entry(
+    FILE *fd, const MuTFFSampleToChunkTableEntry *in);
 
 ///
 /// @brief Maximum length of the sample-to-chunk table
@@ -1277,6 +1770,16 @@ MuTFFError mutff_read_sample_to_chunk_atom(FILE *fd,
                                            MuTFFSampleToChunkAtom *out);
 
 ///
+/// @brief Write a sample-to-chunk atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_sample_to_chunk_atom(FILE *fd,
+                                            const MuTFFSampleToChunkAtom *in);
+
+///
 /// @brief Maximum number of entries in a sample size table
 ///
 #define MuTFF_MAX_SAMPLE_SIZE_TABLE_LEN 4
@@ -1305,6 +1808,16 @@ typedef struct {
 MuTFFError mutff_read_sample_size_atom(FILE *fd, MuTFFSampleSizeAtom *out);
 
 ///
+/// @brief Write a sample size atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_sample_size_atom(FILE *fd,
+                                        const MuTFFSampleSizeAtom *in);
+
+///
 /// @brief Maximum length of the chunk offset table
 ///
 #define MuTFF_MAX_CHUNK_OFFSET_TABLE_LEN 4
@@ -1331,6 +1844,16 @@ typedef struct {
 ///
 MuTFFError mutff_read_chunk_offset_atom(FILE *fd, MuTFFChunkOffsetAtom *out);
 
+///
+/// @brief Write a chunk offset atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_chunk_offset_atom(FILE *fd,
+                                         const MuTFFChunkOffsetAtom *in);
+
 #define MuTFF_MAX_SAMPLE_DEPENDENCY_FLAGS_TABLE_LEN 4
 
 ///
@@ -1342,7 +1865,7 @@ typedef struct {
   uint32_t size;
   uint32_t type;
   MuTFFAtomVersionFlags version_flags;
-  char sample_dependency_flags_table
+  unsigned char sample_dependency_flags_table
       [MuTFF_MAX_SAMPLE_DEPENDENCY_FLAGS_TABLE_LEN];
 } MuTFFSampleDependencyFlagsAtom;
 
@@ -1355,6 +1878,16 @@ typedef struct {
 ///
 MuTFFError mutff_read_sample_dependency_flags_atom(
     FILE *fd, MuTFFSampleDependencyFlagsAtom *out);
+
+///
+/// @brief Write a sample dependency flags atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_sample_dependency_flags_atom(
+    FILE *fd, const MuTFFSampleDependencyFlagsAtom *in);
 
 ///
 /// @brief Sample table atom
@@ -1435,6 +1968,16 @@ MuTFFError mutff_read_sound_media_information_header_atom(
     FILE *fd, MuTFFSoundMediaInformationHeaderAtom *out);
 
 ///
+/// @brief Write a sound media information header atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_sound_media_information_header_atom(
+    FILE *fd, const MuTFFSoundMediaInformationHeaderAtom *in);
+
+///
 /// @brief Sound media information atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-25647
@@ -1486,6 +2029,16 @@ MuTFFError mutff_read_base_media_info_atom(FILE *fd,
                                            MuTFFBaseMediaInfoAtom *out);
 
 ///
+/// @brief Write a base media info atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_base_media_info_atom(FILE *fd,
+                                            const MuTFFBaseMediaInfoAtom *in);
+
+///
 /// @brief Text media information atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html#//apple_ref/doc/uid/TP40000939-CH205-SW90
@@ -1505,6 +2058,16 @@ typedef struct {
 ///
 MuTFFError mutff_read_text_media_information_atom(
     FILE *fd, MuTFFTextMediaInformationAtom *out);
+
+///
+/// @brief Write a text media information atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_text_media_information_atom(
+    FILE *fd, const MuTFFTextMediaInformationAtom *in);
 
 ///
 /// @brief Base media information header atom
@@ -1529,6 +2092,16 @@ MuTFFError mutff_read_base_media_information_header_atom(
     FILE *fd, MuTFFBaseMediaInformationHeaderAtom *out);
 
 ///
+/// @brief Write a base media information header atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_base_media_information_header_atom(
+    FILE *fd, const MuTFFBaseMediaInformationHeaderAtom *in);
+
+///
 /// @brief Base media information atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-BBCBJEBH
@@ -1548,6 +2121,16 @@ typedef struct {
 ///
 MuTFFError mutff_read_base_media_information_atom(
     FILE *fd, MuTFFBaseMediaInformationAtom *out);
+
+///
+/// @brief Write a base media information atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [in] in    Input
+/// @return           Whether or not the atom was written successfully
+///
+MuTFFError mutff_write_base_media_information_atom(
+    FILE *fd, const MuTFFBaseMediaInformationAtom *in);
 
 ///
 /// @brief A media information atom
