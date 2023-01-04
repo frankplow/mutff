@@ -42,11 +42,20 @@ typedef struct {
 } MuTFFAtomVersionFlags;
 
 ///
+/// @brief Read the version and flags of an atom
+///
+/// @param [in] fd    The file descriptor
+/// @param [out] out  The parsed atom
+/// @return           Whether or not the fields were read successfully
+///
+MuTFFError mutff_read_atom_version_flags(FILE *fd, MuTFFAtomVersionFlags *out);
+
+///
 /// @brief Write the version and flags of an atom
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the type was written successfully
+/// @return           Whether or not the fields were written successfully
 ///
 MuTFFError mutff_write_atom_version_flags(FILE *fd, const MuTFFAtomVersionFlags *in);
 
@@ -290,7 +299,6 @@ MuTFFError mutff_write_wide_atom(FILE *fd, const MuTFFWideAtom *in);
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/MuTFF/MuTFFChap1/mutff1.html#//apple_ref/doc/uid/TP40000939-CH203-38240
 ///
-#pragma pack(push, 2)
 typedef struct {
   uint32_t size;
   uint32_t type;
@@ -299,7 +307,6 @@ typedef struct {
   uint32_t atom_type;
   uint16_t atom_index;
 } MuTFFPreviewAtom;
-#pragma pack(pop)
 
 ///
 /// @brief Read a preview atom

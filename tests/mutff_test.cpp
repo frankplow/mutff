@@ -4555,29 +4555,4 @@ TEST(MuTFF, WriteAtomVersionFlags) {
   EXPECT_EQ(data[3], 3);
 }
 
-TEST(MuTFF, FixedAtomSizes) {
-  EXPECT_EQ(sizeof(MuTFFPreviewAtom), 20);
-  EXPECT_EQ(sizeof(MuTFFMovieHeaderAtom), 108);
-  EXPECT_EQ(sizeof(MuTFFTrackHeaderAtom), 92);
-  EXPECT_EQ(sizeof(MuTFFTrackCleanApertureDimensionsAtom), 20);
-  EXPECT_EQ(sizeof(MuTFFTrackProductionApertureDimensionsAtom), 20);
-  EXPECT_EQ(sizeof(MuTFFTrackEncodedPixelsDimensionsAtom), 20);
-  EXPECT_EQ(sizeof(MuTFFTrackApertureModeDimensionsAtom), 68);
-  EXPECT_EQ(sizeof(MuTFFEditListEntry), 12);
-  EXPECT_EQ(sizeof(MuTFFTrackExcludeFromAutoselectionAtom), 8);
-  EXPECT_EQ(sizeof(MuTFFTrackLoadSettingsAtom), 24);
-  EXPECT_EQ(sizeof(MuTFFInputTypeAtom), 12);
-  EXPECT_EQ(sizeof(MuTFFMediaHeaderAtom), 32);
-  EXPECT_EQ(sizeof(MuTFFVideoMediaInformationHeaderAtom), 20);
-  EXPECT_EQ(sizeof(MuTFFTimeToSampleTableEntry), 8);
-  EXPECT_EQ(sizeof(MuTFFCompositionOffsetTableEntry), 8);
-  EXPECT_EQ(sizeof(MuTFFCompositionShiftLeastGreatestAtom), 32);
-  EXPECT_EQ(sizeof(MuTFFSampleToChunkTableEntry), 12);
-  EXPECT_EQ(sizeof(MuTFFSoundMediaInformationHeaderAtom), 16);
-  EXPECT_EQ(sizeof(MuTFFBaseMediaInfoAtom), 24);
-  EXPECT_EQ(sizeof(MuTFFTextMediaInformationAtom), 44);
-  EXPECT_EQ(sizeof(MuTFFBaseMediaInformationHeaderAtom), 76);
-  EXPECT_EQ(sizeof(MuTFFBaseMediaInformationAtom), 84);
-}
-
 // vi:sw=2:ts=2:et:fdm=marker
