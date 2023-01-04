@@ -21,6 +21,11 @@
 #define MuTFF_FOUR_C(in) ((in[0] << 24) + (in[1] << 16) + (in[2] << 8) + in[3])
 
 ///
+/// @brief A 24-bit unsigned integer
+///
+typedef uint32_t mutff_uint24_t;
+
+///
 /// @brief A generic error in the MuTFF library
 ///
 typedef enum {
@@ -32,32 +37,6 @@ typedef enum {
   MuTFFErrorTooManyAtoms,
   MuTFFErrorBadFormat,
 } MuTFFError;
-
-///
-/// @brief The version and flags of a QuickTime atom
-///
-typedef struct {
-  uint32_t version : 8;
-  uint32_t flags : 24;
-} MuTFFAtomVersionFlags;
-
-///
-/// @brief Read the version and flags of an atom
-///
-/// @param [in] fd    The file descriptor
-/// @param [out] out  The parsed atom
-/// @return           Whether or not the fields were read successfully
-///
-MuTFFError mutff_read_atom_version_flags(FILE *fd, MuTFFAtomVersionFlags *out);
-
-///
-/// @brief Write the version and flags of an atom
-///
-/// @param [in] fd    The file descriptor
-/// @param [in] in    Input
-/// @return           Whether or not the fields were written successfully
-///
-MuTFFError mutff_write_atom_version_flags(FILE *fd, const MuTFFAtomVersionFlags *in);
 
 ///
 /// @brief The header + offset of a generic QuickTime atom
@@ -334,7 +313,8 @@ MuTFFError mutff_write_preview_atom(FILE *fd, const MuTFFPreviewAtom *in);
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint32_t creation_time;
   uint32_t modification_time;
   uint32_t time_scale;
@@ -546,7 +526,8 @@ MuTFFError mutff_write_user_data_atom(FILE *fd, const MuTFFUserDataAtom *in);
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint32_t creation_time;
   uint32_t modification_time;
   uint32_t track_id;
@@ -589,7 +570,8 @@ MuTFFError mutff_write_track_header_atom(FILE *fd,
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint32_t width;
   uint32_t height;
 } MuTFFTrackCleanApertureDimensionsAtom;
@@ -622,7 +604,8 @@ MuTFFError mutff_write_track_clean_aperture_dimensions_atom(
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint32_t width;
   uint32_t height;
 } MuTFFTrackProductionApertureDimensionsAtom;
@@ -655,7 +638,8 @@ MuTFFError mutff_write_track_production_aperture_dimensions_atom(
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint32_t width;
   uint32_t height;
 } MuTFFTrackEncodedPixelsDimensionsAtom;
@@ -767,7 +751,8 @@ MuTFFError mutff_write_sample_description(FILE *fd, const MuTFFSampleDescription
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   MuTFFSampleDescription matte_image_description_structure;
   size_t matte_data_len;
   char matte_data[MuTFF_MAX_MATTE_DATA_LEN];
@@ -867,7 +852,8 @@ MuTFFError mutff_write_edit_list_entry(FILE *fd, const MuTFFEditListEntry *in);
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint32_t number_of_entries;
   MuTFFEditListEntry edit_list_table[MuTFF_MAX_EDIT_LIST_ENTRIES];
 } MuTFFEditListAtom;
@@ -1189,7 +1175,8 @@ MuTFFError mutff_write_track_input_map_atom(FILE *fd,
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint32_t creation_time;
   uint32_t modification_time;
   uint32_t time_scale;
@@ -1231,7 +1218,8 @@ MuTFFError mutff_write_media_header_atom(FILE *fd,
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   char language_tag_string[MuTFF_MAX_LANGUAGE_TAG_LENGTH];
 } MuTFFExtendedLanguageTagAtom;
 
@@ -1269,7 +1257,8 @@ MuTFFError mutff_write_extended_language_tag_atom(
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint32_t component_type;
   uint32_t component_subtype;
   uint32_t component_manufacturer;
@@ -1305,7 +1294,8 @@ MuTFFError mutff_write_handler_reference_atom(
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint16_t graphics_mode;
   uint16_t opcolor[3];
 } MuTFFVideoMediaInformationHeaderAtom;
@@ -1343,7 +1333,8 @@ MuTFFError mutff_write_video_media_information_header_atom(
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   char data[MuTFF_MAX_DATA_REFERENCE_DATA_SIZE];
 } MuTFFDataReference;
 
@@ -1379,7 +1370,8 @@ MuTFFError mutff_write_data_reference(FILE *fd, const MuTFFDataReference *in);
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint32_t number_of_entries;
   MuTFFDataReference data_references[MuTFF_MAX_DATA_REFERENCES];
 } MuTFFDataReferenceAtom;
@@ -1445,7 +1437,8 @@ MuTFFError mutff_write_data_information_atom(
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint32_t number_of_entries;
   MuTFFSampleDescription
       sample_description_table[MuTFF_MAX_SAMPLE_DESCRIPTION_TABLE_LEN];
@@ -1514,7 +1507,8 @@ MuTFFError mutff_write_time_to_sample_table_entry(
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint32_t number_of_entries;
   MuTFFTimeToSampleTableEntry
       time_to_sample_table[MuTFF_MAX_TIME_TO_SAMPLE_TABLE_LEN];
@@ -1579,7 +1573,8 @@ MuTFFError mutff_write_composition_offset_table_entry(
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint32_t entry_count;
   MuTFFCompositionOffsetTableEntry
       composition_offset_table[MuTFF_MAX_COMPOSITION_OFFSET_TABLE_LEN];
@@ -1613,7 +1608,8 @@ MuTFFError mutff_write_composition_offset_atom(
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint32_t composition_offset_to_display_offset_shift;
   int32_t least_display_offset;
   int32_t greatest_display_offset;
@@ -1654,7 +1650,8 @@ MuTFFError mutff_write_composition_shift_least_greatest_atom(
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint32_t number_of_entries;
   uint32_t sync_sample_table[MuTFF_MAX_SYNC_SAMPLE_TABLE_LEN];
 } MuTFFSyncSampleAtom;
@@ -1691,7 +1688,8 @@ MuTFFError mutff_write_sync_sample_atom(FILE *fd,
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint32_t entry_count;
   uint32_t partial_sync_sample_table[MuTFF_MAX_PARTIAL_SYNC_SAMPLE_TABLE_LEN];
 } MuTFFPartialSyncSampleAtom;
@@ -1760,7 +1758,8 @@ MuTFFError mutff_write_sample_to_chunk_table_entry(
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint32_t number_of_entries;
   MuTFFSampleToChunkTableEntry
       sample_to_chunk_table[MuTFF_MAX_SAMPLE_TO_CHUNK_TABLE_LEN];
@@ -1799,7 +1798,8 @@ MuTFFError mutff_write_sample_to_chunk_atom(FILE *fd,
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint32_t sample_size;
   uint32_t number_of_entries;
   uint32_t sample_size_table[MuTFF_MAX_SAMPLE_SIZE_TABLE_LEN];
@@ -1837,7 +1837,8 @@ MuTFFError mutff_write_sample_size_atom(FILE *fd,
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint32_t number_of_entries;
   uint32_t chunk_offset_table[MuTFF_MAX_CHUNK_OFFSET_TABLE_LEN];
 } MuTFFChunkOffsetAtom;
@@ -1871,7 +1872,8 @@ MuTFFError mutff_write_chunk_offset_atom(FILE *fd,
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   unsigned char sample_dependency_flags_table
       [MuTFF_MAX_SAMPLE_DEPENDENCY_FLAGS_TABLE_LEN];
 } MuTFFSampleDependencyFlagsAtom;
@@ -1959,7 +1961,8 @@ MuTFFError mutff_read_video_media_information_atom(
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   int16_t balance;
   char _reserved[2];
 } MuTFFSoundMediaInformationHeaderAtom;
@@ -2018,7 +2021,8 @@ MuTFFError mutff_read_sound_media_information_atom(
 typedef struct {
   uint32_t size;
   uint32_t type;
-  MuTFFAtomVersionFlags version_flags;
+  uint8_t version;
+  mutff_uint24_t flags;
   uint16_t graphics_mode;
   uint16_t opcolor[3];
   int16_t balance;
