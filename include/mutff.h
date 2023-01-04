@@ -26,6 +26,22 @@
 typedef uint32_t mutff_uint24_t;
 
 ///
+/// @brief A fixed-point number with 8 integral bits and 8 fractional bits
+///
+typedef struct {
+  int8_t integral;
+  uint8_t fractional;
+} mutff_q8_8_t;
+
+///
+/// @brief A fixed-point number with 16 integral bits and 16 fractional bits
+///
+typedef struct {
+  int16_t integral;
+  uint16_t fractional;
+} mutff_q16_16_t;
+
+///
 /// @brief A generic error in the MuTFF library
 ///
 typedef enum {
@@ -319,8 +335,8 @@ typedef struct {
   uint32_t modification_time;
   uint32_t time_scale;
   uint32_t duration;
-  uint32_t preferred_rate;
-  uint16_t preferred_volume;
+  mutff_q16_16_t preferred_rate;
+  mutff_q8_8_t preferred_volume;
   char _reserved[10];
   uint32_t matrix_structure[3][3];
   uint32_t preview_time;
@@ -536,11 +552,11 @@ typedef struct {
   char _reserved_2[8];
   uint16_t layer;
   uint16_t alternate_group;
-  uint16_t volume;
+  mutff_q8_8_t volume;
   char _reserved_3[2];
   uint32_t matrix_structure[3][3];
-  uint32_t track_width;
-  uint32_t track_height;
+  mutff_q16_16_t track_width;
+  mutff_q16_16_t track_height;
 } MuTFFTrackHeaderAtom;
 
 ///
@@ -572,8 +588,8 @@ typedef struct {
   uint32_t type;
   uint8_t version;
   mutff_uint24_t flags;
-  uint32_t width;
-  uint32_t height;
+  mutff_q16_16_t width;
+  mutff_q16_16_t height;
 } MuTFFTrackCleanApertureDimensionsAtom;
 
 ///
@@ -606,8 +622,8 @@ typedef struct {
   uint32_t type;
   uint8_t version;
   mutff_uint24_t flags;
-  uint32_t width;
-  uint32_t height;
+  mutff_q16_16_t width;
+  mutff_q16_16_t height;
 } MuTFFTrackProductionApertureDimensionsAtom;
 
 ///
@@ -640,8 +656,8 @@ typedef struct {
   uint32_t type;
   uint8_t version;
   mutff_uint24_t flags;
-  uint32_t width;
-  uint32_t height;
+  mutff_q16_16_t width;
+  mutff_q16_16_t height;
 } MuTFFTrackEncodedPixelsDimensionsAtom;
 
 ///
@@ -817,7 +833,7 @@ MuTFFError mutff_write_track_matte_atom(FILE *fd,
 typedef struct {
   uint32_t track_duration;
   uint32_t media_time;
-  uint32_t media_rate;
+  mutff_q16_16_t media_rate;
 } MuTFFEditListEntry;
 
 ///

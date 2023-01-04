@@ -151,8 +151,6 @@ static MuTFFError mutff_read_u24(FILE *fd, mutff_uint24_t *data) {
       return MuTFFErrorIOError;
     }
   }
-  // Convert from network order (big-endian)
-  // to host order (implementation-defined).
   *data = mutff_ntoh_24(network_order);
   return MuTFFErrorNone;
 }
@@ -194,7 +192,18 @@ static MuTFFError mutff_write_u8(FILE *fd, uint8_t data) {
   return MuTFFErrorNone;
 }
 
+static MuTFFError mutff_write_i8(FILE *fd, int8_t data) {
+  // ensure number is stored as two's complement
+  data = data >= 0 ? data : ~abs(data) + 1;
+  const size_t written = fwrite(&data, 1, 1, fd);
+  if (written != 1) {
+    return MuTFFErrorIOError;
+  }
+  return MuTFFErrorNone;
+}
+
 static MuTFFError mutff_write_u16(FILE *fd, uint16_t data) {
+  // convert number to network order
   data = mutff_hton_16(data);
   const size_t written = fwrite(&data, 2, 1, fd);
   if (written != 1) {
@@ -204,7 +213,6 @@ static MuTFFError mutff_write_u16(FILE *fd, uint16_t data) {
 }
 
 static MuTFFError mutff_write_i16(FILE *fd, int16_t data) {
-  // ensure number is stored as two's complement
   data = data >= 0 ? data : ~abs(data) + 1;
   data = mutff_hton_16(data);
   const size_t written = fwrite(&data, 2, 1, fd);
@@ -233,12 +241,55 @@ static MuTFFError mutff_write_u32(FILE *fd, uint32_t data) {
 }
 
 static MuTFFError mutff_write_i32(FILE *fd, int32_t data) {
-  // ensure number is stored as two's complement
   data = data >= 0 ? data : ~abs(data) + 1;
   data = mutff_hton_32(data);
   const size_t written = fwrite(&data, 4, 1, fd);
   if (written != 1) {
     return MuTFFErrorIOError;
+  }
+  return MuTFFErrorNone;
+}
+
+static MuTFFError mutff_read_q8_8(FILE *fd, mutff_q8_8_t *data) {
+  MuTFFError err;
+  if ((err = mutff_read_i8(fd, &data->integral))) {
+    return err;
+  }
+  if ((err = mutff_read_u8(fd, &data->fractional))) {
+    return err;
+  }
+  return MuTFFErrorNone;
+}
+
+static MuTFFError mutff_write_q8_8(FILE *fd, mutff_q8_8_t data) {
+  MuTFFError err;
+  if ((err = mutff_write_i8(fd, data.integral))) {
+    return err;
+  }
+  if ((err = mutff_write_u8(fd, data.fractional))) {
+    return err;
+  }
+  return MuTFFErrorNone;
+}
+
+static MuTFFError mutff_read_q16_16(FILE *fd, mutff_q16_16_t *data) {
+  MuTFFError err;
+  if ((err = mutff_read_i16(fd, &data->integral))) {
+    return err;
+  }
+  if ((err = mutff_read_u16(fd, &data->fractional))) {
+    return err;
+  }
+  return MuTFFErrorNone;
+}
+
+static MuTFFError mutff_write_q16_16(FILE *fd, mutff_q16_16_t data) {
+  MuTFFError err;
+  if ((err = mutff_write_i16(fd, data.integral))) {
+    return err;
+  }
+  if ((err = mutff_write_u16(fd, data.fractional))) {
+    return err;
   }
   return MuTFFErrorNone;
 }
@@ -554,10 +605,10 @@ MuTFFError mutff_read_movie_header_atom(FILE *fd, MuTFFMovieHeaderAtom *out) {
   if ((err = mutff_read_u32(fd, &out->duration))) {
     return err;
   }
-  if ((err = mutff_read_u32(fd, &out->preferred_rate))) {
+  if ((err = mutff_read_q16_16(fd, &out->preferred_rate))) {
     return err;
   }
-  if ((err = mutff_read_u16(fd, &out->preferred_volume))) {
+  if ((err = mutff_read_q8_8(fd, &out->preferred_volume))) {
     return err;
   }
   fseek(fd, 10, SEEK_CUR);
@@ -620,10 +671,10 @@ MuTFFError mutff_write_movie_header_atom(FILE *fd,
   if ((err = mutff_write_u32(fd, in->duration))) {
     return err;
   }
-  if ((err = mutff_write_u32(fd, in->preferred_rate))) {
+  if ((err = mutff_write_q16_16(fd, in->preferred_rate))) {
     return err;
   }
-  if ((err = mutff_write_u16(fd, in->preferred_volume))) {
+  if ((err = mutff_write_q8_8(fd, in->preferred_volume))) {
     return err;
   }
   for (size_t i = 0; i < 10; ++i) {
@@ -930,7 +981,7 @@ MuTFFError mutff_read_track_header_atom(FILE *fd, MuTFFTrackHeaderAtom *out) {
   if ((err = mutff_read_u16(fd, &out->alternate_group))) {
     return err;
   }
-  if ((err = mutff_read_u16(fd, &out->volume))) {
+  if ((err = mutff_read_q8_8(fd, &out->volume))) {
     return err;
   }
   fseek(fd, 2, SEEK_CUR);
@@ -941,10 +992,10 @@ MuTFFError mutff_read_track_header_atom(FILE *fd, MuTFFTrackHeaderAtom *out) {
       }
     }
   }
-  if ((err = mutff_read_u32(fd, &out->track_width))) {
+  if ((err = mutff_read_q16_16(fd, &out->track_width))) {
     return err;
   }
-  if ((err = mutff_read_u32(fd, &out->track_height))) {
+  if ((err = mutff_read_q16_16(fd, &out->track_height))) {
     return err;
   }
   return MuTFFErrorNone;
@@ -993,7 +1044,7 @@ MuTFFError mutff_write_track_header_atom(FILE *fd,
   if ((err = mutff_write_u16(fd, in->alternate_group))) {
     return err;
   }
-  if ((err = mutff_write_u16(fd, in->volume))) {
+  if ((err = mutff_write_q8_8(fd, in->volume))) {
     return err;
   }
   for (size_t i = 0; i < 2; ++i) {
@@ -1008,10 +1059,10 @@ MuTFFError mutff_write_track_header_atom(FILE *fd,
       }
     }
   }
-  if ((err = mutff_write_u32(fd, in->track_width))) {
+  if ((err = mutff_write_q16_16(fd, in->track_width))) {
     return err;
   }
-  if ((err = mutff_write_u32(fd, in->track_height))) {
+  if ((err = mutff_write_q16_16(fd, in->track_height))) {
     return err;
   }
   return MuTFFErrorNone;
@@ -1032,10 +1083,10 @@ MuTFFError mutff_read_track_clean_aperture_dimensions_atom(
   if ((err = mutff_read_u24(fd, &out->flags))) {
     return err;
   }
-  if ((err = mutff_read_u32(fd, &out->width))) {
+  if ((err = mutff_read_q16_16(fd, &out->width))) {
     return err;
   }
-  if ((err = mutff_read_u32(fd, &out->height))) {
+  if ((err = mutff_read_q16_16(fd, &out->height))) {
     return err;
   }
   return MuTFFErrorNone;
@@ -1056,10 +1107,10 @@ MuTFFError mutff_write_track_clean_aperture_dimensions_atom(
   if ((err = mutff_write_u24(fd, in->flags))) {
     return err;
   }
-  if ((err = mutff_write_u32(fd, in->width))) {
+  if ((err = mutff_write_q16_16(fd, in->width))) {
     return err;
   }
-  if ((err = mutff_write_u32(fd, in->height))) {
+  if ((err = mutff_write_q16_16(fd, in->height))) {
     return err;
   }
   return MuTFFErrorNone;
@@ -1080,10 +1131,10 @@ MuTFFError mutff_read_track_production_aperture_dimensions_atom(
   if ((err = mutff_read_u24(fd, &out->flags))) {
     return err;
   }
-  if ((err = mutff_read_u32(fd, &out->width))) {
+  if ((err = mutff_read_q16_16(fd, &out->width))) {
     return err;
   }
-  if ((err = mutff_read_u32(fd, &out->height))) {
+  if ((err = mutff_read_q16_16(fd, &out->height))) {
     return err;
   }
   return MuTFFErrorNone;
@@ -1104,10 +1155,10 @@ MuTFFError mutff_write_track_production_aperture_dimensions_atom(
   if ((err = mutff_write_u24(fd, in->flags))) {
     return err;
   }
-  if ((err = mutff_write_u32(fd, in->width))) {
+  if ((err = mutff_write_q16_16(fd, in->width))) {
     return err;
   }
-  if ((err = mutff_write_u32(fd, in->height))) {
+  if ((err = mutff_write_q16_16(fd, in->height))) {
     return err;
   }
   return MuTFFErrorNone;
@@ -1128,10 +1179,10 @@ MuTFFError mutff_read_track_encoded_pixels_dimensions_atom(
   if ((err = mutff_read_u24(fd, &out->flags))) {
     return err;
   }
-  if ((err = mutff_read_u32(fd, &out->width))) {
+  if ((err = mutff_read_q16_16(fd, &out->width))) {
     return err;
   }
-  if ((err = mutff_read_u32(fd, &out->height))) {
+  if ((err = mutff_read_q16_16(fd, &out->height))) {
     return err;
   }
   return MuTFFErrorNone;
@@ -1152,10 +1203,10 @@ MuTFFError mutff_write_track_encoded_pixels_dimensions_atom(
   if ((err = mutff_write_u24(fd, in->flags))) {
     return err;
   }
-  if ((err = mutff_write_u32(fd, in->width))) {
+  if ((err = mutff_write_q16_16(fd, in->width))) {
     return err;
   }
-  if ((err = mutff_write_u32(fd, in->height))) {
+  if ((err = mutff_write_q16_16(fd, in->height))) {
     return err;
   }
   return MuTFFErrorNone;
@@ -1378,7 +1429,7 @@ MuTFFError mutff_read_edit_list_entry(FILE *fd, MuTFFEditListEntry *out) {
   if ((err = mutff_read_u32(fd, &out->media_time))) {
     return err;
   }
-  if ((err = mutff_read_u32(fd, &out->media_rate))) {
+  if ((err = mutff_read_q16_16(fd, &out->media_rate))) {
     return err;
   }
   return MuTFFErrorNone;
@@ -1392,7 +1443,7 @@ MuTFFError mutff_write_edit_list_entry(FILE *fd, const MuTFFEditListEntry *in) {
   if ((err = mutff_write_u32(fd, in->media_time))) {
     return err;
   }
-  if ((err = mutff_write_u32(fd, in->media_rate))) {
+  if ((err = mutff_write_q16_16(fd, in->media_rate))) {
     return err;
   }
   return MuTFFErrorNone;

@@ -67,9 +67,10 @@ TEST_F(TestMov, MovieHeaderAtom) {
   EXPECT_EQ(movie_header_atom.modification_time, 0);
   EXPECT_EQ(movie_header_atom.time_scale, 1000);
   EXPECT_EQ(movie_header_atom.duration, 1167);
-  EXPECT_EQ(movie_header_atom.preferred_rate, 0x00010000);
-  EXPECT_EQ(movie_header_atom.preferred_volume, 0x0100);
-  EXPECT_EQ(movie_header_atom.preferred_volume, 0x0100);
+  EXPECT_EQ(movie_header_atom.preferred_rate.integral, 1);
+  EXPECT_EQ(movie_header_atom.preferred_rate.fractional, 0);
+  EXPECT_EQ(movie_header_atom.preferred_volume.integral, 1);
+  EXPECT_EQ(movie_header_atom.preferred_volume.fractional, 0);
   // @TODO: test matrix_structure
   // 00  00  00  00 a
   // 00  00  00  00 b
@@ -165,7 +166,8 @@ TEST_F(TestMov, TrackHeaderAtom) {
   EXPECT_EQ(atom.duration, 0x048f);
   EXPECT_EQ(atom.layer, 0);
   EXPECT_EQ(atom.alternate_group, 0);
-  EXPECT_EQ(atom.volume, 0);
+  EXPECT_EQ(atom.volume.integral, 0);
+  EXPECT_EQ(atom.volume.fractional, 0);
   EXPECT_EQ(atom.matrix_structure[0][0], 0x00010000);
   EXPECT_EQ(atom.matrix_structure[0][1], 0);
   EXPECT_EQ(atom.matrix_structure[0][2], 0);
@@ -175,8 +177,10 @@ TEST_F(TestMov, TrackHeaderAtom) {
   EXPECT_EQ(atom.matrix_structure[2][0], 0);
   EXPECT_EQ(atom.matrix_structure[2][1], 0);
   EXPECT_EQ(atom.matrix_structure[2][2], 0x40000000);
-  EXPECT_EQ(atom.track_width, 0x02800000);
-  EXPECT_EQ(atom.track_height, 0x01e00000);
+  EXPECT_EQ(atom.track_width.integral, 640);
+  EXPECT_EQ(atom.track_width.fractional, 0);
+  EXPECT_EQ(atom.track_height.integral, 480);
+  EXPECT_EQ(atom.track_height.fractional, 0);
 
   EXPECT_EQ(ftell(fd), offset + atom.size);
 }
@@ -197,7 +201,8 @@ TEST_F(TestMov, EditAtom) {
   EXPECT_EQ(atom.edit_list_atom.number_of_entries, 1);
   EXPECT_EQ(atom.edit_list_atom.edit_list_table[0].track_duration, 0x048f);
   EXPECT_EQ(atom.edit_list_atom.edit_list_table[0].media_time, 0);
-  EXPECT_EQ(atom.edit_list_atom.edit_list_table[0].media_rate, 0x00010000);
+  EXPECT_EQ(atom.edit_list_atom.edit_list_table[0].media_rate.integral, 1);
+  EXPECT_EQ(atom.edit_list_atom.edit_list_table[0].media_rate.fractional, 0);
 
   EXPECT_EQ(ftell(fd), offset + atom.size);
 }
@@ -2865,12 +2870,12 @@ static const MuTFFEditListAtom elst_test_struct = {
       {
         0x00010203,        // entry[0].track duration
         0x10111213,        // entry[0].media time
-        0x20212223,        // entry[0].media rate
+        {0x2021, 0x2223},  // entry[0].media rate
       },
       {
         0x30313233,        // entry[1].track duration
         0x40414243,        // entry[1].media time
-        0x50515253,        // entry[1].media rate
+        {0x5051, 0x5253},  // entry[1].media rate
       }
     }
 };
@@ -2912,8 +2917,10 @@ TEST(MuTFF, ReadEditListAtom) {
               atom.edit_list_table[i].track_duration);
     EXPECT_EQ(atom.edit_list_table[i].media_time,
               atom.edit_list_table[i].media_time);
-    EXPECT_EQ(atom.edit_list_table[i].media_rate,
-              atom.edit_list_table[i].media_rate);
+    EXPECT_EQ(atom.edit_list_table[i].media_rate.integral,
+              atom.edit_list_table[i].media_rate.integral);
+    EXPECT_EQ(atom.edit_list_table[i].media_rate.fractional,
+              atom.edit_list_table[i].media_rate.fractional);
   }
   EXPECT_EQ(ftell(fd), elst_test_data_size);
 }
@@ -2988,14 +2995,19 @@ TEST(MuTFF, ReadEditAtom) {
       edts_test_struct.edit_list_atom.edit_list_table[0].track_duration);
   EXPECT_EQ(atom.edit_list_atom.edit_list_table[0].media_time,
       edts_test_struct.edit_list_atom.edit_list_table[0].media_time);
-  EXPECT_EQ(atom.edit_list_atom.edit_list_table[0].media_rate,
-      edts_test_struct.edit_list_atom.edit_list_table[0].media_rate);
+  EXPECT_EQ(atom.edit_list_atom.edit_list_table[0].media_rate.integral,
+      edts_test_struct.edit_list_atom.edit_list_table[0].media_rate.integral);
+  EXPECT_EQ(atom.edit_list_atom.edit_list_table[0].media_rate.fractional,
+      edts_test_struct.edit_list_atom.edit_list_table[0].media_rate.fractional);
   EXPECT_EQ(atom.edit_list_atom.edit_list_table[1].track_duration,
       edts_test_struct.edit_list_atom.edit_list_table[1].track_duration);
   EXPECT_EQ(atom.edit_list_atom.edit_list_table[1].media_time,
       edts_test_struct.edit_list_atom.edit_list_table[1].media_time);
-  EXPECT_EQ(atom.edit_list_atom.edit_list_table[1].media_rate,
-      edts_test_struct.edit_list_atom.edit_list_table[1].media_rate);
+  EXPECT_EQ(atom.edit_list_atom.edit_list_table[1].media_rate.integral,
+      edts_test_struct.edit_list_atom.edit_list_table[1].media_rate.integral);
+  EXPECT_EQ(
+      atom.edit_list_atom.edit_list_table[1].media_rate.fractional,
+      edts_test_struct.edit_list_atom.edit_list_table[1].media_rate.fractional);
   EXPECT_EQ(ftell(fd), edts_test_data_size);
 }
 // }}}1
@@ -3011,9 +3023,9 @@ static const unsigned char edit_list_entry_test_data[edit_list_entry_test_data_s
 // clang-format on
 // clang-format off
 static const MuTFFEditListEntry edit_list_entry_test_struct = {
-    0x00010203,  // track duration
-    0x10111213,  // media time
-    0x20212223,  // media rate
+    0x00010203,        // track duration
+    0x10111213,        // media time
+    {0x2021, 0x2223},  // media rate
 };
 // clang-format on
 
@@ -3045,7 +3057,10 @@ TEST(MuTFF, ReadEditListEntry) {
 
   EXPECT_EQ(atom.track_duration, edit_list_entry_test_struct.track_duration);
   EXPECT_EQ(atom.media_time, edit_list_entry_test_struct.media_time);
-  EXPECT_EQ(atom.media_rate, edit_list_entry_test_struct.media_rate);
+  EXPECT_EQ(atom.media_rate.integral,
+            edit_list_entry_test_struct.media_rate.integral);
+  EXPECT_EQ(atom.media_rate.fractional,
+            edit_list_entry_test_struct.media_rate.fractional);
   EXPECT_EQ(ftell(fd), edit_list_entry_test_data_size);
 }
 // }}}1
@@ -3268,8 +3283,8 @@ static const MuTFFTrackEncodedPixelsDimensionsAtom enof_test_struct = {
     MuTFF_FOUR_C("enof"),  // type
     0x00,                  // version
     0x000102,              // flags
-    0x00010203,            // width
-    0x10111213,            // height
+    {0x0001, 0x0203},      // width
+    {0x1011, 0x1213},      // height
 };
 // clang-format on
 
@@ -3303,8 +3318,10 @@ TEST(MuTFF, ReadTrackEncodedPixelsDimensionsAtom) {
   EXPECT_EQ(atom.type, enof_test_struct.type);
   EXPECT_EQ(atom.version, enof_test_struct.version);
   EXPECT_EQ(atom.flags, enof_test_struct.flags);
-  EXPECT_EQ(atom.width, enof_test_struct.width);
-  EXPECT_EQ(atom.height, enof_test_struct.height);
+  EXPECT_EQ(atom.width.integral, enof_test_struct.width.integral);
+  EXPECT_EQ(atom.width.fractional, enof_test_struct.width.fractional);
+  EXPECT_EQ(atom.height.integral, enof_test_struct.height.integral);
+  EXPECT_EQ(atom.height.fractional, enof_test_struct.height.fractional);
   EXPECT_EQ(ftell(fd), enof_test_data_size);
 }
 // }}}1
@@ -3330,8 +3347,8 @@ static const MuTFFTrackProductionApertureDimensionsAtom prof_test_struct = {
     MuTFF_FOUR_C("prof"),  // type
     0x00,                  // version
     0x000102,              // flags
-    0x00010203,            // width
-    0x10111213,            // height
+    {0x0001, 0x0203},      // width
+    {0x1011, 0x1213},      // height
 };
 // clang-format on
 
@@ -3365,8 +3382,10 @@ TEST(MuTFF, ReadTrackProductionApertureDimensionsAtom) {
   EXPECT_EQ(atom.type, prof_test_struct.type);
   EXPECT_EQ(atom.version, prof_test_struct.version);
   EXPECT_EQ(atom.flags, prof_test_struct.flags);
-  EXPECT_EQ(atom.width, prof_test_struct.width);
-  EXPECT_EQ(atom.height, prof_test_struct.height);
+  EXPECT_EQ(atom.width.integral, prof_test_struct.width.integral);
+  EXPECT_EQ(atom.width.fractional, prof_test_struct.width.fractional);
+  EXPECT_EQ(atom.height.integral, prof_test_struct.height.integral);
+  EXPECT_EQ(atom.height.fractional, prof_test_struct.height.fractional);
   EXPECT_EQ(ftell(fd), prof_test_data_size);
 }
 // }}}1
@@ -3392,8 +3411,8 @@ static const MuTFFTrackCleanApertureDimensionsAtom clef_test_struct = {
     MuTFF_FOUR_C("clef"),  // type
     0x00,                  // version
     0x000102,              // flags
-    0x00010203,            // width
-    0x10111213,            // height
+    {0x0001, 0x0203},      // width
+    {0x1011, 0x1213},      // height
 };
 // clang-format on
 
@@ -3427,8 +3446,10 @@ TEST(MuTFF, ReadTrackCleanApertureDimensionsAtom) {
   EXPECT_EQ(atom.type, clef_test_struct.type);
   EXPECT_EQ(atom.version, clef_test_struct.version);
   EXPECT_EQ(atom.flags, clef_test_struct.flags);
-  EXPECT_EQ(atom.width, clef_test_struct.width);
-  EXPECT_EQ(atom.height, clef_test_struct.height);
+  EXPECT_EQ(atom.width.integral, clef_test_struct.width.integral);
+  EXPECT_EQ(atom.width.fractional, clef_test_struct.width.fractional);
+  EXPECT_EQ(atom.height.integral, clef_test_struct.height.integral);
+  EXPECT_EQ(atom.height.fractional, clef_test_struct.height.fractional);
   EXPECT_EQ(ftell(fd), clef_test_data_size);
 }
 // }}}1
@@ -3558,7 +3579,7 @@ static const MuTFFTrackHeaderAtom tkhd_test_struct = {
     },
     0x0001,                  // layer
     0x0001,                  // alternate group
-    0x0001,                  // volume
+    {0x00, 0x01},            // volume
     {                        // reserved
       0x00, 0x00,
     },
@@ -3579,8 +3600,8 @@ static const MuTFFTrackHeaderAtom tkhd_test_struct = {
         0x21222324,          // matrix[2][2]
       }
     },
-    0x00010203,              // track width
-    0x00010203,              // track height
+    {0x0001, 0x0203},        // track width
+    {0x0001, 0x0203},        // track height
 };
 // clang-format on
 
@@ -3619,15 +3640,20 @@ TEST(MuTFF, ReadTrackHeaderAtom) {
   EXPECT_EQ(atom.duration, tkhd_test_struct.duration);
   EXPECT_EQ(atom.layer, tkhd_test_struct.layer);
   EXPECT_EQ(atom.alternate_group, tkhd_test_struct.alternate_group);
-  EXPECT_EQ(atom.volume, tkhd_test_struct.volume);
+  EXPECT_EQ(atom.volume.integral, tkhd_test_struct.volume.integral);
+  EXPECT_EQ(atom.volume.fractional, tkhd_test_struct.volume.fractional);
   for (size_t j = 0; j < 3; ++j) {
     for (size_t i = 0; i < 3; ++i) {
       EXPECT_EQ(atom.matrix_structure[j][i],
                 tkhd_test_struct.matrix_structure[j][i]);
     }
   }
-  EXPECT_EQ(atom.track_width, tkhd_test_struct.track_width);
-  EXPECT_EQ(atom.track_height, tkhd_test_struct.track_height);
+  EXPECT_EQ(atom.track_width.integral, tkhd_test_struct.track_width.integral);
+  EXPECT_EQ(atom.track_width.fractional,
+            tkhd_test_struct.track_width.fractional);
+  EXPECT_EQ(atom.track_height.integral, tkhd_test_struct.track_height.integral);
+  EXPECT_EQ(atom.track_height.fractional,
+            tkhd_test_struct.track_height.fractional);
   EXPECT_EQ(ftell(fd), tkhd_test_data_size);
 }
 // }}}1
@@ -4008,8 +4034,8 @@ static const MuTFFMovieHeaderAtom mvhd_test_struct = {
     0x01020304,                    // modification time
     0x01020304,                    // time scale
     0x01020304,                    // duration
-    0x01020304,                    // preferred rate
-    0x0102,                        // preferred volume
+    {0x0102, 0x0304},              // preferred rate
+    {0x01, 0x02},                  // preferred volume
     0x00, 0x00, 0x00, 0x00, 0x00,  // reserved
     0x00, 0x00, 0x00, 0x00, 0x00,  //
     0x01020304,                    // matrix structure
@@ -4064,8 +4090,14 @@ TEST(MuTFF, ReadMovieHeaderAtom) {
   EXPECT_EQ(atom.modification_time, mvhd_test_struct.modification_time);
   EXPECT_EQ(atom.time_scale, mvhd_test_struct.time_scale);
   EXPECT_EQ(atom.duration, mvhd_test_struct.duration);
-  EXPECT_EQ(atom.preferred_rate, mvhd_test_struct.preferred_rate);
-  EXPECT_EQ(atom.preferred_volume, mvhd_test_struct.preferred_volume);
+  EXPECT_EQ(atom.preferred_rate.integral,
+            mvhd_test_struct.preferred_rate.integral);
+  EXPECT_EQ(atom.preferred_rate.fractional,
+            mvhd_test_struct.preferred_rate.fractional);
+  EXPECT_EQ(atom.preferred_volume.integral,
+            mvhd_test_struct.preferred_volume.integral);
+  EXPECT_EQ(atom.preferred_volume.fractional,
+            mvhd_test_struct.preferred_volume.fractional);
   for (size_t j = 0; j < 3; ++j) {
     for (size_t i = 0; i < 3; ++i) {
       EXPECT_EQ(atom.matrix_structure[j][i],
