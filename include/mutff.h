@@ -45,13 +45,10 @@ typedef struct {
 /// @brief A generic error in the MuTFF library
 ///
 typedef enum {
-  MuTFFErrorNone = 0,
-  MuTFFErrorEOF,
-  MuTFFErrorIOError,
-  MuTFFErrorAtomTooLong,
-  MuTFFErrorNotBasicAtomType,
-  MuTFFErrorTooManyAtoms,
-  MuTFFErrorBadFormat,
+  MuTFFErrorIOError = -1,
+  MuTFFErrorEOF = -2,
+  MuTFFErrorBadFormat = -3,
+  MuTFFErrorOutOfMemory = -4,
 } MuTFFError;
 
 ///
@@ -69,7 +66,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor
 /// @param [out] out  Output
-/// @return           Whether or not an atom was read successfully
+/// @return           If the read was successful, the number of bytes read.
+///                   If there was an error, the MuTFFError code.
 ///
 MuTFFError mutff_peek_atom_header(FILE *fd, MuTFFAtomHeader *out);
 
@@ -93,7 +91,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor
 /// @param [out] out  Output
-/// @return           Whether or not a rectangle was read successfully
+/// @return           If a rectangle was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_quickdraw_rect(FILE *fd, MuTFFQuickDrawRect *out);
 
@@ -102,7 +101,9 @@ MuTFFError mutff_read_quickdraw_rect(FILE *fd, MuTFFQuickDrawRect *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the rectangle was written successfully
+/// @return           If the rectangle was written successfully, then the number
+///                   of bytes written, otherwise the (negative) MuTFFError
+///                   code.
 ///
 MuTFFError mutff_write_quickdraw_rect(FILE *fd, const MuTFFQuickDrawRect *in);
 
@@ -130,7 +131,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor
 /// @param [out] out  Output
-/// @return           Whether or not an atom was read successfully
+/// @return           If an atom was read successfully, then the number of bytes
+///                   read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_quickdraw_region(FILE *fd, MuTFFQuickDrawRegion *out);
 
@@ -139,9 +141,11 @@ MuTFFError mutff_read_quickdraw_region(FILE *fd, MuTFFQuickDrawRegion *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the region was written successfully
+/// @return           If the region was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
-MuTFFError mutff_write_quickdraw_region(FILE *fd, const MuTFFQuickDrawRegion *in);
+MuTFFError mutff_write_quickdraw_region(FILE *fd,
+                                        const MuTFFQuickDrawRegion *in);
 
 ///
 /// @brief The maximum number of compatible brands
@@ -167,7 +171,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_file_type_compatibility_atom(
     FILE *fd, MuTFFFileTypeCompatibilityAtom *out);
@@ -177,7 +182,8 @@ MuTFFError mutff_read_file_type_compatibility_atom(
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_file_type_compatibility_atom(
     FILE *fd, const MuTFFFileTypeCompatibilityAtom *in);
@@ -192,7 +198,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_movie_data_atom(FILE *fd, MuTFFMovieDataAtom *out);
 
@@ -201,7 +208,8 @@ MuTFFError mutff_read_movie_data_atom(FILE *fd, MuTFFMovieDataAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_movie_data_atom(FILE *fd, const MuTFFMovieDataAtom *in);
 
@@ -220,7 +228,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_free_atom(FILE *fd, MuTFFFreeAtom *out);
 
@@ -229,7 +238,8 @@ MuTFFError mutff_read_free_atom(FILE *fd, MuTFFFreeAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_free_atom(FILE *fd, const MuTFFFreeAtom *in);
 
@@ -248,7 +258,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_skip_atom(FILE *fd, MuTFFSkipAtom *out);
 
@@ -257,7 +268,8 @@ MuTFFError mutff_read_skip_atom(FILE *fd, MuTFFSkipAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_skip_atom(FILE *fd, const MuTFFSkipAtom *in);
 
@@ -276,7 +288,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_wide_atom(FILE *fd, MuTFFWideAtom *out);
 
@@ -285,7 +298,8 @@ MuTFFError mutff_read_wide_atom(FILE *fd, MuTFFWideAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_wide_atom(FILE *fd, const MuTFFWideAtom *in);
 
@@ -308,7 +322,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_preview_atom(FILE *fd, MuTFFPreviewAtom *out);
 
@@ -317,7 +332,8 @@ MuTFFError mutff_read_preview_atom(FILE *fd, MuTFFPreviewAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_preview_atom(FILE *fd, const MuTFFPreviewAtom *in);
 
@@ -353,7 +369,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_movie_header_atom(FILE *fd, MuTFFMovieHeaderAtom *out);
 
@@ -362,7 +379,8 @@ MuTFFError mutff_read_movie_header_atom(FILE *fd, MuTFFMovieHeaderAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_movie_header_atom(FILE *fd,
                                          const MuTFFMovieHeaderAtom *in);
@@ -387,7 +405,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_clipping_region_atom(FILE *fd,
                                            MuTFFClippingRegionAtom *out);
@@ -397,7 +416,8 @@ MuTFFError mutff_read_clipping_region_atom(FILE *fd,
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_clipping_region_atom(FILE *fd,
                                             const MuTFFClippingRegionAtom *in);
@@ -418,7 +438,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_clipping_atom(FILE *fd, MuTFFClippingAtom *out);
 
@@ -427,7 +448,8 @@ MuTFFError mutff_read_clipping_atom(FILE *fd, MuTFFClippingAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_clipping_atom(FILE *fd, const MuTFFClippingAtom *in);
 
@@ -455,7 +477,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_color_table_atom(FILE *fd, MuTFFColorTableAtom *out);
 
@@ -464,7 +487,8 @@ MuTFFError mutff_read_color_table_atom(FILE *fd, MuTFFColorTableAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_color_table_atom(FILE *fd,
                                         const MuTFFColorTableAtom *in);
@@ -485,7 +509,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed entry
-/// @return           Whether or not the entry was read successfully
+/// @return           If the entry was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_user_data_list_entry(FILE *fd,
                                            MuTFFUserDataListEntry *out);
@@ -495,7 +520,8 @@ MuTFFError mutff_read_user_data_list_entry(FILE *fd,
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the entry was written successfully
+/// @return           If the entry was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_user_data_list_entry(FILE *fd,
                                             const MuTFFUserDataListEntry *in);
@@ -521,7 +547,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_user_data_atom(FILE *fd, MuTFFUserDataAtom *out);
 
@@ -530,7 +557,8 @@ MuTFFError mutff_read_user_data_atom(FILE *fd, MuTFFUserDataAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_user_data_atom(FILE *fd, const MuTFFUserDataAtom *in);
 
@@ -564,7 +592,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_track_header_atom(FILE *fd, MuTFFTrackHeaderAtom *out);
 
@@ -573,7 +602,8 @@ MuTFFError mutff_read_track_header_atom(FILE *fd, MuTFFTrackHeaderAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_track_header_atom(FILE *fd,
                                          const MuTFFTrackHeaderAtom *in);
@@ -597,7 +627,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_track_clean_aperture_dimensions_atom(
     FILE *fd, MuTFFTrackCleanApertureDimensionsAtom *out);
@@ -607,7 +638,8 @@ MuTFFError mutff_read_track_clean_aperture_dimensions_atom(
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_track_clean_aperture_dimensions_atom(
     FILE *fd, const MuTFFTrackCleanApertureDimensionsAtom *in);
@@ -631,7 +663,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_track_production_aperture_dimensions_atom(
     FILE *fd, MuTFFTrackProductionApertureDimensionsAtom *out);
@@ -641,7 +674,8 @@ MuTFFError mutff_read_track_production_aperture_dimensions_atom(
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_track_production_aperture_dimensions_atom(
     FILE *fd, const MuTFFTrackProductionApertureDimensionsAtom *in);
@@ -665,7 +699,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_track_encoded_pixels_dimensions_atom(
     FILE *fd, MuTFFTrackEncodedPixelsDimensionsAtom *out);
@@ -675,7 +710,8 @@ MuTFFError mutff_read_track_encoded_pixels_dimensions_atom(
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_track_encoded_pixels_dimensions_atom(
     FILE *fd, const MuTFFTrackEncodedPixelsDimensionsAtom *in);
@@ -699,7 +735,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_track_aperture_mode_dimensions_atom(
     FILE *fd, MuTFFTrackApertureModeDimensionsAtom *out);
@@ -709,7 +746,8 @@ MuTFFError mutff_read_track_aperture_mode_dimensions_atom(
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_track_aperture_mode_dimensions_atom(
     FILE *fd, const MuTFFTrackApertureModeDimensionsAtom *in);
@@ -740,7 +778,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed description
-/// @return           Whether or not the description was read successfully
+/// @return           If the description was read successfully, then the number
+///                   of bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_sample_description(FILE *fd, MuTFFSampleDescription *out);
 
@@ -749,9 +788,12 @@ MuTFFError mutff_read_sample_description(FILE *fd, MuTFFSampleDescription *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the description was written successfully
+/// @return           If the description was written successfully, then the
+///                   number of bytes written, otherwise the (negative)
+///                   MuTFFError code.
 ///
-MuTFFError mutff_write_sample_description(FILE *fd, const MuTFFSampleDescription *in);
+MuTFFError mutff_write_sample_description(FILE *fd,
+                                          const MuTFFSampleDescription *in);
 
 ///
 /// @brief The maximum length of the data in a compressed matte atom
@@ -779,7 +821,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_compressed_matte_atom(FILE *fd,
                                             MuTFFCompressedMatteAtom *out);
@@ -789,7 +832,8 @@ MuTFFError mutff_read_compressed_matte_atom(FILE *fd,
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_compressed_matte_atom(
     FILE *fd, const MuTFFCompressedMatteAtom *in);
@@ -810,7 +854,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_track_matte_atom(FILE *fd, MuTFFTrackMatteAtom *out);
 
@@ -819,7 +864,8 @@ MuTFFError mutff_read_track_matte_atom(FILE *fd, MuTFFTrackMatteAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_track_matte_atom(FILE *fd,
                                         const MuTFFTrackMatteAtom *in);
@@ -841,7 +887,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_edit_list_entry(FILE *fd, MuTFFEditListEntry *out);
 
@@ -850,7 +897,8 @@ MuTFFError mutff_read_edit_list_entry(FILE *fd, MuTFFEditListEntry *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_edit_list_entry(FILE *fd, const MuTFFEditListEntry *in);
 
@@ -879,7 +927,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_edit_list_atom(FILE *fd, MuTFFEditListAtom *out);
 
@@ -888,7 +937,8 @@ MuTFFError mutff_read_edit_list_atom(FILE *fd, MuTFFEditListAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_edit_list_atom(FILE *fd, const MuTFFEditListAtom *in);
 
@@ -908,7 +958,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_edit_atom(FILE *fd, MuTFFEditAtom *out);
 
@@ -917,7 +968,8 @@ MuTFFError mutff_read_edit_atom(FILE *fd, MuTFFEditAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_edit_atom(FILE *fd, const MuTFFEditAtom *in);
 
@@ -944,7 +996,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_track_reference_type_atom(
     FILE *fd, MuTFFTrackReferenceTypeAtom *out);
@@ -954,7 +1007,8 @@ MuTFFError mutff_read_track_reference_type_atom(
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_track_reference_type_atom(
     FILE *fd, const MuTFFTrackReferenceTypeAtom *in);
@@ -982,7 +1036,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_track_reference_atom(FILE *fd,
                                            MuTFFTrackReferenceAtom *out);
@@ -992,7 +1047,8 @@ MuTFFError mutff_read_track_reference_atom(FILE *fd,
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_track_reference_atom(FILE *fd,
                                             const MuTFFTrackReferenceAtom *in);
@@ -1011,7 +1067,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_track_exclude_from_autoselection_atom(
     FILE *fd, MuTFFTrackExcludeFromAutoselectionAtom *out);
@@ -1021,7 +1078,8 @@ MuTFFError mutff_read_track_exclude_from_autoselection_atom(
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_track_exclude_from_autoselection_atom(
     FILE *fd, const MuTFFTrackExcludeFromAutoselectionAtom *in);
@@ -1044,7 +1102,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_track_load_settings_atom(FILE *fd,
                                                MuTFFTrackLoadSettingsAtom *out);
@@ -1054,7 +1113,8 @@ MuTFFError mutff_read_track_load_settings_atom(FILE *fd,
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_track_load_settings_atom(
     FILE *fd, const MuTFFTrackLoadSettingsAtom *in);
@@ -1072,7 +1132,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_input_type_atom(FILE *fd, MuTFFInputTypeAtom *out);
 
@@ -1081,7 +1142,8 @@ MuTFFError mutff_read_input_type_atom(FILE *fd, MuTFFInputTypeAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_input_type_atom(FILE *fd, const MuTFFInputTypeAtom *in);
 
@@ -1098,7 +1160,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_object_id_atom(FILE *fd, MuTFFObjectIDAtom *out);
 
@@ -1107,7 +1170,8 @@ MuTFFError mutff_read_object_id_atom(FILE *fd, MuTFFObjectIDAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_object_id_atom(FILE *fd, const MuTFFObjectIDAtom *in);
 
@@ -1131,7 +1195,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_track_input_atom(FILE *fd, MuTFFTrackInputAtom *out);
 
@@ -1140,7 +1205,8 @@ MuTFFError mutff_read_track_input_atom(FILE *fd, MuTFFTrackInputAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_track_input_atom(FILE *fd,
                                         const MuTFFTrackInputAtom *in);
@@ -1168,7 +1234,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_track_input_map_atom(FILE *fd,
                                            MuTFFTrackInputMapAtom *out);
@@ -1178,7 +1245,8 @@ MuTFFError mutff_read_track_input_map_atom(FILE *fd,
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_track_input_map_atom(FILE *fd,
                                             const MuTFFTrackInputMapAtom *in);
@@ -1206,7 +1274,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_media_header_atom(FILE *fd, MuTFFMediaHeaderAtom *out);
 
@@ -1215,7 +1284,8 @@ MuTFFError mutff_read_media_header_atom(FILE *fd, MuTFFMediaHeaderAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_media_header_atom(FILE *fd,
                                          const MuTFFMediaHeaderAtom *in);
@@ -1244,7 +1314,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_extended_language_tag_atom(
     FILE *fd, MuTFFExtendedLanguageTagAtom *out);
@@ -1254,7 +1325,8 @@ MuTFFError mutff_read_extended_language_tag_atom(
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_extended_language_tag_atom(
     FILE *fd, const MuTFFExtendedLanguageTagAtom *in);
@@ -1287,7 +1359,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_handler_reference_atom(FILE *fd,
                                              MuTFFHandlerReferenceAtom *out);
@@ -1297,7 +1370,8 @@ MuTFFError mutff_read_handler_reference_atom(FILE *fd,
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_handler_reference_atom(
     FILE *fd, const MuTFFHandlerReferenceAtom *in);
@@ -1320,7 +1394,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_video_media_information_header_atom(
     FILE *fd, MuTFFVideoMediaInformationHeaderAtom *out);
@@ -1330,7 +1405,8 @@ MuTFFError mutff_read_video_media_information_header_atom(
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_video_media_information_header_atom(
     FILE *fd, const MuTFFVideoMediaInformationHeaderAtom *in);
@@ -1359,7 +1435,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed reference
-/// @return           Whether or not the reference was read successfully
+/// @return           If the reference was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_data_reference(FILE *fd, MuTFFDataReference *out);
 
@@ -1368,7 +1445,8 @@ MuTFFError mutff_read_data_reference(FILE *fd, MuTFFDataReference *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_data_reference(FILE *fd, const MuTFFDataReference *in);
 
@@ -1397,7 +1475,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_data_reference_atom(FILE *fd,
                                           MuTFFDataReferenceAtom *out);
@@ -1407,7 +1486,8 @@ MuTFFError mutff_read_data_reference_atom(FILE *fd,
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_data_reference_atom(FILE *fd,
                                            const MuTFFDataReferenceAtom *in);
@@ -1428,7 +1508,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_data_information_atom(FILE *fd,
                                             MuTFFDataInformationAtom *out);
@@ -1438,7 +1519,8 @@ MuTFFError mutff_read_data_information_atom(FILE *fd,
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_data_information_atom(
     FILE *fd, const MuTFFDataInformationAtom *in);
@@ -1465,7 +1547,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_sample_description_atom(FILE *fd,
                                               MuTFFSampleDescriptionAtom *out);
@@ -1475,7 +1558,8 @@ MuTFFError mutff_read_sample_description_atom(FILE *fd,
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_sample_description_atom(
     FILE *fd, const MuTFFSampleDescriptionAtom *in);
@@ -1494,7 +1578,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_time_to_sample_table_entry(
     FILE *fd, MuTFFTimeToSampleTableEntry *out);
@@ -1504,7 +1589,8 @@ MuTFFError mutff_read_time_to_sample_table_entry(
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_time_to_sample_table_entry(
     FILE *fd, const MuTFFTimeToSampleTableEntry *in);
@@ -1535,7 +1621,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_time_to_sample_atom(FILE *fd, MuTFFTimeToSampleAtom *out);
 
@@ -1544,7 +1631,8 @@ MuTFFError mutff_read_time_to_sample_atom(FILE *fd, MuTFFTimeToSampleAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_time_to_sample_atom(FILE *fd,
                                            const MuTFFTimeToSampleAtom *in);
@@ -1562,7 +1650,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_composition_offset_table_entry(
     FILE *fd, MuTFFCompositionOffsetTableEntry *out);
@@ -1572,7 +1661,8 @@ MuTFFError mutff_read_composition_offset_table_entry(
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_composition_offset_table_entry(
     FILE *fd, const MuTFFCompositionOffsetTableEntry *in);
@@ -1601,7 +1691,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_composition_offset_atom(FILE *fd,
                                               MuTFFCompositionOffsetAtom *out);
@@ -1611,7 +1702,8 @@ MuTFFError mutff_read_composition_offset_atom(FILE *fd,
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_composition_offset_atom(
     FILE *fd, const MuTFFCompositionOffsetAtom *in);
@@ -1638,7 +1730,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_composition_shift_least_greatest_atom(
     FILE *fd, MuTFFCompositionShiftLeastGreatestAtom *out);
@@ -1648,7 +1741,8 @@ MuTFFError mutff_read_composition_shift_least_greatest_atom(
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_composition_shift_least_greatest_atom(
     FILE *fd, const MuTFFCompositionShiftLeastGreatestAtom *in);
@@ -1677,7 +1771,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_sync_sample_atom(FILE *fd, MuTFFSyncSampleAtom *out);
 
@@ -1686,7 +1781,8 @@ MuTFFError mutff_read_sync_sample_atom(FILE *fd, MuTFFSyncSampleAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_sync_sample_atom(FILE *fd,
                                         const MuTFFSyncSampleAtom *in);
@@ -1715,7 +1811,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_partial_sync_sample_atom(FILE *fd,
                                                MuTFFPartialSyncSampleAtom *out);
@@ -1725,7 +1822,8 @@ MuTFFError mutff_read_partial_sync_sample_atom(FILE *fd,
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_partial_sync_sample_atom(
     FILE *fd, const MuTFFPartialSyncSampleAtom *in);
@@ -1745,7 +1843,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed entry
-/// @return           Whether or not the entry was read successfully
+/// @return           If the entry was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_sample_to_chunk_table_entry(
     FILE *fd, MuTFFSampleToChunkTableEntry *out);
@@ -1755,7 +1854,8 @@ MuTFFError mutff_read_sample_to_chunk_table_entry(
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_sample_to_chunk_table_entry(
     FILE *fd, const MuTFFSampleToChunkTableEntry *in);
@@ -1786,7 +1886,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_sample_to_chunk_atom(FILE *fd,
                                            MuTFFSampleToChunkAtom *out);
@@ -1796,7 +1897,8 @@ MuTFFError mutff_read_sample_to_chunk_atom(FILE *fd,
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_sample_to_chunk_atom(FILE *fd,
                                             const MuTFFSampleToChunkAtom *in);
@@ -1826,7 +1928,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_sample_size_atom(FILE *fd, MuTFFSampleSizeAtom *out);
 
@@ -1835,7 +1938,8 @@ MuTFFError mutff_read_sample_size_atom(FILE *fd, MuTFFSampleSizeAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_sample_size_atom(FILE *fd,
                                         const MuTFFSampleSizeAtom *in);
@@ -1864,7 +1968,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_chunk_offset_atom(FILE *fd, MuTFFChunkOffsetAtom *out);
 
@@ -1873,7 +1978,8 @@ MuTFFError mutff_read_chunk_offset_atom(FILE *fd, MuTFFChunkOffsetAtom *out);
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_chunk_offset_atom(FILE *fd,
                                          const MuTFFChunkOffsetAtom *in);
@@ -1899,7 +2005,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_sample_dependency_flags_atom(
     FILE *fd, MuTFFSampleDependencyFlagsAtom *out);
@@ -1909,7 +2016,8 @@ MuTFFError mutff_read_sample_dependency_flags_atom(
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_sample_dependency_flags_atom(
     FILE *fd, const MuTFFSampleDependencyFlagsAtom *in);
@@ -1939,7 +2047,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_sample_table_atom(FILE *fd, MuTFFSampleTableAtom *out);
 
@@ -1964,7 +2073,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_video_media_information_atom(
     FILE *fd, MuTFFVideoMediaInformationAtom *out);
@@ -1988,7 +2098,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_sound_media_information_header_atom(
     FILE *fd, MuTFFSoundMediaInformationHeaderAtom *out);
@@ -1998,7 +2109,8 @@ MuTFFError mutff_read_sound_media_information_header_atom(
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_sound_media_information_header_atom(
     FILE *fd, const MuTFFSoundMediaInformationHeaderAtom *in);
@@ -2022,7 +2134,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_sound_media_information_atom(
     FILE *fd, MuTFFSoundMediaInformationAtom *out);
@@ -2050,7 +2163,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_base_media_info_atom(FILE *fd,
                                            MuTFFBaseMediaInfoAtom *out);
@@ -2060,7 +2174,8 @@ MuTFFError mutff_read_base_media_info_atom(FILE *fd,
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_base_media_info_atom(FILE *fd,
                                             const MuTFFBaseMediaInfoAtom *in);
@@ -2081,7 +2196,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_text_media_information_atom(
     FILE *fd, MuTFFTextMediaInformationAtom *out);
@@ -2091,7 +2207,8 @@ MuTFFError mutff_read_text_media_information_atom(
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_text_media_information_atom(
     FILE *fd, const MuTFFTextMediaInformationAtom *in);
@@ -2113,7 +2230,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_base_media_information_header_atom(
     FILE *fd, MuTFFBaseMediaInformationHeaderAtom *out);
@@ -2123,7 +2241,8 @@ MuTFFError mutff_read_base_media_information_header_atom(
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_base_media_information_header_atom(
     FILE *fd, const MuTFFBaseMediaInformationHeaderAtom *in);
@@ -2144,7 +2263,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_base_media_information_atom(
     FILE *fd, MuTFFBaseMediaInformationAtom *out);
@@ -2154,7 +2274,8 @@ MuTFFError mutff_read_base_media_information_atom(
 ///
 /// @param [in] fd    The file descriptor
 /// @param [in] in    Input
-/// @return           Whether or not the atom was written successfully
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_base_media_information_atom(
     FILE *fd, const MuTFFBaseMediaInformationAtom *in);
@@ -2176,7 +2297,8 @@ typedef union {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_media_information_atom(FILE *fd,
                                              MuTFFMediaInformationAtom *out);
@@ -2200,7 +2322,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_media_atom(FILE *fd, MuTFFMediaAtom *out);
 
@@ -2230,7 +2353,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_track_atom(FILE *fd, MuTFFTrackAtom *out);
 
@@ -2260,7 +2384,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor
 /// @param [out] out  The parsed atom
-/// @return           Whether or not the atom was read successfully
+/// @return           If the atom was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out);
 
@@ -2306,7 +2431,8 @@ typedef struct {
 ///
 /// @param [in] fd    The file descriptor to read from
 /// @param [out] out  The parsed file
-/// @return           Whether or not the file was read successfully
+/// @return           If the file was read successfully, then the number of
+///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_movie_file(FILE *fd, MuTFFMovieFile *out);
 
@@ -2315,7 +2441,8 @@ MuTFFError mutff_read_movie_file(FILE *fd, MuTFFMovieFile *out);
 ///
 /// @param [in] fd    The file descriptor to write to
 /// @param [in] in    The file
-/// @return           Whether or not the file was written successfully
+/// @return           If the file was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_write_movie_file(FILE *fd, MuTFFMovieFile *in);
 
