@@ -4,10 +4,33 @@
 
 A small QuickTime file format (QTFF) library.
 
-This library came out of a project I was doing where I needed a simple, relatively efficient QTFF library to run on a Cortex-M microcontroller. I discovered there were few QTFF libraries readily available and none which met my needs.
+This library came out of a project I was doing where I needed a simple QTFF library to run on an ARM Cortex-M microcontroller.
+
+## Examples
+Here is an example of how to use the library to find the duration of a movie:
+```c
+#include <stdio.h>
+#include <mutff.h>
+
+int movie_duration(FILE *file) {
+  MuTFFMovieFile movie_file;
+  int time_scale;
+  int duration;
+
+  if (mutff_read_movie_file(file, &movie_file) < 0) {
+    fprintf(stderr, "Failed to parse movie file.");
+    return -1;
+  }
+
+  time_scale = movie_file.movies[0].movie_header.time_scale;
+  duration = movie_file.movies[0].movie_header.duration / time_scale;
+
+  return duration;
+}
+```
 
 ## Documentation
-Documentation for the latest `main` as available on the [GitHub Pages site for this project](https://frankplow.github.io/mutff).
+Documentation for the latest `main` is available on the [GitHub Pages site for this project](https://frankplow.github.io/mutff).
 
 ## Building from Source
 To configure, while in the project root, run:
@@ -21,6 +44,7 @@ $ cmake --build
 
 The project builds a static library by default. To build a shared library, pass `-DBUILD_SHARED_LIBS=1` during the configuration step. Other options supported by the project (and their defaults) are:
 * `BUILD_TESTS` (`ON`)
+* `BUILD_COVERAGE` (`OFF`)
 * `BUILD_DOCS` (`OFF`)
 
 ## References
