@@ -153,7 +153,11 @@ MuTFFError mutff_write_quickdraw_region(FILE *fd,
 #define MuTFF_MAX_COMPATIBLE_BRANDS 4
 
 ///
-/// @brief File type compatibility atom
+/// @brief File type atom
+///
+/// The file type atom is a (semi-)optional atom contained in the file. While
+/// older QuickTime files may not include the atom, new ones should.
+///
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/MuTFF/MuTFFChap1/mutff1.html#//apple_ref/doc/uid/TP40000939-CH203-CJBCBIFF
 ///
@@ -162,7 +166,7 @@ typedef struct {
   uint32_t minor_version;
   size_t compatible_brands_count;
   uint32_t compatible_brands[MuTFF_MAX_COMPATIBLE_BRANDS];
-} MuTFFFileTypeCompatibilityAtom;
+} MuTFFFileTypeAtom;
 
 ///
 /// @brief Read a file type compatibility atom
@@ -172,8 +176,7 @@ typedef struct {
 /// @return           If the atom was read successfully, then the number of
 ///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
-MuTFFError mutff_read_file_type_compatibility_atom(
-    FILE *fd, MuTFFFileTypeCompatibilityAtom *out);
+MuTFFError mutff_read_file_type_atom(FILE *fd, MuTFFFileTypeAtom *out);
 
 ///
 /// @brief Write a file type compatibility atom
@@ -183,11 +186,21 @@ MuTFFError mutff_read_file_type_compatibility_atom(
 /// @return           If the atom was written successfully, then the number of
 ///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
-MuTFFError mutff_write_file_type_compatibility_atom(
-    FILE *fd, const MuTFFFileTypeCompatibilityAtom *in);
+MuTFFError mutff_write_file_type_atom(FILE *fd, const MuTFFFileTypeAtom *in);
 
+///
+/// @brief A movie data atom
+///
+/// Any number of movie data atoms may be contained in the file. They contain
+/// media data. µTFF does not copy the data from movie data atoms into memory.
+/// Instead it provides the file offset of the data.
+///
+/// @see
+/// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap1/qtff1.html#//apple_ref/doc/uid/TP40000939-CH203-55478
+///
 typedef struct {
   uint64_t data_size;
+  long offset;
 } MuTFFMovieDataAtom;
 
 ///
@@ -299,6 +312,11 @@ MuTFFError mutff_write_wide_atom(FILE *fd, const MuTFFWideAtom *in);
 
 ///
 /// @brief Preview atom
+///
+/// Preview atoms are an optional atom contained in the file. They describe file
+/// metadata which may be used in producing a preview image or information about
+/// the file.
+///
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/MuTFF/MuTFFChap1/mutff1.html#//apple_ref/doc/uid/TP40000939-CH203-38240
 ///
@@ -693,10 +711,10 @@ MuTFFError mutff_write_track_encoded_pixels_dimensions_atom(
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-SW15
 ///
 typedef struct {
-  MuTFFTrackCleanApertureDimensionsAtom track_clean_aperture_dimension;
+  MuTFFTrackCleanApertureDimensionsAtom track_clean_aperture_dimensions;
   MuTFFTrackProductionApertureDimensionsAtom
-      track_production_aperture_dimension;
-  MuTFFTrackEncodedPixelsDimensionsAtom track_encoded_pixels_dimension;
+      track_production_aperture_dimensions;
+  MuTFFTrackEncodedPixelsDimensionsAtom track_encoded_pixels_dimensions;
 } MuTFFTrackApertureModeDimensionsAtom;
 
 ///
@@ -1134,7 +1152,10 @@ MuTFFError mutff_write_object_id_atom(FILE *fd, const MuTFFObjectIDAtom *in);
 typedef struct {
   uint32_t atom_id;
   uint16_t child_count;
+
   MuTFFInputTypeAtom input_type_atom;
+
+  bool object_id_atom_present;
   MuTFFObjectIDAtom object_id_atom;
 } MuTFFTrackInputAtom;
 
@@ -1605,6 +1626,10 @@ MuTFFError mutff_write_composition_offset_table_entry(
 
 ///
 /// @brief Composition offset atom
+/// @see
+/// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-SW19
+/// @note The MPEG-4 specification calls these composition time-to-sample boxes.
+/// The format is identical.
 ///
 typedef struct {
   uint8_t version;
@@ -1640,6 +1665,7 @@ MuTFFError mutff_write_composition_offset_atom(
 /// @brief Composition shift least greatest atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-SW20
+/// @note The MPEG-4 specification calls these composition to decode boxes.
 ///
 typedef struct {
   uint8_t version;
@@ -1944,14 +1970,31 @@ MuTFFError mutff_write_sample_dependency_flags_atom(
 ///
 typedef struct {
   MuTFFSampleDescriptionAtom sample_description;
+
   MuTFFTimeToSampleAtom time_to_sample;
+
+  bool composition_offset_present;
   MuTFFCompositionOffsetAtom composition_offset;
+
+  bool composition_shift_least_greatest_present;
   MuTFFCompositionShiftLeastGreatestAtom composition_shift_least_greatest;
+
+  bool sync_sample_present;
   MuTFFSyncSampleAtom sync_sample;
+
+  bool partial_sync_sample_present;
   MuTFFPartialSyncSampleAtom partial_sync_sample;
+
+  bool sample_to_chunk_present;
   MuTFFSampleToChunkAtom sample_to_chunk;
+
+  bool sample_size_present;
   MuTFFSampleSizeAtom sample_size;
+
+  bool chunk_offset_present;
   MuTFFChunkOffsetAtom chunk_offset;
+
+  bool sample_dependency_flags_present;
   MuTFFSampleDependencyFlagsAtom sample_dependency_flags;
 } MuTFFSampleTableAtom;
 
@@ -1974,8 +2017,13 @@ MuTFFError mutff_read_sample_table_atom(FILE *fd, MuTFFSampleTableAtom *out);
 ///
 typedef struct {
   MuTFFVideoMediaInformationHeaderAtom video_media_information_header;
+
   MuTFFHandlerReferenceAtom handler_reference;
+
+  bool data_information_present;
   MuTFFDataInformationAtom data_information;
+
+  bool sample_table_present;
   MuTFFSampleTableAtom sample_table;
 } MuTFFVideoMediaInformationAtom;
 
@@ -2030,8 +2078,13 @@ MuTFFError mutff_write_sound_media_information_header_atom(
 ///
 typedef struct {
   MuTFFSoundMediaInformationHeaderAtom sound_media_information_header;
+
   MuTFFHandlerReferenceAtom handler_reference;
+
+  bool data_information_present;
   MuTFFDataInformationAtom data_information;
+
+  bool sample_table_present;
   MuTFFSampleTableAtom sample_table;
 } MuTFFSoundMediaInformationAtom;
 
@@ -2121,6 +2174,8 @@ MuTFFError mutff_write_text_media_information_atom(
 ///
 typedef struct {
   MuTFFBaseMediaInfoAtom base_media_info;
+
+  bool text_media_information_present;
   MuTFFTextMediaInformationAtom text_media_information;
 } MuTFFBaseMediaInformationHeaderAtom;
 
@@ -2207,9 +2262,17 @@ MuTFFError mutff_read_media_information_atom(FILE *fd,
 ///
 typedef struct {
   MuTFFMediaHeaderAtom media_header;
+
+  bool extended_language_tag_present;
   MuTFFExtendedLanguageTagAtom extended_language_tag;
+
+  bool handler_reference_present;
   MuTFFHandlerReferenceAtom handler_reference;
+
+  bool media_information_present;
   MuTFFMediaInformationAtom media_information;
+
+  bool user_data_present;
   MuTFFUserDataAtom user_data;
 } MuTFFMediaAtom;
 
@@ -2229,15 +2292,34 @@ MuTFFError mutff_read_media_atom(FILE *fd, MuTFFMediaAtom *out);
 ///
 typedef struct {
   MuTFFTrackHeaderAtom track_header;
-  MuTFFTrackApertureModeDimensionsAtom track_aperture_mode_dimensions;
-  MuTFFClippingAtom clipping;
-  MuTFFTrackMatteAtom track_matte;
-  MuTFFEditAtom edit;
-  MuTFFTrackReferenceAtom track_reference;
-  MuTFFTrackExcludeFromAutoselectionAtom track_exclude_from_autoselection;
-  MuTFFTrackLoadSettingsAtom track_load_settings;
-  MuTFFTrackInputMapAtom track_input_map;
+
   MuTFFMediaAtom media;
+
+  bool track_aperture_mode_dimensions_present;
+  MuTFFTrackApertureModeDimensionsAtom track_aperture_mode_dimensions;
+
+  bool clipping_present;
+  MuTFFClippingAtom clipping;
+
+  bool track_matte_present;
+  MuTFFTrackMatteAtom track_matte;
+
+  bool edit_present;
+  MuTFFEditAtom edit;
+
+  bool track_reference_present;
+  MuTFFTrackReferenceAtom track_reference;
+
+  bool track_exclude_from_autoselection_present;
+  MuTFFTrackExcludeFromAutoselectionAtom track_exclude_from_autoselection;
+
+  bool track_load_settings_present;
+  MuTFFTrackLoadSettingsAtom track_load_settings;
+
+  bool track_input_map_present;
+  MuTFFTrackInputMapAtom track_input_map;
+
+  bool user_data_present;
   MuTFFUserDataAtom user_data;
 } MuTFFTrackAtom;
 
@@ -2258,16 +2340,27 @@ MuTFFError mutff_read_track_atom(FILE *fd, MuTFFTrackAtom *out);
 
 ///
 /// @brief Movie atom
+///
+/// A single movie atom is required in the file. It describes how the file
+/// should be played.
+///
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-SW1
 ///
 typedef struct {
   MuTFFMovieHeaderAtom movie_header;
-  MuTFFClippingAtom clipping;
-  MuTFFColorTableAtom color_table;
-  MuTFFUserDataAtom user_data;
+
   size_t track_count;
   MuTFFTrackAtom track[MuTFF_MAX_TRACK_ATOMS];
+
+  bool clipping_present;
+  MuTFFClippingAtom clipping;
+
+  bool color_table_present;
+  MuTFFColorTableAtom color_table;
+
+  bool user_data_present;
+  MuTFFUserDataAtom user_data;
 } MuTFFMovieAtom;
 
 ///
@@ -2280,26 +2373,33 @@ typedef struct {
 ///
 MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out);
 
-#define MuTFF_MAX_FILE_TYPE_COMPATIBILITY_ATOMS 1
-#define MuTFF_MAX_MOVIE_ATOMS 1
 #define MuTFF_MAX_MOVIE_DATA_ATOMS 4
 #define MuTFF_MAX_FREE_ATOMS 4
 #define MuTFF_MAX_SKIP_ATOMS 4
 #define MuTFF_MAX_WIDE_ATOMS 4
-#define MuTFF_MAX_PREVIEW_ATOMS 1
 
 ///
 /// @brief A QuickTime movie file
+///
+/// At the top level, the movie file should contain:
+/// * Optionally a file type atom, always as the first atom. This is recommended
+/// for new files.
+/// * A single required movie atom
+/// * Zero or more movie data atoms
+/// * Optionally a preview atom
+/// Optionally seperated by free, skip and wide atoms.
+///
+/// The order of the atoms is technically arbitrary excepting the file type
+/// atom, however the above order is typical and recommended.
+///
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap1/qtff1.html#//apple_ref/doc/uid/TP40000939-CH203-39025
 ///
 typedef struct {
-  size_t file_type_compatibility_count;
-  MuTFFFileTypeCompatibilityAtom
-      file_type_compatibility[MuTFF_MAX_FILE_TYPE_COMPATIBILITY_ATOMS];
+  bool file_type_present;
+  MuTFFFileTypeAtom file_type;
 
-  size_t movie_count;
-  MuTFFMovieAtom movie[MuTFF_MAX_MOVIE_ATOMS];
+  MuTFFMovieAtom movie;
 
   size_t movie_data_count;
   MuTFFMovieDataAtom movie_data[MuTFF_MAX_MOVIE_DATA_ATOMS];
@@ -2313,8 +2413,8 @@ typedef struct {
   size_t wide_count;
   MuTFFWideAtom wide[MuTFF_MAX_WIDE_ATOMS];
 
-  size_t preview_count;
-  MuTFFPreviewAtom preview[MuTFF_MAX_PREVIEW_ATOMS];
+  bool preview_present;
+  MuTFFPreviewAtom preview;
 } MuTFFMovieFile;
 
 ///

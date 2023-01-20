@@ -22,8 +22,8 @@ int movie_duration(FILE *file) {
     return -1;
   }
 
-  time_scale = movie_file.movies[0].movie_header.time_scale;
-  duration = movie_file.movies[0].movie_header.duration / time_scale;
+  time_scale = movie_file.movie.movie_header.time_scale;
+  duration = movie_file.movie.movie_header.duration / time_scale;
 
   return duration;
 }
