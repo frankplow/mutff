@@ -1,0 +1,30 @@
+name: MISRA
+
+run-name: ${{ github.workflow }} - ${{ github.sha }}
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v3
+
+      - name: Update apt
+        run: sudo apt-get update
+
+      # @TODO: cache cppcheck
+      - name: Get cppcheck
+        run: sudo apt-get install cppcheck -y
+
+      - name: Perform analysis
+        run: cppcheck src --dump
+
+      - name: Check for violations
+        run: python3 /usr/lib/x86_64-linux-gnu/cppcheck/addons/misra.py src/*.dump
