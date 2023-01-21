@@ -61,7 +61,6 @@ static void mutff_hton_24(unsigned char *dest, mutff_uint24_t n) {
   dest[0] = n >> 16;
   dest[1] = n >> 8;
   dest[2] = n;
-  dest[3] = 0;
 }
 
 static uint32_t mutff_ntoh_32(unsigned char *no) {
