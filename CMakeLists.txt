@@ -23,6 +23,13 @@ target_include_directories(${PROJECT_NAME}
 set_target_properties(${PROJECT_NAME} PROPERTIES
     PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/include/mutff.h)
 
+if(CMAKE_C_COMPILER_ID STREQUAL GNU)
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        -Wall -Wextra -Wpedantic -Wno-unused-parameter)
+elseif(CMAKE_C_COMPILER_ID MATCHES "(Apple)?Clang")
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        -Wall -Wextra -Wpedantic -Wno-unused-parameter)
+endif()
 
 if(BUILD_TESTS)
     enable_testing()

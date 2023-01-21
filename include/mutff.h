@@ -18,7 +18,9 @@
 /// @addtogroup MuTFF
 /// @{
 
-#define MuTFF_FOUR_C(in) ((in[0] << 24) + (in[1] << 16) + (in[2] << 8) + in[3])
+#define MuTFF_FOUR_C(in)                                   \
+  (((uint32_t)(in)[0] << 24) + ((uint32_t)(in)[1] << 16) + \
+   ((uint32_t)(in)[2] << 8) + (uint32_t)(in)[3])
 
 ///
 /// @brief A 24-bit unsigned integer
@@ -69,7 +71,7 @@ typedef struct {
 /// @return           If the read was successful, the number of bytes read.
 ///                   If there was an error, the MuTFFError code.
 ///
-MuTFFError mutff_peek_atom_header(FILE *fd, MuTFFAtomHeader *out);
+extern MuTFFError mutff_peek_atom_header(FILE *fd, MuTFFAtomHeader *out);
 
 ///
 /// @brief A QuickDraw rectangle
@@ -110,7 +112,7 @@ MuTFFError mutff_write_quickdraw_rect(FILE *fd, const MuTFFQuickDrawRect *in);
 ///
 /// @brief Maximum size of the additional data in a QuickDraw region
 ///
-#define MuTFF_MAX_QUICKDRAW_REGION_DATA_SIZE 8
+#define MuTFF_MAX_QUICKDRAW_REGION_DATA_SIZE 8U
 
 ///
 /// @brief A QuickDraw region
@@ -150,7 +152,7 @@ MuTFFError mutff_write_quickdraw_region(FILE *fd,
 ///
 /// @brief The maximum number of compatible brands
 ///
-#define MuTFF_MAX_COMPATIBLE_BRANDS 4
+#define MuTFF_MAX_COMPATIBLE_BRANDS 4U
 
 ///
 /// @brief File type atom
@@ -459,7 +461,7 @@ MuTFFError mutff_write_clipping_atom(FILE *fd, const MuTFFClippingAtom *in);
 ///
 /// @brief The maximum number of entries in the color table
 ///
-#define MuTFF_MAX_COLOR_TABLE_SIZE 16
+#define MuTFF_MAX_COLOR_TABLE_SIZE 16U
 
 ///
 /// @brief Color table atom
@@ -497,7 +499,7 @@ MuTFFError mutff_write_color_table_atom(FILE *fd,
 ///
 /// @brief The maximum size of the data in an entry of a user data list
 ///
-#define MuTFF_MAX_USER_DATA_ENTRY_SIZE 64
+#define MuTFF_MAX_USER_DATA_ENTRY_SIZE 64U
 
 typedef struct {
   uint32_t type;
@@ -530,7 +532,7 @@ MuTFFError mutff_write_user_data_list_entry(FILE *fd,
 ///
 /// @brief The maximum number of entries in the user data list
 ///
-#define MuTFF_MAX_USER_DATA_ITEMS 16
+#define MuTFF_MAX_USER_DATA_ITEMS 16U
 
 ///
 /// @brief User data atom
@@ -744,7 +746,7 @@ MuTFFError mutff_write_track_aperture_mode_dimensions_atom(
 ///        description
 /// @see MuTFFSampleDescription
 ///
-#define MuTFF_MAX_SAMPLE_DESCRIPTION_DATA_LEN 16
+#define MuTFF_MAX_SAMPLE_DESCRIPTION_DATA_LEN 16U
 
 ///
 /// @brief A sample description
@@ -785,7 +787,7 @@ MuTFFError mutff_write_sample_description(FILE *fd,
 /// @brief The maximum length of the data in a compressed matte atom
 /// @see MuTFFCompressedMatteAtom
 ///
-#define MuTFF_MAX_MATTE_DATA_LEN 16
+#define MuTFF_MAX_MATTE_DATA_LEN 16U
 
 ///
 /// @brief Compressed matte atom
@@ -888,7 +890,7 @@ MuTFFError mutff_write_edit_list_entry(FILE *fd, const MuTFFEditListEntry *in);
 /// @brief The maximum number of entries in an edit list atom
 /// @see MuTFFEditListAtom
 ///
-#define MuTFF_MAX_EDIT_LIST_ENTRIES 8
+#define MuTFF_MAX_EDIT_LIST_ENTRIES 8U
 
 ///
 /// @brief Edit list atom
@@ -955,7 +957,7 @@ MuTFFError mutff_write_edit_atom(FILE *fd, const MuTFFEditAtom *in);
 /// @brief The maximum track IDs in a track reference type atom
 /// @see MuTFFTrackReferenceTypeAtom
 ///
-#define MuTFF_MAX_TRACK_REFERENCE_TYPE_TRACK_IDS 4
+#define MuTFF_MAX_TRACK_REFERENCE_TYPE_TRACK_IDS 4U
 
 ///
 /// @brief Track reference type atom
@@ -994,7 +996,7 @@ MuTFFError mutff_write_track_reference_type_atom(
 /// @brief The maximum reference type atoms in a track reference atom
 /// @see MuTFFTrackReferenceAtom
 ///
-#define MuTFF_MAX_TRACK_REFERENCE_TYPE_ATOMS 4
+#define MuTFF_MAX_TRACK_REFERENCE_TYPE_ATOMS 4U
 
 ///
 /// @brief Track reference atom
@@ -1183,7 +1185,7 @@ MuTFFError mutff_write_track_input_atom(FILE *fd,
 /// @brief Maximum entries in a track input map
 /// @see MuTFFTrackInputMapAtom
 ///
-#define MuTFF_MAX_TRACK_INPUT_ATOMS 2
+#define MuTFF_MAX_TRACK_INPUT_ATOMS 2U
 
 ///
 /// @brief Track input map atom
@@ -1258,7 +1260,7 @@ MuTFFError mutff_write_media_header_atom(FILE *fd,
 /// @brief Maximum language tag length
 /// @see MuTFFExtendedLanguageTagAtom
 ///
-#define MuTFF_MAX_LANGUAGE_TAG_LENGTH 8
+#define MuTFF_MAX_LANGUAGE_TAG_LENGTH 8U
 
 ///
 /// @brief Extended language tag atom
@@ -1297,7 +1299,7 @@ MuTFFError mutff_write_extended_language_tag_atom(
 /// @brief Maximum component name length
 /// @see MuTFFHandlerReferenceAtom
 ///
-#define MuTFF_MAX_COMPONENT_NAME_LENGTH 24
+#define MuTFF_MAX_COMPONENT_NAME_LENGTH 24U
 
 ///
 /// @brief Handler reference atom
@@ -1313,7 +1315,7 @@ typedef struct {
   uint32_t component_manufacturer;
   uint32_t component_flags;
   uint32_t component_flags_mask;
-  char component_name[MuTFF_MAX_COMPONENT_NAME_LENGTH + 1];
+  char component_name[MuTFF_MAX_COMPONENT_NAME_LENGTH + 1U];
 } MuTFFHandlerReferenceAtom;
 
 /// @brief Read a handler reference atom
@@ -1374,7 +1376,7 @@ MuTFFError mutff_write_video_media_information_header_atom(
 /// @brief The maximum size of the data in a data reference
 /// @see MuTFFDataReference
 ///
-#define MuTFF_MAX_DATA_REFERENCE_DATA_SIZE 16
+#define MuTFF_MAX_DATA_REFERENCE_DATA_SIZE 16U
 
 ///
 /// @brief Data reference
@@ -1413,7 +1415,7 @@ MuTFFError mutff_write_data_reference(FILE *fd, const MuTFFDataReference *in);
 /// @brief The maximum number of data references in a data reference atom
 /// @see MuTFFDataReferenceAtom
 ///
-#define MuTFF_MAX_DATA_REFERENCES 4
+#define MuTFF_MAX_DATA_REFERENCES 4U
 
 ///
 /// @brief Data reference atom
@@ -1480,7 +1482,7 @@ MuTFFError mutff_read_data_information_atom(FILE *fd,
 MuTFFError mutff_write_data_information_atom(
     FILE *fd, const MuTFFDataInformationAtom *in);
 
-#define MuTFF_MAX_SAMPLE_DESCRIPTION_TABLE_LEN 8
+#define MuTFF_MAX_SAMPLE_DESCRIPTION_TABLE_LEN 8U
 
 ///
 /// @brief Sample description atom
@@ -1552,7 +1554,7 @@ MuTFFError mutff_write_time_to_sample_table_entry(
 /// @brief Maximum number of entries in a time-to-sample atom
 /// @see MuTFFTimeToSampleAtom
 ///
-#define MuTFF_MAX_TIME_TO_SAMPLE_TABLE_LEN 4
+#define MuTFF_MAX_TIME_TO_SAMPLE_TABLE_LEN 4U
 
 ///
 /// @brief Time-to-sample atom
@@ -1622,7 +1624,7 @@ MuTFFError mutff_write_composition_offset_table_entry(
 /// @brief Maximum length of the composition offset table
 /// @see MuTFFCompositionOffsetAtom
 ///
-#define MuTFF_MAX_COMPOSITION_OFFSET_TABLE_LEN 4
+#define MuTFF_MAX_COMPOSITION_OFFSET_TABLE_LEN 4U
 
 ///
 /// @brief Composition offset atom
@@ -1702,7 +1704,7 @@ MuTFFError mutff_write_composition_shift_least_greatest_atom(
 ///
 /// @brief Maximum length of the sync sample table
 ///
-#define MuTFF_MAX_SYNC_SAMPLE_TABLE_LEN 8
+#define MuTFF_MAX_SYNC_SAMPLE_TABLE_LEN 8U
 
 ///
 /// @brief Sync sample atom
@@ -1740,7 +1742,7 @@ MuTFFError mutff_write_sync_sample_atom(FILE *fd,
 ///
 /// @brief Maximum length of the partial sync sample table
 ///
-#define MuTFF_MAX_PARTIAL_SYNC_SAMPLE_TABLE_LEN 4
+#define MuTFF_MAX_PARTIAL_SYNC_SAMPLE_TABLE_LEN 4U
 
 ///
 /// @brief Partial sync sample atom
@@ -1812,7 +1814,7 @@ MuTFFError mutff_write_sample_to_chunk_table_entry(
 /// @brief Maximum length of the sample-to-chunk table
 /// @see MuTFFSampleToChunkAtom
 ///
-#define MuTFF_MAX_SAMPLE_TO_CHUNK_TABLE_LEN 4
+#define MuTFF_MAX_SAMPLE_TO_CHUNK_TABLE_LEN 4U
 
 ///
 /// @brief Sample to chunk atom
@@ -1852,7 +1854,7 @@ MuTFFError mutff_write_sample_to_chunk_atom(FILE *fd,
 ///
 /// @brief Maximum number of entries in a sample size table
 ///
-#define MuTFF_MAX_SAMPLE_SIZE_TABLE_LEN 4
+#define MuTFF_MAX_SAMPLE_SIZE_TABLE_LEN 4U
 
 ///
 /// @brief Sample size atom
@@ -1891,7 +1893,7 @@ MuTFFError mutff_write_sample_size_atom(FILE *fd,
 ///
 /// @brief Maximum length of the chunk offset table
 ///
-#define MuTFF_MAX_CHUNK_OFFSET_TABLE_LEN 4
+#define MuTFF_MAX_CHUNK_OFFSET_TABLE_LEN 4U
 
 ///
 /// @brief Chunk offset atom
@@ -1926,7 +1928,7 @@ MuTFFError mutff_read_chunk_offset_atom(FILE *fd, MuTFFChunkOffsetAtom *out);
 MuTFFError mutff_write_chunk_offset_atom(FILE *fd,
                                          const MuTFFChunkOffsetAtom *in);
 
-#define MuTFF_MAX_SAMPLE_DEPENDENCY_FLAGS_TABLE_LEN 4
+#define MuTFF_MAX_SAMPLE_DEPENDENCY_FLAGS_TABLE_LEN 4U
 
 ///
 /// @brief Sample dependency flags atom
@@ -2336,7 +2338,7 @@ MuTFFError mutff_read_track_atom(FILE *fd, MuTFFTrackAtom *out);
 ///
 /// @brief The maximum number of track atoms in a movie atom
 ///
-#define MuTFF_MAX_TRACK_ATOMS 4
+#define MuTFF_MAX_TRACK_ATOMS 4U
 
 ///
 /// @brief Movie atom
@@ -2373,10 +2375,10 @@ typedef struct {
 ///
 MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out);
 
-#define MuTFF_MAX_MOVIE_DATA_ATOMS 4
-#define MuTFF_MAX_FREE_ATOMS 4
-#define MuTFF_MAX_SKIP_ATOMS 4
-#define MuTFF_MAX_WIDE_ATOMS 4
+#define MuTFF_MAX_MOVIE_DATA_ATOMS 4U
+#define MuTFF_MAX_FREE_ATOMS 4U
+#define MuTFF_MAX_SKIP_ATOMS 4U
+#define MuTFF_MAX_WIDE_ATOMS 4U
 
 ///
 /// @brief A QuickTime movie file
