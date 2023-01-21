@@ -1,10 +1,11 @@
 # µTFF
 ![Main Build Status](https://github.com/frankplow/mutff/actions/workflows/build.yml/badge.svg)
+![Main Build Status](https://github.com/frankplow/mutff/actions/workflows/static-analysis.yml/badge.svg)
 ![Test Coverage](https://frankplow.github.io/mutff/badges/coverage.svg)
 
 A small QuickTime file format (QTFF) library.
 
-This library came out of a project I was doing where I needed a simple QTFF library to run on an ARM Cortex-M microcontroller.
+This library came out of a project I was doing where I needed a simple QTFF library to run on an ARM Cortex-M microcontroller. It is [somewhat MISRA compliant](#misra-compliance).
 
 ## Examples
 Here is an example of how to use the library to find the duration of a movie:
@@ -28,6 +29,19 @@ int movie_duration(FILE *file) {
   return duration;
 }
 ```
+
+## MISRA Compliance
+The project is _not_ [MISRA](https://www.misra.org.uk/) compliant. It intentionally violates the following rules:
+* 19.2
+* 21.6
+* 2.7 (style advisory)
+* 8.7 (advisory, inapplicable to libraries)
+* 12.1 (style advisory)
+* 15.5 (style advisory)
+* 17.8 (style advisory)
+Additionally, MISRA compliance is determined by static analysis with [cppcheck](https://cppcheck.sourceforge.io/), which is not comprehensive.
+
+The project does aim to abide by most of the MISRA rules however. In practice it follows the most significant rules such as not performing dynamic allocation. The most significant violations are those of rule 19.2 and rule 21.6. These violations will likely be removed in the future.
 
 ## Documentation
 Documentation for the latest `main` is available on the [GitHub Pages site for this project](https://frankplow.github.io/mutff).
