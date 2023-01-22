@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env: 
-  SUPPRESSED_RULES: "2.7,8.7,12.1,15.5,17.8,19.2,21.6"
+  SUPPRESSED_RULES: "2.7,8.7,12.1,15.5,17.8,21.6"
 
 jobs:
   build:

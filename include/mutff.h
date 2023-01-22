@@ -2235,27 +2235,46 @@ MuTFFError mutff_write_base_media_information_atom(
     FILE *fd, const MuTFFBaseMediaInformationAtom *in);
 
 ///
-/// @brief A media information atom
+/// @brief Media types
+/// @see
+/// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html#//apple_ref/doc/uid/TP40000939-CH205-SW1
 ///
-/// Can be one of: MuTFFVideoMediaInformationAtom,
-/// MuTFFSoundMediaInformationAtom, MuTFFBaseMediaInformationAtom.
-/// All three have the same QTFF type `minf`
-///
-typedef union {
-  MuTFFVideoMediaInformationAtom video;
-  MuTFFSoundMediaInformationAtom sound;
-  MuTFFBaseMediaInformationAtom base;
-} MuTFFMediaInformationAtom;
+typedef enum {
+  MuTFFMediaTypeVideo = MuTFF_FOUR_C("vide"),
+  MuTFFMediaTypeSound = MuTFF_FOUR_C("soun"),
+  MuTFFMediaTypeTimedMetadata = MuTFF_FOUR_C("meta"),
+  MuTFFMediaTypeTextMedia = MuTFF_FOUR_C("text"),
+  MuTFFMediaTypeClosedCaptioningMedia = MuTFF_FOUR_C("clcp"),
+  MuTFFMediaTypeSubtitleMedia = MuTFF_FOUR_C("sbtl"),
+  MuTFFMediaTypeMusicMedia = MuTFF_FOUR_C("musi"),
+  MuTFFMediaTypeMPEG1Media = MuTFF_FOUR_C("MPEG"),
+  MuTFFMediaTypeSpriteMedia = MuTFF_FOUR_C("sprt"),
+  MuTFFMediaTypeTweenMedia = MuTFF_FOUR_C("twen"),
+  MuTFFMediaType3DMedia = MuTFF_FOUR_C("qd3d"),
+  MuTFFMediaTypeStreamingMedia = MuTFF_FOUR_C("strm"),
+  MuTFFMediaTypeHintMedia = MuTFF_FOUR_C("hint"),
+  MuTFFMediaTypeVRMedia = MuTFF_FOUR_C("qtvr"),
+  MuTFFMediaTypePanoramaMedia = MuTFF_FOUR_C("pano"),
+  MuTFFMediaTypeObjectMedia = MuTFF_FOUR_C("obje"),
+} MuTFFMediaType;
 
-/// @brief Read a media information atom
 ///
-/// @param [in] fd    The file descriptor to read from
-/// @param [out] out  The parsed atom
-/// @return           If the atom was read successfully, then the number of
-///                   bytes read, otherwise the (negative) MuTFFError code.
+/// @brief Media information types
+/// @see
+/// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-BBCHEIJG
 ///
-MuTFFError mutff_read_media_information_atom(FILE *fd,
-                                             MuTFFMediaInformationAtom *out);
+typedef enum {
+  MuTFFVideoMediaInformation,
+  MuTFFSoundMediaInformation,
+  MuTFFBaseMediaInformation,
+} MuTFFMediaInformationType;
+
+///
+/// @brief Relates a MuTFFMediaType to its corresponding
+/// MuTFFMediaInformationHeaderType
+///
+MuTFFMediaInformationType mutff_media_information_type(
+    MuTFFMediaType media_type);
 
 ///
 /// @brief Media atom
@@ -2272,11 +2291,22 @@ typedef struct {
   MuTFFHandlerReferenceAtom handler_reference;
 
   bool media_information_present;
-  MuTFFMediaInformationAtom media_information;
+  MuTFFVideoMediaInformationAtom video_media_information;
+  MuTFFSoundMediaInformationAtom sound_media_information;
+  MuTFFBaseMediaInformationAtom base_media_information;
 
   bool user_data_present;
   MuTFFUserDataAtom user_data;
 } MuTFFMediaAtom;
+
+///
+/// @brief Determine the type of a media atom
+///
+/// @param [out] out  The media type of the media atom
+/// @param [in] atom  The atom to determine the type of
+/// @return           If successful, 0, otherwise the MuTFFError code
+///
+MuTFFError mutff_media_type(MuTFFMediaType *out, MuTFFMediaAtom *atom);
 
 /// @brief Read a media atom
 ///

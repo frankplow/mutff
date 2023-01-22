@@ -237,16 +237,6 @@ TEST_F(TestMov, MediaHandlerReferenceAtom) {
   EXPECT_EQ(ftell(fd), offset + 45);
 }
 
-TEST_F(TestMov, MediaInformationAtom) {
-  const size_t offset = 28667;
-  MuTFFMediaInformationAtom atom;
-  fseek(fd, offset, SEEK_SET);
-  const MuTFFError ret = mutff_read_media_information_atom(fd, &atom);
-  ASSERT_EQ(ret, 336);
-
-  EXPECT_EQ(ftell(fd), offset + 336);
-}
-
 TEST_F(TestMov, VideoMediaInformationHeader) {
   const size_t offset = 28675;
   MuTFFVideoMediaInformationHeaderAtom atom;

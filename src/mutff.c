@@ -3238,79 +3238,76 @@ MuTFFError mutff_write_base_media_information_atom(
   return ret;
 }
 
-MuTFFError mutff_read_media_information_atom(FILE *fd,
-                                             MuTFFMediaInformationAtom *out) {
-  MuTFFError err;
-  MuTFFAtomHeader header;
-  size_t offset = 0;
-  uint32_t size;
-
-  errno = 0;
-  const size_t start_offset = ftell(fd);
-  if (errno != 0) {
-    return MuTFFErrorIOError;
+inline MuTFFMediaInformationType mutff_media_information_type(
+    MuTFFMediaType media_type) {
+  switch (media_type) {
+    case MuTFFMediaTypeVideo:
+      return MuTFFVideoMediaInformation;
+    case MuTFFMediaTypeSound:
+      return MuTFFSoundMediaInformation;
+    default:
+      return MuTFFBaseMediaInformation;
   }
+}
 
-  err = mutff_read_u32(fd, &size);
-  if (mutff_is_error(err)) {
-    return err;
+static inline bool mutff_is_known_media_type(uint32_t type) {
+  switch (type) {
+    case MuTFFMediaTypeVideo:
+      return true;
+    case MuTFFMediaTypeSound:
+      return true;
+    case MuTFFMediaTypeTimedMetadata:
+      return true;
+    case MuTFFMediaTypeTextMedia:
+      return true;
+    case MuTFFMediaTypeClosedCaptioningMedia:
+      return true;
+    case MuTFFMediaTypeSubtitleMedia:
+      return true;
+    case MuTFFMediaTypeMusicMedia:
+      return true;
+    case MuTFFMediaTypeMPEG1Media:
+      return true;
+    case MuTFFMediaTypeSpriteMedia:
+      return true;
+    case MuTFFMediaTypeTweenMedia:
+      return true;
+    case MuTFFMediaType3DMedia:
+      return true;
+    case MuTFFMediaTypeStreamingMedia:
+      return true;
+    case MuTFFMediaTypeHintMedia:
+      return true;
+    case MuTFFMediaTypeVRMedia:
+      return true;
+    case MuTFFMediaTypePanoramaMedia:
+      return true;
+    case MuTFFMediaTypeObjectMedia:
+      return true;
+    default:
+      return false;
   }
-  offset += (size_t)offset;
+}
 
-  // skip type
-  if (fseek(fd, 4, SEEK_CUR) == -1) {
-    return MuTFFErrorIOError;
+MuTFFError mutff_media_type(MuTFFMediaType *out, MuTFFMediaAtom *atom) {
+  if (!atom->handler_reference_present) {
+    return MuTFFErrorBadFormat;
   }
-  offset += 4U;
-
-  // iterate over children
-  while (offset < size) {
-    err = mutff_peek_atom_header(fd, &header);
-    if (mutff_is_error(err)) {
-      return err;
-    }
-    offset += header.size;
-    if (offset > size) {
-      return MuTFFErrorBadFormat;
-    }
-
-    switch (header.type) {
-      /* case MuTFF_FOUR_C("vmhd"): */
-      case 0x766d6864:
-        if (fseek(fd, start_offset, SEEK_SET) == -1) {
-          return MuTFFErrorIOError;
-        }
-        return mutff_read_video_media_information_atom(fd, &out->video);
-      /* case MuTFF_FOUR_C("smhd"): */
-      case 0x736d6864:
-        if (fseek(fd, start_offset, SEEK_SET) == -1) {
-          return MuTFFErrorIOError;
-        }
-        return mutff_read_sound_media_information_atom(fd, &out->sound);
-      /* case MuTFF_FOUR_C("gmhd"): */
-      case 0x676d6864:
-        if (fseek(fd, start_offset, SEEK_SET) == -1) {
-          return MuTFFErrorIOError;
-        }
-        return mutff_read_base_media_information_atom(fd, &out->base);
-      default:
-        if (fseek(fd, header.size, SEEK_CUR) == -1) {
-          return MuTFFErrorIOError;
-        }
-    }
+  if (!mutff_is_known_media_type(atom->handler_reference.component_subtype)) {
+    return MuTFFErrorBadFormat;
   }
-
-  return MuTFFErrorBadFormat;
+  *out = (MuTFFMediaType)atom->handler_reference.component_subtype;
+  return 0;
 }
 
 MuTFFError mutff_read_media_atom(FILE *fd, MuTFFMediaAtom *out) {
   MuTFFError err;
   uint64_t ret = 0;
   MuTFFAtomHeader header;
-  size_t offset;
   uint64_t size;
   uint32_t type;
   bool media_header_present = false;
+  long media_information_offset;
 
   out->extended_language_tag_present = false;
   out->handler_reference_present = false;
@@ -3323,11 +3320,9 @@ MuTFFError mutff_read_media_atom(FILE *fd, MuTFFMediaAtom *out) {
   }
 
   // read child atoms
-  offset = 8;
-  while (offset < size) {
+  while (ret < size) {
     MuTFF_FIELD(mutff_peek_atom_header, &header);
-    offset += header.size;
-    if (offset > size) {
+    if (ret + header.size > size) {
       return MuTFFErrorBadFormat;
     }
 
@@ -3351,9 +3346,19 @@ MuTFFError mutff_read_media_atom(FILE *fd, MuTFFMediaAtom *out) {
         break;
       /* case MuTFF_FOUR_C("minf"): */
       case 0x6d696e66:
-        MuTFF_READ_CHILD(mutff_read_media_information_atom,
-                         &out->media_information,
-                         out->media_information_present);
+        if (out->media_information_present) {
+          return MuTFFErrorBadFormat;
+        }
+        errno = 0;
+        media_information_offset = ftell(fd);
+        if (errno != 0) {
+          return MuTFFErrorIOError;
+        }
+        if (fseek(fd, header.size, SEEK_CUR) == -1) {
+          return MuTFFErrorIOError;
+        }
+        ret += header.size;
+        out->media_information_present = true;
         break;
       /* case MuTFF_FOUR_C("udta"): */
       case 0x75647461:
@@ -3371,6 +3376,44 @@ MuTFFError mutff_read_media_atom(FILE *fd, MuTFFMediaAtom *out) {
 
   if (!media_header_present) {
     return MuTFFErrorBadFormat;
+  }
+
+  errno = 0;
+  const long atom_end_offset = ftell(fd);
+  if (errno != 0) {
+    return MuTFFErrorIOError;
+  }
+  if (out->media_information_present) {
+    MuTFFMediaType media_type;
+    err = mutff_media_type(&media_type, out);
+    if (mutff_is_error(err)) {
+      return err;
+    }
+    if (fseek(fd, media_information_offset, SEEK_SET) != 0) {
+      return MuTFFErrorIOError;
+    }
+    switch (mutff_media_information_type(media_type)) {
+      case MuTFFVideoMediaInformation:
+        err = mutff_read_video_media_information_atom(
+            fd, &out->video_media_information);
+        break;
+      case MuTFFSoundMediaInformation:
+        err = mutff_read_sound_media_information_atom(
+            fd, &out->sound_media_information);
+        break;
+      case MuTFFBaseMediaInformation:
+        err = mutff_read_base_media_information_atom(
+            fd, &out->base_media_information);
+        break;
+      default:
+        return MuTFFErrorBadFormat;
+    }
+    if (mutff_is_error(err)) {
+      return err;
+    }
+    if (fseek(fd, atom_end_offset, SEEK_SET) != 0) {
+      return MuTFFErrorIOError;
+    }
   }
 
   return ret;
@@ -3491,6 +3534,7 @@ MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out) {
   uint32_t type;
   bool movie_header_present = false;
 
+  out->track_count = 0;
   out->clipping_present = false;
   out->color_table_present = false;
   out->user_data_present = false;

@@ -32,7 +32,6 @@ int movie_duration(FILE *file) {
 
 ## MISRA Compliance
 The project is _not_ [MISRA](https://www.misra.org.uk/) compliant. It intentionally violates the following rules:
-* 19.2
 * 21.6
 * 2.7 (style advisory)
 * 8.7 (advisory, inapplicable to libraries)
@@ -42,7 +41,7 @@ The project is _not_ [MISRA](https://www.misra.org.uk/) compliant. It intentiona
 
 Additionally, MISRA compliance is determined by static analysis with [cppcheck](https://cppcheck.sourceforge.io/), which is not comprehensive.
 
-The project does aim to abide by most of the MISRA rules however. In practice it follows the most significant rules such as not performing dynamic allocation. The most significant violations are those of rule 19.2 and rule 21.6. These violations will likely be removed in the future.
+The project does aim to abide by most of the MISRA rules however. In practice it follows the most significant rules such as not performing dynamic allocation. The most significant violation is that of rule 21.6. This violation will likely be removed in the future.
 
 ## Documentation
 Documentation for the latest `main` is available on the [GitHub Pages site for this project](https://frankplow.github.io/mutff).
