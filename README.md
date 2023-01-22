@@ -39,6 +39,7 @@ The project is _not_ [MISRA](https://www.misra.org.uk/) compliant. It intentiona
 * 12.1 (style advisory)
 * 15.5 (style advisory)
 * 17.8 (style advisory)
+
 Additionally, MISRA compliance is determined by static analysis with [cppcheck](https://cppcheck.sourceforge.io/), which is not comprehensive.
 
 The project does aim to abide by most of the MISRA rules however. In practice it follows the most significant rules such as not performing dynamic allocation. The most significant violations are those of rule 19.2 and rule 21.6. These violations will likely be removed in the future.
@@ -57,9 +58,9 @@ $ cmake --build
 ```
 
 The project builds a static library by default. To build a shared library, pass `-DBUILD_SHARED_LIBS=1` during the configuration step. Other options supported by the project (and their defaults) are:
-* `BUILD_TESTS` (`ON`)
-* `BUILD_COVERAGE` (`OFF`)
-* `BUILD_DOCS` (`OFF`)
+* `MUTFF_BUILD_TESTS` (`ON`)
+* `MUTFF_BUILD_COVERAGE` (`OFF`)
+* `MUTFF_BUILD_DOCS` (`OFF`)
 
 ## References
 * [QTFF specification](https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFPreface/qtffPreface.html)

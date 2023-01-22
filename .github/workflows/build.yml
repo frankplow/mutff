@@ -23,7 +23,7 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Configure project
-        run: mkdir build && cd build && cmake ${{github.workspace}} -DBUILD_TESTS=ON -DBUILD_COVERAGE=OFF -DBUILD_DOCS=OFF -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+        run: mkdir build && cd build && cmake ${{github.workspace}} -DMUTFF_BUILD_TESTS=ON -DMUTFF_BUILD_COVERAGE=OFF -DMUTFF_BUILD_DOCS=OFF -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
       - name: Build project
         run: cmake --build build

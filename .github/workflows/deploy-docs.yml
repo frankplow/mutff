@@ -36,7 +36,7 @@ jobs:
         run: sudo apt-get install doxygen -y
 
       - name: Configure project
-        run: mkdir build && cd build && cmake ${{github.workspace}} -DBUILD_TESTS=ON -DBUILD_COVERAGE=ON -DBUILD_DOCS=ON -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+        run: mkdir build && cd build && cmake ${{github.workspace}} -DMUTFF_BUILD_TESTS=ON -DMUTFF_BUILD_COVERAGE=ON -DMUTFF_BUILD_DOCS=ON -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
       - name: Build project
         run: cmake --build build

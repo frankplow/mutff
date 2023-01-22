@@ -6,43 +6,45 @@ project(MuTFF
     DESCRIPTION "A small QuickTime file format (QTFF) library"
 )
 
-option(BUILD_TESTS "Build ${PROJECT_NAME} tests" ON)
-option(BUILD_COVERAGE "Build ${PROJECT_NAME} coverage report" OFF)
-option(BUILD_DOCS "Build ${PROJECT_NAME} documentation" OFF)
+string(TOLOWER ${PROJECT_NAME} library_name)
+string(TOUPPER ${PROJECT_NAME} project_name_uppercase)
 
-add_library(${PROJECT_NAME}
+option(${project_name_uppercase}_BUILD_TESTS "Build ${PROJECT_NAME} tests" ON)
+option(${project_name_uppercase}_BUILD_COVERAGE "Build ${PROJECT_NAME} coverage report" OFF)
+option(${project_name_uppercase}_BUILD_DOCS "Build ${PROJECT_NAME} documentation" OFF)
+
+add_library(${library_name}
     src/mutff.c
 )
 
-target_include_directories(${PROJECT_NAME}
-    PUBLIC
+target_include_directories(${library_name} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-set_target_properties(${PROJECT_NAME} PROPERTIES
+set_target_properties(${library_name} PROPERTIES
     PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/include/mutff.h)
 
 if(CMAKE_C_COMPILER_ID STREQUAL GNU)
-    target_compile_options(${PROJECT_NAME} PRIVATE
-        -Wall -Wextra -Wpedantic -Wno-unused-parameter)
+    target_compile_options(${library_name} PRIVATE
+        -std=c99 -Wall -Wextra -Wpedantic -Wno-unused-parameter)
 elseif(CMAKE_C_COMPILER_ID MATCHES "(Apple)?Clang")
-    target_compile_options(${PROJECT_NAME} PRIVATE
-        -Wall -Wextra -Wpedantic -Wno-unused-parameter)
+    target_compile_options(${library_name} PRIVATE
+        -std=c99 -Wall -Wextra -Wpedantic -Wno-unused-parameter)
 endif()
 
-if(BUILD_TESTS)
+if(${project_name_uppercase}_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
 
-if(BUILD_COVERAGE)
+if(${project_name_uppercase}_BUILD_COVERAGE)
     if(CMAKE_C_COMPILER_ID STREQUAL GNU)
-        target_compile_options(${PROJECT_NAME} PUBLIC --coverage)
-        target_link_options(${PROJECT_NAME} PUBLIC --coverage)
+        target_compile_options(${library_name} PUBLIC --coverage)
+        target_link_options(${library_name} PUBLIC --coverage)
     elseif(CMAKE_C_COMPILER_ID MATCHES "(Apple)?Clang")
-        target_compile_options(${PROJECT_NAME} PUBLIC --coverage)
-        target_link_options(${PROJECT_NAME} PUBLIC --coverage)
+        target_compile_options(${library_name} PUBLIC --coverage)
+        target_link_options(${library_name} PUBLIC --coverage)
     else()
         message(WARNING "Unrecognised compiler. Unable to set flags for coverage generation")
     endif()
@@ -51,9 +53,9 @@ if(BUILD_COVERAGE)
         message(WARNING "Optimisation may cause inaccuracies in coverage reports. Build with `Debug` configuration for best results.")
     endif()
 
-    set(object_dir ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${PROJECT_NAME}.dir)
+    set(object_dir ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${library_name}.dir)
     set(coverage_dir ${CMAKE_CURRENT_BINARY_DIR}/coverage)
-    get_property(lib_sources TARGET ${PROJECT_NAME} PROPERTY SOURCES)
+    get_property(lib_sources TARGET ${library_name} PROPERTY SOURCES)
     add_custom_target(coverage)
     add_custom_command(TARGET coverage PRE_BUILD
         COMMAND mkdir -p ${coverage_dir}
@@ -66,7 +68,7 @@ if(BUILD_COVERAGE)
     endforeach()
 endif()
 
-if(BUILD_DOCS)
+if(${project_name_uppercase}_BUILD_DOCS)
     find_package(Doxygen)
     configure_file(Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
     add_custom_target(docs
