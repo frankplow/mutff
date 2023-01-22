@@ -89,10 +89,11 @@ TEST_F(TestMov, FileTypeAtom) {
   const MuTFFError ret = mutff_read_file_type_atom(fd, &file_type_atom);
   ASSERT_EQ(ret, 20);
 
-  EXPECT_EQ(file_type_atom.major_brand, MuTFF_FOUR_C("qt  "));
+  EXPECT_EQ(file_type_atom.major_brand, MuTFF_FOURCC('q', 't', ' ', ' '));
   EXPECT_EQ(file_type_atom.minor_version, 0x00000200);
   EXPECT_EQ(file_type_atom.compatible_brands_count, 1);
-  EXPECT_EQ(file_type_atom.compatible_brands[0], MuTFF_FOUR_C("qt  "));
+  EXPECT_EQ(file_type_atom.compatible_brands[0],
+            MuTFF_FOURCC('q', 't', ' ', ' '));
 
   EXPECT_EQ(ftell(fd), offset + 20);
 }
@@ -224,8 +225,8 @@ TEST_F(TestMov, MediaHandlerReferenceAtom) {
 
   EXPECT_EQ(atom.version, 0x00);
   EXPECT_EQ(atom.flags, 0x000000);
-  EXPECT_EQ(atom.component_type, MuTFF_FOUR_C("mhlr"));
-  EXPECT_EQ(atom.component_subtype, MuTFF_FOUR_C("vide"));
+  EXPECT_EQ(atom.component_type, MuTFF_FOURCC('m', 'h', 'l', 'r'));
+  EXPECT_EQ(atom.component_subtype, MuTFF_FOURCC('v', 'i', 'd', 'e'));
   EXPECT_EQ(atom.component_manufacturer, 0);
   EXPECT_EQ(atom.component_flags, 0);
   EXPECT_EQ(atom.component_flags_mask, 0);
@@ -257,8 +258,8 @@ TEST_F(TestMov, VideoMediaInformationHandlerReference) {
 
   EXPECT_EQ(atom.version, 0x00);
   EXPECT_EQ(atom.flags, 0x000000);
-  EXPECT_EQ(atom.component_type, MuTFF_FOUR_C("dhlr"));
-  EXPECT_EQ(atom.component_subtype, MuTFF_FOUR_C("url "));
+  EXPECT_EQ(atom.component_type, MuTFF_FOURCC('d', 'h', 'l', 'r'));
+  EXPECT_EQ(atom.component_subtype, MuTFF_FOURCC('u', 'r', 'l', ' '));
   EXPECT_EQ(atom.component_manufacturer, 0);
   EXPECT_EQ(atom.component_flags, 0);
   EXPECT_EQ(atom.component_flags_mask, 0);
@@ -1129,7 +1130,7 @@ static const MuTFFSampleDescriptionAtom stsd_test_struct = {
     {
       {
         20,
-        MuTFF_FOUR_C("abcd"),
+        MuTFF_FOURCC('a', 'b', 'c', 'd'),
         0x0001,
         {
           0x00, 0x01, 0x02, 0x03,
@@ -1137,7 +1138,7 @@ static const MuTFFSampleDescriptionAtom stsd_test_struct = {
       },
       {
         20,
-        MuTFF_FOUR_C("efgh"),
+        MuTFF_FOURCC('e', 'f', 'g', 'h'),
         0x1011,
         {
           0x10, 0x11, 0x12, 0x13,
@@ -1227,7 +1228,7 @@ static const MuTFFDataReferenceAtom dref_test_struct = {
     2,
     {
       {
-        MuTFF_FOUR_C("abcd"),
+        MuTFF_FOURCC('a', 'b', 'c', 'd'),
         0x00,
         0x000102,
         4,
@@ -1236,7 +1237,7 @@ static const MuTFFDataReferenceAtom dref_test_struct = {
         },
       },
       {
-        MuTFF_FOUR_C("efgh"),
+        MuTFF_FOURCC('e', 'f', 'g', 'h'),
         0x10,
         0x101112,
         4,
@@ -1399,7 +1400,7 @@ static const unsigned char data_ref_test_data[data_ref_test_data_size] = {
 // clang-format on
 // clang-format off
 static const MuTFFDataReference data_ref_test_struct = {
-    MuTFF_FOUR_C("abcd"),        // type
+    MuTFF_FOURCC('a', 'b', 'c', 'd'),        // type
     0x00,                        // version
     0x000102,                    // flags
     4,                           // data size
@@ -2479,7 +2480,7 @@ static const MuTFFTrackReferenceAtom tref_test_struct = {
     2,                         // track reference type count
     {
       {
-        MuTFF_FOUR_C("abcd"),  // track reference type[0].type
+        MuTFF_FOURCC('a', 'b', 'c', 'd'),  // track reference type[0].type
         2,
         {
           0x00010203,          // track reference type[0].track_ids[0]
@@ -2487,7 +2488,7 @@ static const MuTFFTrackReferenceAtom tref_test_struct = {
         },
       },
       {
-        MuTFF_FOUR_C("efgh"),  // track reference type[1].type
+        MuTFF_FOURCC('e', 'f', 'g', 'h'),  // track reference type[1].type
         2,
         {
           0x20212223,          // track reference type[1].track_ids[0]
@@ -2555,7 +2556,7 @@ static const unsigned char track_ref_atom_test_data[track_ref_atom_test_data_siz
 // clang-format on
 // clang-format off
 static const MuTFFTrackReferenceTypeAtom track_ref_atom_test_struct = {
-    MuTFF_FOUR_C("abcd"),            // type
+    MuTFF_FOURCC('a', 'b', 'c', 'd'),            // type
     2,                               // track id count
     0x00010203,                      // track ids[0]
     0x10111213,                      // track ids[1]
@@ -2831,7 +2832,7 @@ static const unsigned char sample_desc_test_data[sample_desc_test_data_size] = {
 // clang-format off
 static const MuTFFSampleDescription sample_desc_test_struct = {
     sample_desc_test_data_size,     // size
-    MuTFF_FOUR_C("abcd"),           // data format
+    MuTFF_FOURCC('a', 'b', 'c', 'd'),           // data format
     0x0001,
     {
       0x00, 0x01, 0x02, 0x03,
@@ -3386,14 +3387,14 @@ static const MuTFFUserDataAtom udta_test_struct = {
     2,
     {
       {
-          MuTFF_FOUR_C("abcd"),
+          MuTFF_FOURCC('a', 'b', 'c', 'd'),
           4,
           {
             'e', 'f', 'g', 'h',
           }
       },
       {
-          MuTFF_FOUR_C("ijkl"),
+          MuTFF_FOURCC('i', 'j', 'k', 'l'),
           0,
       },
     }
@@ -3443,7 +3444,7 @@ static const unsigned char udta_entry_test_data[udta_entry_test_data_size] = {
 // clang-format on
 // clang-format off
 static const MuTFFUserDataListEntry udta_entry_test_struct = {
-    MuTFF_FOUR_C("abcd"),       // type
+    MuTFF_FOURCC('a', 'b', 'c', 'd'),       // type
     8,                          // data size
     {                           // data
       'e', 'f', 'g', 'h',
@@ -3813,7 +3814,7 @@ static const unsigned char pnot_test_data[pnot_test_data_size] = {
 static const MuTFFPreviewAtom pnot_test_struct = {
     0x01020304,            // modification time
     0x0102,                // version
-    MuTFF_FOUR_C("abcd"),  // atom type
+    MuTFF_FOURCC('a', 'b', 'c', 'd'),  // atom type
     0x0102,                // atom indezcx
 };
 // clang-format on
@@ -4056,10 +4057,10 @@ static const unsigned char ftyp_test_data[ftyp_test_data_size] = {
 // clang-format on
 // clang-format off
 static const MuTFFFileTypeAtom ftyp_test_struct = {
-    MuTFF_FOUR_C("qt  "),    // major brand
+    MuTFF_FOURCC('q', 't', ' ', ' '),    // major brand
     0x14040600,              // minor version
     1,                       // compatible brands count
-    MuTFF_FOUR_C("qt  "),    // compatible brands[0]
+    MuTFF_FOURCC('q', 't', ' ', ' '),    // compatible brands[0]
 };
 // clang-format on
 
@@ -4222,7 +4223,7 @@ TEST(MuTFF, PeekAtomHeader) {
   mutff_peek_atom_header(fd, &header);
 
   EXPECT_EQ(header.size, 0x01020304);
-  EXPECT_EQ(header.type, MuTFF_FOUR_C("abcd"));
+  EXPECT_EQ(header.type, MuTFF_FOURCC('a', 'b', 'c', 'd'));
   EXPECT_EQ(ftell(fd), 0);
 }
 

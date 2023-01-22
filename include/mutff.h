@@ -18,9 +18,9 @@
 /// @addtogroup MuTFF
 /// @{
 
-#define MuTFF_FOUR_C(in)                                   \
-  (((uint32_t)(in)[0] << 24) + ((uint32_t)(in)[1] << 16) + \
-   ((uint32_t)(in)[2] << 8) + (uint32_t)(in)[3])
+#define MuTFF_FOURCC(a, b, c, d)                                         \
+  ((uint32_t)(a) << 24) + ((uint32_t)(b) << 16) + ((uint32_t)(c) << 8) + \
+      (uint32_t)(d)
 
 ///
 /// @brief A 24-bit unsigned integer
@@ -2240,22 +2240,22 @@ MuTFFError mutff_write_base_media_information_atom(
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html#//apple_ref/doc/uid/TP40000939-CH205-SW1
 ///
 typedef enum {
-  MuTFFMediaTypeVideo = MuTFF_FOUR_C("vide"),
-  MuTFFMediaTypeSound = MuTFF_FOUR_C("soun"),
-  MuTFFMediaTypeTimedMetadata = MuTFF_FOUR_C("meta"),
-  MuTFFMediaTypeTextMedia = MuTFF_FOUR_C("text"),
-  MuTFFMediaTypeClosedCaptioningMedia = MuTFF_FOUR_C("clcp"),
-  MuTFFMediaTypeSubtitleMedia = MuTFF_FOUR_C("sbtl"),
-  MuTFFMediaTypeMusicMedia = MuTFF_FOUR_C("musi"),
-  MuTFFMediaTypeMPEG1Media = MuTFF_FOUR_C("MPEG"),
-  MuTFFMediaTypeSpriteMedia = MuTFF_FOUR_C("sprt"),
-  MuTFFMediaTypeTweenMedia = MuTFF_FOUR_C("twen"),
-  MuTFFMediaType3DMedia = MuTFF_FOUR_C("qd3d"),
-  MuTFFMediaTypeStreamingMedia = MuTFF_FOUR_C("strm"),
-  MuTFFMediaTypeHintMedia = MuTFF_FOUR_C("hint"),
-  MuTFFMediaTypeVRMedia = MuTFF_FOUR_C("qtvr"),
-  MuTFFMediaTypePanoramaMedia = MuTFF_FOUR_C("pano"),
-  MuTFFMediaTypeObjectMedia = MuTFF_FOUR_C("obje"),
+  MuTFFMediaTypeVideo = MuTFF_FOURCC('v', 'i', 'd', 'e'),
+  MuTFFMediaTypeSound = MuTFF_FOURCC('s', 'o', 'u', 'n'),
+  MuTFFMediaTypeTimedMetadata = MuTFF_FOURCC('m', 'e', 't', 'a'),
+  MuTFFMediaTypeTextMedia = MuTFF_FOURCC('t', 'e', 'x', 't'),
+  MuTFFMediaTypeClosedCaptioningMedia = MuTFF_FOURCC('c', 'l', 'c', 'p'),
+  MuTFFMediaTypeSubtitleMedia = MuTFF_FOURCC('s', 'b', 't', 'l'),
+  MuTFFMediaTypeMusicMedia = MuTFF_FOURCC('m', 'u', 's', 'i'),
+  MuTFFMediaTypeMPEG1Media = MuTFF_FOURCC('M', 'P', 'E', 'G'),
+  MuTFFMediaTypeSpriteMedia = MuTFF_FOURCC('s', 'p', 'r', 't'),
+  MuTFFMediaTypeTweenMedia = MuTFF_FOURCC('t', 'w', 'e', 'n'),
+  MuTFFMediaType3DMedia = MuTFF_FOURCC('q', 'd', '3', 'd'),
+  MuTFFMediaTypeStreamingMedia = MuTFF_FOURCC('s', 't', 'r', 'm'),
+  MuTFFMediaTypeHintMedia = MuTFF_FOURCC('h', 'i', 'n', 't'),
+  MuTFFMediaTypeVRMedia = MuTFF_FOURCC('q', 't', 'v', 'r'),
+  MuTFFMediaTypePanoramaMedia = MuTFF_FOURCC('p', 'a', 'n', 'o'),
+  MuTFFMediaTypeObjectMedia = MuTFF_FOURCC('o', 'b', 'j', 'e'),
 } MuTFFMediaType;
 
 ///
