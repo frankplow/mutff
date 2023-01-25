@@ -34,6 +34,14 @@
     (flag) = true;                          \
   } while (0);
 
+#define MuTFF_SEEK_CUR(offset)                \
+  do {                                        \
+    if (fseek(fd, (offset), SEEK_CUR) != 0) { \
+      return MuTFFErrorIOError;               \
+    }                                         \
+    ret += (offset);                          \
+  } while (0);
+
 static inline bool mutff_is_error(MuTFFError err) { return (int)err < 0; }
 
 // Convert a number from network (big) endian to host endian.
@@ -347,6 +355,17 @@ static MuTFFError mutff_read_header(FILE *fd, uint64_t *size, uint32_t *type) {
   return ret;
 }
 
+static MuTFFError mutff_peek_atom_header(FILE *fd, uint64_t *size,
+                                         uint32_t *type) {
+  MuTFFError err;
+  uint64_t ret = 0;
+
+  MuTFF_FIELD(mutff_read_header, size, type);
+  MuTFF_SEEK_CUR(-ret);
+
+  return ret;
+}
+
 static MuTFFError mutff_write_header(FILE *fd, uint64_t size, uint32_t type) {
   MuTFFError err;
   uint64_t ret = 0;
@@ -361,24 +380,6 @@ static MuTFFError mutff_write_header(FILE *fd, uint64_t size, uint32_t type) {
   }
 
   return ret;
-}
-
-MuTFFError mutff_peek_atom_header(FILE *fd, MuTFFAtomHeader *out) {
-  MuTFFError err;
-
-  err = mutff_read_u32(fd, &out->size);
-  if (mutff_is_error(err)) {
-    return err;
-  }
-  err = mutff_read_u32(fd, &out->type);
-  if (mutff_is_error(err)) {
-    return err;
-  }
-  if (fseek(fd, -8, SEEK_CUR) == -1) {
-    return MuTFFErrorIOError;
-  }
-
-  return 0;
 }
 
 MuTFFError mutff_read_quickdraw_rect(FILE *fd, MuTFFQuickDrawRect *out) {
@@ -454,9 +455,7 @@ MuTFFError mutff_read_file_type_atom(FILE *fd, MuTFFFileTypeAtom *out) {
   for (size_t i = 0; i < out->compatible_brands_count; ++i) {
     MuTFF_FIELD(mutff_read_u32, &out->compatible_brands[i]);
   }
-  if (!fseek(fd, size - ret, SEEK_CUR)) {
-    ret += size - ret;
-  }
+  MuTFF_SEEK_CUR(size - ret);
 
   return ret;
 }
@@ -492,9 +491,7 @@ MuTFFError mutff_read_movie_data_atom(FILE *fd, MuTFFMovieDataAtom *out) {
     return MuTFFErrorBadFormat;
   }
   out->data_size = mutff_data_size(size);
-  if (!fseek(fd, size - ret, SEEK_CUR)) {
-    ret += size - ret;
-  }
+  MuTFF_SEEK_CUR(size - ret);
   return ret;
 }
 
@@ -524,9 +521,7 @@ MuTFFError mutff_read_free_atom(FILE *fd, MuTFFFreeAtom *out) {
     return MuTFFErrorBadFormat;
   }
   out->data_size = mutff_data_size(size);
-  if (!fseek(fd, size - ret, SEEK_CUR)) {
-    ret += size - ret;
-  }
+  MuTFF_SEEK_CUR(size - ret);
   return ret;
 }
 
@@ -555,9 +550,7 @@ MuTFFError mutff_read_skip_atom(FILE *fd, MuTFFSkipAtom *out) {
     return MuTFFErrorBadFormat;
   }
   out->data_size = mutff_data_size(size);
-  if (!fseek(fd, size - ret, SEEK_CUR)) {
-    ret += size - ret;
-  }
+  MuTFF_SEEK_CUR(size - ret);
   return ret;
 }
 
@@ -586,9 +579,7 @@ MuTFFError mutff_read_wide_atom(FILE *fd, MuTFFWideAtom *out) {
     return MuTFFErrorBadFormat;
   }
   out->data_size = mutff_data_size(size);
-  if (!fseek(fd, size - ret, SEEK_CUR)) {
-    ret += size - ret;
-  }
+  MuTFF_SEEK_CUR(size - ret);
   return ret;
 }
 
@@ -620,9 +611,7 @@ MuTFFError mutff_read_preview_atom(FILE *fd, MuTFFPreviewAtom *out) {
   MuTFF_FIELD(mutff_read_u16, &out->version);
   MuTFF_FIELD(mutff_read_u32, &out->atom_type);
   MuTFF_FIELD(mutff_read_u16, &out->atom_index);
-  if (!fseek(fd, size - ret, SEEK_CUR)) {
-    ret += size - ret;
-  }
+  MuTFF_SEEK_CUR(size - ret);
   return ret;
 }
 
@@ -659,10 +648,7 @@ MuTFFError mutff_read_movie_header_atom(FILE *fd, MuTFFMovieHeaderAtom *out) {
   MuTFF_FIELD(mutff_read_u32, &out->duration);
   MuTFF_FIELD(mutff_read_q16_16, &out->preferred_rate);
   MuTFF_FIELD(mutff_read_q8_8, &out->preferred_volume);
-  if (fseek(fd, 10, SEEK_CUR) == -1) {
-    return MuTFFErrorIOError;
-  }
-  ret += 10U;
+  MuTFF_SEEK_CUR(10U);
   for (size_t j = 0; j < 3U; ++j) {
     for (size_t i = 0; i < 3U; ++i) {
       MuTFF_FIELD(mutff_read_u32, &out->matrix_structure[j][i]);
@@ -675,9 +661,7 @@ MuTFFError mutff_read_movie_header_atom(FILE *fd, MuTFFMovieHeaderAtom *out) {
   MuTFF_FIELD(mutff_read_u32, &out->selection_duration);
   MuTFF_FIELD(mutff_read_u32, &out->current_time);
   MuTFF_FIELD(mutff_read_u32, &out->next_track_id);
-  if (!fseek(fd, size - ret, SEEK_CUR)) {
-    ret += size - ret;
-  }
+  MuTFF_SEEK_CUR(size - ret);
   return ret;
 }
 
@@ -730,9 +714,7 @@ MuTFFError mutff_read_clipping_region_atom(FILE *fd,
     return MuTFFErrorBadFormat;
   }
   MuTFF_FIELD(mutff_read_quickdraw_region, &out->region);
-  if (!fseek(fd, size - ret, SEEK_CUR)) {
-    ret += size - ret;
-  }
+  MuTFF_SEEK_CUR(size - ret);
 
   return ret;
 }
@@ -757,25 +739,24 @@ MuTFFError mutff_read_clipping_atom(FILE *fd, MuTFFClippingAtom *out) {
   uint64_t ret = 0;
   uint64_t size;
   uint32_t type;
-  MuTFFAtomHeader header;
   bool clipping_region_present = false;
 
   MuTFF_FIELD(mutff_read_header, &size, &type);
   if (type != MuTFF_FOURCC('c', 'l', 'i', 'p')) {
     return MuTFFErrorBadFormat;
   }
+  uint64_t child_size;
+  uint32_t child_type;
   while (ret < size) {
-    MuTFF_FIELD(mutff_peek_atom_header, &header);
-    if (ret + header.size > size) {
+    MuTFF_FIELD(mutff_peek_atom_header, &child_size, &child_type);
+    if (ret + child_size > size) {
       return MuTFFErrorBadFormat;
     }
-    if (header.type == MuTFF_FOURCC('c', 'r', 'g', 'n')) {
+    if (child_type == MuTFF_FOURCC('c', 'r', 'g', 'n')) {
       MuTFF_READ_CHILD(mutff_read_clipping_region_atom, &out->clipping_region,
                        clipping_region_present);
     } else {
-      if (!fseek(fd, header.size, SEEK_CUR)) {
-        ret += header.size;
-      }
+      MuTFF_SEEK_CUR(child_size);
     }
   }
 
@@ -823,9 +804,7 @@ MuTFFError mutff_read_color_table_atom(FILE *fd, MuTFFColorTableAtom *out) {
       MuTFF_FIELD(mutff_read_u16, &out->color_array[i][j]);
     }
   }
-  if (!fseek(fd, size - ret, SEEK_CUR)) {
-    ret += size - ret;
-  }
+  MuTFF_SEEK_CUR(size - ret);
 
   return ret;
 }
@@ -892,9 +871,6 @@ MuTFFError mutff_write_user_data_list_entry(FILE *fd,
 MuTFFError mutff_read_user_data_atom(FILE *fd, MuTFFUserDataAtom *out) {
   MuTFFError err;
   uint64_t ret = 0;
-  MuTFFAtomHeader header;
-  size_t i;
-  size_t offset;
 
   // read data
   uint64_t size;
@@ -905,15 +881,15 @@ MuTFFError mutff_read_user_data_atom(FILE *fd, MuTFFUserDataAtom *out) {
   }
 
   // read children
-  i = 0;
-  offset = 8;
-  while (offset < size) {
+  size_t i = 0;
+  uint64_t child_size;
+  uint32_t child_type;
+  while (ret < size) {
     if (i >= MuTFF_MAX_USER_DATA_ITEMS) {
       return MuTFFErrorOutOfMemory;
     }
-    MuTFF_FIELD(mutff_peek_atom_header, &header);
-    offset += header.size;
-    if (offset > size) {
+    MuTFF_FIELD(mutff_peek_atom_header, &child_size, &child_type);
+    if (ret + child_size > size) {
       return MuTFFErrorBadFormat;
     }
     MuTFF_FIELD(mutff_read_user_data_list_entry, &out->user_data_list[i]);
@@ -959,22 +935,13 @@ MuTFFError mutff_read_track_header_atom(FILE *fd, MuTFFTrackHeaderAtom *out) {
   MuTFF_FIELD(mutff_read_u32, &out->creation_time);
   MuTFF_FIELD(mutff_read_u32, &out->modification_time);
   MuTFF_FIELD(mutff_read_u32, &out->track_id);
-  if (fseek(fd, 4, SEEK_CUR) == -1) {
-    return MuTFFErrorIOError;
-  }
-  ret += 4U;
+  MuTFF_SEEK_CUR(4U);
   MuTFF_FIELD(mutff_read_u32, &out->duration);
-  if (fseek(fd, 8, SEEK_CUR) == -1) {
-    return MuTFFErrorIOError;
-  }
-  ret += 8U;
+  MuTFF_SEEK_CUR(8U);
   MuTFF_FIELD(mutff_read_u16, &out->layer);
   MuTFF_FIELD(mutff_read_u16, &out->alternate_group);
   MuTFF_FIELD(mutff_read_q8_8, &out->volume);
-  if (fseek(fd, 2, SEEK_CUR) == -1) {
-    return MuTFFErrorIOError;
-  }
-  ret += 2U;
+  MuTFF_SEEK_CUR(2U);
   for (size_t j = 0; j < 3U; ++j) {
     for (size_t i = 0; i < 3U; ++i) {
       MuTFF_FIELD(mutff_read_u32, &out->matrix_structure[j][i]);
@@ -982,9 +949,7 @@ MuTFFError mutff_read_track_header_atom(FILE *fd, MuTFFTrackHeaderAtom *out) {
   }
   MuTFF_FIELD(mutff_read_q16_16, &out->track_width);
   MuTFF_FIELD(mutff_read_q16_16, &out->track_height);
-  if (!fseek(fd, size - ret, SEEK_CUR)) {
-    ret += size - ret;
-  }
+  MuTFF_SEEK_CUR(size - ret);
   return ret;
 }
 
@@ -1143,14 +1108,15 @@ MuTFFError mutff_read_track_aperture_mode_dimensions_atom(
   }
 
   // read children
-  MuTFFAtomHeader header;
+  uint64_t child_size;
+  uint32_t child_type;
   while (ret < size) {
-    MuTFF_FIELD(mutff_peek_atom_header, &header);
-    if (ret + header.size > size) {
+    MuTFF_FIELD(mutff_peek_atom_header, &child_size, &child_type);
+    if (ret + child_size > size) {
       return MuTFFErrorBadFormat;
     }
 
-    switch (header.type) {
+    switch (child_type) {
       case MuTFF_FOURCC('c', 'l', 'e', 'f'):
         MuTFF_READ_CHILD(mutff_read_track_clean_aperture_dimensions_atom,
                          &out->track_clean_aperture_dimensions,
@@ -1170,10 +1136,7 @@ MuTFFError mutff_read_track_aperture_mode_dimensions_atom(
         break;
       default:
         // Unrecognised atom type, skip atom
-        if (fseek(fd, header.size, SEEK_CUR) == -1) {
-          return MuTFFErrorIOError;
-        }
-        ret += header.size;
+        MuTFF_SEEK_CUR(child_size);
         break;
     }
   }
@@ -1213,10 +1176,7 @@ MuTFFError mutff_read_sample_description(FILE *fd,
   uint64_t ret = 0;
   MuTFF_FIELD(mutff_read_u32, &out->size);
   MuTFF_FIELD(mutff_read_u32, &out->data_format);
-  if (fseek(fd, 6, SEEK_CUR) == -1) {
-    return MuTFFErrorIOError;
-  }
-  ret += 6U;
+  MuTFF_SEEK_CUR(6U);
   MuTFF_FIELD(mutff_read_u16, &out->data_reference_index);
   const uint32_t data_size = mutff_data_size(out->size) - 8U;
   for (uint32_t i = 0; i < data_size; ++i) {
@@ -1296,7 +1256,6 @@ MuTFFError mutff_read_track_matte_atom(FILE *fd, MuTFFTrackMatteAtom *out) {
   uint64_t ret = 0;
   uint64_t size;
   uint32_t type;
-  MuTFFAtomHeader header;
   bool compressed_matte_atom_present = false;
 
   MuTFF_FIELD(mutff_read_header, &size, &type);
@@ -1304,19 +1263,19 @@ MuTFFError mutff_read_track_matte_atom(FILE *fd, MuTFFTrackMatteAtom *out) {
     return MuTFFErrorBadFormat;
   }
 
+  uint64_t child_size;
+  uint32_t child_type;
   while (ret < size) {
-    MuTFF_FIELD(mutff_peek_atom_header, &header);
-    if (ret + header.size > size) {
+    MuTFF_FIELD(mutff_peek_atom_header, &child_size, &child_type);
+    if (ret + child_size > size) {
       return MuTFFErrorBadFormat;
     }
-    if (header.type == MuTFF_FOURCC('k', 'm', 'a', 't')) {
+    if (child_type == MuTFF_FOURCC('k', 'm', 'a', 't')) {
       MuTFF_READ_CHILD(mutff_read_compressed_matte_atom,
                        &out->compressed_matte_atom,
                        compressed_matte_atom_present);
     } else {
-      if (!fseek(fd, header.size, SEEK_CUR)) {
-        ret += header.size;
-      }
+      MuTFF_SEEK_CUR(child_size);
     }
   }
 
@@ -1408,25 +1367,25 @@ MuTFFError mutff_read_edit_atom(FILE *fd, MuTFFEditAtom *out) {
   uint64_t ret = 0;
   uint64_t size;
   uint32_t type;
-  MuTFFAtomHeader header;
   bool edit_list_present = false;
 
   MuTFF_FIELD(mutff_read_header, &size, &type);
   if (type != MuTFF_FOURCC('e', 'd', 't', 's')) {
     return MuTFFErrorBadFormat;
   }
+
+  uint64_t child_size;
+  uint32_t child_type;
   while (ret < size) {
-    MuTFF_FIELD(mutff_peek_atom_header, &header);
-    if (ret + header.size > size) {
+    MuTFF_FIELD(mutff_peek_atom_header, &child_size, &child_type);
+    if (ret + child_size > size) {
       return err;
     }
-    if (header.type == MuTFF_FOURCC('e', 'l', 's', 't')) {
+    if (child_type == MuTFF_FOURCC('e', 'l', 's', 't')) {
       MuTFF_READ_CHILD(mutff_read_edit_list_atom, &out->edit_list_atom,
                        edit_list_present);
     } else {
-      if (!fseek(fd, header.size, SEEK_CUR)) {
-        ret += header.size;
-      }
+      MuTFF_SEEK_CUR(child_size);
     }
   }
 
@@ -1498,13 +1457,14 @@ MuTFFError mutff_read_track_reference_atom(FILE *fd,
 
   // read children
   size_t i = 0;
-  MuTFFAtomHeader header;
+  uint64_t child_size;
+  uint32_t child_type;
   while (ret < size) {
     if (i >= MuTFF_MAX_TRACK_REFERENCE_TYPE_ATOMS) {
       return MuTFFErrorOutOfMemory;
     }
-    MuTFF_FIELD(mutff_peek_atom_header, &header);
-    if (ret + header.size > size) {
+    MuTFF_FIELD(mutff_peek_atom_header, &child_size, &child_type);
+    if (ret + child_size > size) {
       return MuTFFErrorBadFormat;
     }
     MuTFF_FIELD(mutff_read_track_reference_type_atom,
@@ -1660,7 +1620,6 @@ MuTFFError mutff_read_track_input_atom(FILE *fd, MuTFFTrackInputAtom *out) {
   uint64_t ret = 0;
   uint64_t size;
   uint32_t type;
-  MuTFFAtomHeader header;
   bool input_type_present = false;
 
   out->object_id_atom_present = false;
@@ -1670,25 +1629,19 @@ MuTFFError mutff_read_track_input_atom(FILE *fd, MuTFFTrackInputAtom *out) {
     return MuTFFErrorBadFormat;
   }
   MuTFF_FIELD(mutff_read_u32, &out->atom_id);
-  if (!fseek(fd, 2, SEEK_CUR)) {
-    ret += 2U;
-  } else {
-    return MuTFFErrorIOError;
-  }
+  MuTFF_SEEK_CUR(2U);
   MuTFF_FIELD(mutff_read_u16, &out->child_count);
-  if (!fseek(fd, 4, SEEK_CUR)) {
-    ret += 4U;
-  } else {
-    return MuTFFErrorIOError;
-  }
+  MuTFF_SEEK_CUR(4U);
 
   // read children
+  uint64_t child_size;
+  uint32_t child_type;
   while (ret < size) {
-    MuTFF_FIELD(mutff_peek_atom_header, &header);
-    if (ret + header.size > size) {
+    MuTFF_FIELD(mutff_peek_atom_header, &child_size, &child_type);
+    if (ret + child_size > size) {
       return MuTFFErrorBadFormat;
     }
-    switch (header.type) {
+    switch (child_type) {
       case MuTFF_FOURCC('\0', '\0', 't', 'y'):
         MuTFF_READ_CHILD(mutff_read_input_type_atom, &out->input_type_atom,
                          input_type_present);
@@ -1698,10 +1651,7 @@ MuTFFError mutff_read_track_input_atom(FILE *fd, MuTFFTrackInputAtom *out) {
                          out->object_id_atom_present);
         break;
       default:
-        if (fseek(fd, header.size, SEEK_CUR) == -1) {
-          return MuTFFErrorIOError;
-        }
-        ret += header.size;
+        MuTFF_SEEK_CUR(child_size);
         break;
     }
   }
@@ -1752,23 +1702,21 @@ MuTFFError mutff_read_track_input_map_atom(FILE *fd,
 
   // read children
   size_t i = 0;
-  MuTFFAtomHeader header;
+  uint64_t child_size;
+  uint32_t child_type;
   while (ret < size) {
     if (i >= MuTFF_MAX_TRACK_REFERENCE_TYPE_ATOMS) {
       return MuTFFErrorOutOfMemory;
     }
-    MuTFF_FIELD(mutff_peek_atom_header, &header);
-    if (ret + header.size > size) {
+    MuTFF_FIELD(mutff_peek_atom_header, &child_size, &child_type);
+    if (ret + child_size > size) {
       return MuTFFErrorBadFormat;
     }
-    if (header.type == MuTFF_FOURCC('\0', '\0', 'i', 'n')) {
+    if (child_type == MuTFF_FOURCC('\0', '\0', 'i', 'n')) {
       MuTFF_FIELD(mutff_read_track_input_atom, &out->track_input_atoms[i]);
       i++;
     } else {
-      if (fseek(fd, header.size, SEEK_CUR) == -1) {
-        return MuTFFErrorIOError;
-      }
-      ret += header.size;
+      MuTFF_SEEK_CUR(child_size);
     }
   }
   out->track_input_atom_count = i;
@@ -2031,8 +1979,6 @@ MuTFFError mutff_read_data_reference_atom(FILE *fd,
                                           MuTFFDataReferenceAtom *out) {
   MuTFFError err;
   uint64_t ret = 0;
-  MuTFFAtomHeader header;
-  size_t offset;
   uint64_t size;
   uint32_t type;
 
@@ -2048,20 +1994,19 @@ MuTFFError mutff_read_data_reference_atom(FILE *fd,
   if (out->number_of_entries > MuTFF_MAX_DATA_REFERENCES) {
     return MuTFFErrorOutOfMemory;
   }
-  offset = 16;
+
+  uint64_t child_size;
+  uint32_t child_type;
   for (size_t i = 0; i < out->number_of_entries; ++i) {
-    MuTFF_FIELD(mutff_peek_atom_header, &header);
-    offset += header.size;
-    if (offset > size) {
+    MuTFF_FIELD(mutff_peek_atom_header, &child_size, &child_type);
+    if (ret + child_size > size) {
       return MuTFFErrorBadFormat;
     }
     MuTFF_FIELD(mutff_read_data_reference, &out->data_references[i]);
   }
 
   // skip any remaining space
-  if (!fseek(fd, size - ret, SEEK_CUR)) {
-    ret += size - ret;
-  }
+  MuTFF_SEEK_CUR(size - ret);
 
   return ret;
 }
@@ -2102,25 +2047,25 @@ MuTFFError mutff_read_data_information_atom(FILE *fd,
   uint64_t ret = 0;
   uint64_t size;
   uint32_t type;
-  MuTFFAtomHeader header;
   bool data_reference_present = false;
 
   MuTFF_FIELD(mutff_read_header, &size, &type);
   if (type != MuTFF_FOURCC('d', 'i', 'n', 'f')) {
     return MuTFFErrorBadFormat;
   }
+
+  uint64_t child_size;
+  uint32_t child_type;
   while (ret < size) {
-    MuTFF_FIELD(mutff_peek_atom_header, &header);
-    if (ret + header.size > size) {
+    MuTFF_FIELD(mutff_peek_atom_header, &child_size, &child_type);
+    if (ret + child_size > size) {
       return MuTFFErrorBadFormat;
     }
-    if (header.type == MuTFF_FOURCC('d', 'r', 'e', 'f')) {
+    if (child_type == MuTFF_FOURCC('d', 'r', 'e', 'f')) {
       MuTFF_READ_CHILD(mutff_read_data_reference_atom, &out->data_reference,
                        data_reference_present);
     } else {
-      if (!fseek(fd, header.size, SEEK_CUR)) {
-        ret += header.size;
-      }
+      MuTFF_SEEK_CUR(child_size);
     }
   }
 
@@ -2150,8 +2095,6 @@ MuTFFError mutff_read_sample_description_atom(FILE *fd,
                                               MuTFFSampleDescriptionAtom *out) {
   MuTFFError err;
   uint64_t ret = 0;
-  MuTFFAtomHeader header;
-  size_t offset;
   uint64_t size;
   uint32_t type;
   MuTFF_FIELD(mutff_read_header, &size, &type);
@@ -2166,11 +2109,12 @@ MuTFFError mutff_read_sample_description_atom(FILE *fd,
   if (out->number_of_entries > MuTFF_MAX_SAMPLE_DESCRIPTION_TABLE_LEN) {
     return MuTFFErrorOutOfMemory;
   }
-  offset = 16;
+
+  uint64_t child_size;
+  uint32_t child_type;
   for (size_t i = 0; i < out->number_of_entries; ++i) {
-    MuTFF_FIELD(mutff_peek_atom_header, &header);
-    offset += header.size;
-    if (offset > size) {
+    MuTFF_FIELD(mutff_peek_atom_header, &child_size, &child_type);
+    if (ret + child_size > size) {
       return MuTFFErrorBadFormat;
     }
     MuTFF_FIELD(mutff_read_sample_description,
@@ -2178,9 +2122,7 @@ MuTFFError mutff_read_sample_description_atom(FILE *fd,
   }
 
   // skip any remaining space
-  if (!fseek(fd, size - ret, SEEK_CUR)) {
-    ret += size - ret;
-  }
+  MuTFF_SEEK_CUR(size - ret);
 
   return ret;
 }
@@ -2611,9 +2553,7 @@ MuTFFError mutff_read_sample_size_atom(FILE *fd, MuTFFSampleSizeAtom *out) {
     }
   } else {
     // skip table
-    if (!fseek(fd, size - ret, SEEK_CUR)) {
-      ret += size - ret;
-    }
+    MuTFF_SEEK_CUR(size - ret);
   }
 
   return ret;
@@ -2744,8 +2684,6 @@ MuTFFError mutff_write_sample_dependency_flags_atom(
 MuTFFError mutff_read_sample_table_atom(FILE *fd, MuTFFSampleTableAtom *out) {
   MuTFFError err;
   uint64_t ret = 0;
-  MuTFFAtomHeader header;
-  size_t offset;
   uint64_t size;
   uint32_t type;
   bool sample_description_present = false;
@@ -2766,15 +2704,15 @@ MuTFFError mutff_read_sample_table_atom(FILE *fd, MuTFFSampleTableAtom *out) {
   }
 
   // read child atoms
-  offset = 8;
-  while (offset < size) {
-    MuTFF_FIELD(mutff_peek_atom_header, &header);
-    offset += header.size;
-    if (offset > size) {
+  uint64_t child_size;
+  uint32_t child_type;
+  while (ret < size) {
+    MuTFF_FIELD(mutff_peek_atom_header, &child_size, &child_type);
+    if (ret + child_size > size) {
       return MuTFFErrorBadFormat;
     }
 
-    switch (header.type) {
+    switch (child_type) {
       case MuTFF_FOURCC('s', 't', 's', 'd'):
         MuTFF_READ_CHILD(mutff_read_sample_description_atom,
                          &out->sample_description, sample_description_present);
@@ -2827,10 +2765,7 @@ MuTFFError mutff_read_sample_table_atom(FILE *fd, MuTFFSampleTableAtom *out) {
       /* case MuTFF_FOURCC('s', 'b', 'g', 'p'): */
       /*   break; */
       default:
-        if (fseek(fd, header.size, SEEK_CUR) == -1) {
-          return MuTFFErrorIOError;
-        }
-        ret += header.size;
+        MuTFF_SEEK_CUR(child_size);
         break;
     }
   }
@@ -2846,8 +2781,6 @@ MuTFFError mutff_read_video_media_information_atom(
     FILE *fd, MuTFFVideoMediaInformationAtom *out) {
   MuTFFError err;
   uint64_t ret = 0;
-  MuTFFAtomHeader header;
-  size_t offset;
   uint64_t size;
   uint32_t type;
   bool video_media_information_header_present = false;
@@ -2862,15 +2795,15 @@ MuTFFError mutff_read_video_media_information_atom(
   }
 
   // read child atoms
-  offset = 8;
-  while (offset < size) {
-    MuTFF_FIELD(mutff_peek_atom_header, &header);
-    offset += header.size;
-    if (offset > size) {
+  uint64_t child_size;
+  uint32_t child_type;
+  while (ret < size) {
+    MuTFF_FIELD(mutff_peek_atom_header, &child_size, &child_type);
+    if (ret + child_size > size) {
       return MuTFFErrorBadFormat;
     }
 
-    switch (header.type) {
+    switch (child_type) {
       case MuTFF_FOURCC('v', 'm', 'h', 'd'):
         MuTFF_READ_CHILD(mutff_read_video_media_information_header_atom,
                          &out->video_media_information_header,
@@ -2889,10 +2822,7 @@ MuTFFError mutff_read_video_media_information_atom(
                          out->sample_table_present);
         break;
       default:
-        if (fseek(fd, header.size, SEEK_CUR) == -1) {
-          return MuTFFErrorIOError;
-        }
-        ret += header.size;
+        MuTFF_SEEK_CUR(child_size);
         break;
     }
   }
@@ -2917,10 +2847,7 @@ MuTFFError mutff_read_sound_media_information_header_atom(
   MuTFF_FIELD(mutff_read_u8, &out->version);
   MuTFF_FIELD(mutff_read_u24, &out->flags);
   MuTFF_FIELD(mutff_read_i16, &out->balance);
-  if (fseek(fd, 2, SEEK_CUR) == -1) {
-    return MuTFFErrorIOError;
-  }
-  ret += 2U;
+  MuTFF_SEEK_CUR(2U);
   return ret;
 }
 
@@ -2948,8 +2875,6 @@ MuTFFError mutff_read_sound_media_information_atom(
     FILE *fd, MuTFFSoundMediaInformationAtom *out) {
   MuTFFError err;
   uint64_t ret = 0;
-  MuTFFAtomHeader header;
-  size_t offset;
   uint64_t size;
   uint32_t type;
   bool sound_media_information_header_present = false;
@@ -2964,15 +2889,15 @@ MuTFFError mutff_read_sound_media_information_atom(
   }
 
   // read child atoms
-  offset = 8;
-  while (offset < size) {
-    MuTFF_FIELD(mutff_peek_atom_header, &header);
-    offset += header.size;
-    if (offset > size) {
+  uint64_t child_size;
+  uint32_t child_type;
+  while (ret < size) {
+    MuTFF_FIELD(mutff_peek_atom_header, &child_size, &child_type);
+    if (ret + child_size > size) {
       return MuTFFErrorBadFormat;
     }
 
-    switch (header.type) {
+    switch (child_type) {
       case MuTFF_FOURCC('s', 'm', 'h', 'd'):
         MuTFF_READ_CHILD(mutff_read_sound_media_information_header_atom,
                          &out->sound_media_information_header,
@@ -2991,10 +2916,7 @@ MuTFFError mutff_read_sound_media_information_atom(
                          out->sample_table_present);
         break;
       default:
-        if (fseek(fd, header.size, SEEK_CUR) == -1) {
-          return MuTFFErrorIOError;
-        }
-        ret += header.size;
+        MuTFF_SEEK_CUR(child_size);
         break;
     }
   }
@@ -3023,10 +2945,7 @@ MuTFFError mutff_read_base_media_info_atom(FILE *fd,
     MuTFF_FIELD(mutff_read_u16, &out->opcolor[i]);
   }
   MuTFF_FIELD(mutff_read_i16, &out->balance);
-  if (fseek(fd, 2, SEEK_CUR) == -1) {
-    return MuTFFErrorIOError;
-  }
-  ret += 2U;
+  MuTFF_SEEK_CUR(2U);
   return ret;
 }
 
@@ -3095,8 +3014,6 @@ MuTFFError mutff_read_base_media_information_header_atom(
     FILE *fd, MuTFFBaseMediaInformationHeaderAtom *out) {
   MuTFFError err;
   uint64_t ret = 0;
-  MuTFFAtomHeader header;
-  size_t offset;
   uint64_t size;
   uint32_t type;
   bool base_media_info_present = false;
@@ -3109,15 +3026,15 @@ MuTFFError mutff_read_base_media_information_header_atom(
   }
 
   // read child atoms
-  offset = 8;
-  while (offset < size) {
-    MuTFF_FIELD(mutff_peek_atom_header, &header);
-    offset += header.size;
-    if (offset > size) {
+  uint64_t child_size;
+  uint32_t child_type;
+  while (ret < size) {
+    MuTFF_FIELD(mutff_peek_atom_header, &child_size, &child_type);
+    if (ret + child_size > size) {
       return MuTFFErrorBadFormat;
     }
 
-    switch (header.type) {
+    switch (child_type) {
       case MuTFF_FOURCC('g', 'm', 'i', 'n'):
         MuTFF_READ_CHILD(mutff_read_base_media_info_atom, &out->base_media_info,
                          base_media_info_present);
@@ -3128,10 +3045,7 @@ MuTFFError mutff_read_base_media_information_header_atom(
                          out->text_media_information_present);
         break;
       default:
-        if (fseek(fd, header.size, SEEK_CUR) == -1) {
-          return MuTFFErrorIOError;
-        }
-        ret += header.size;
+        MuTFF_SEEK_CUR(child_size);
         break;
     }
   }
@@ -3174,9 +3088,7 @@ MuTFFError mutff_read_base_media_information_atom(
               &out->base_media_information_header);
 
   // skip remaining space
-  if (!fseek(fd, size - ret, SEEK_CUR)) {
-    ret += size - ret;
-  }
+  MuTFF_SEEK_CUR(size - ret);
 
   return ret;
 }
@@ -3263,7 +3175,6 @@ MuTFFError mutff_media_type(MuTFFMediaType *out, MuTFFMediaAtom *atom) {
 MuTFFError mutff_read_media_atom(FILE *fd, MuTFFMediaAtom *out) {
   MuTFFError err;
   uint64_t ret = 0;
-  MuTFFAtomHeader header;
   uint64_t size;
   uint32_t type;
   bool media_header_present = false;
@@ -3280,13 +3191,15 @@ MuTFFError mutff_read_media_atom(FILE *fd, MuTFFMediaAtom *out) {
   }
 
   // read child atoms
+  uint64_t child_size;
+  uint32_t child_type;
   while (ret < size) {
-    MuTFF_FIELD(mutff_peek_atom_header, &header);
-    if (ret + header.size > size) {
+    MuTFF_FIELD(mutff_peek_atom_header, &child_size, &child_type);
+    if (ret + child_size > size) {
       return MuTFFErrorBadFormat;
     }
 
-    switch (header.type) {
+    switch (child_type) {
       case MuTFF_FOURCC('m', 'd', 'h', 'd'):
         MuTFF_READ_CHILD(mutff_read_media_header_atom, &out->media_header,
                          media_header_present);
@@ -3310,10 +3223,7 @@ MuTFFError mutff_read_media_atom(FILE *fd, MuTFFMediaAtom *out) {
         if (errno != 0) {
           return MuTFFErrorIOError;
         }
-        if (fseek(fd, header.size, SEEK_CUR) == -1) {
-          return MuTFFErrorIOError;
-        }
-        ret += header.size;
+        MuTFF_SEEK_CUR(child_size);
         out->media_information_present = true;
         break;
       case MuTFF_FOURCC('u', 'd', 't', 'a'):
@@ -3321,10 +3231,7 @@ MuTFFError mutff_read_media_atom(FILE *fd, MuTFFMediaAtom *out) {
                          out->user_data_present);
         break;
       default:
-        if (fseek(fd, header.size, SEEK_CUR) == -1) {
-          return MuTFFErrorIOError;
-        }
-        ret += header.size;
+        MuTFF_SEEK_CUR(child_size);
         break;
     }
   }
@@ -3377,8 +3284,6 @@ MuTFFError mutff_read_media_atom(FILE *fd, MuTFFMediaAtom *out) {
 MuTFFError mutff_read_track_atom(FILE *fd, MuTFFTrackAtom *out) {
   MuTFFError err;
   uint64_t ret = 0;
-  MuTFFAtomHeader header;
-  size_t offset;
   uint64_t size;
   uint32_t type;
   bool track_header_present = false;
@@ -3400,15 +3305,15 @@ MuTFFError mutff_read_track_atom(FILE *fd, MuTFFTrackAtom *out) {
   }
 
   // read child atoms
-  offset = 8;
-  while (offset < size) {
-    MuTFF_FIELD(mutff_peek_atom_header, &header);
-    offset += header.size;
-    if (offset > size) {
+  uint64_t child_size;
+  uint32_t child_type;
+  while (ret < size) {
+    MuTFF_FIELD(mutff_peek_atom_header, &child_size, &child_type);
+    if (ret + child_size > size) {
       return MuTFFErrorBadFormat;
     }
 
-    switch (header.type) {
+    switch (child_type) {
       case MuTFF_FOURCC('t', 'k', 'h', 'd'):
         MuTFF_READ_CHILD(mutff_read_track_header_atom, &out->track_header,
                          track_header_present);
@@ -3455,10 +3360,7 @@ MuTFFError mutff_read_track_atom(FILE *fd, MuTFFTrackAtom *out) {
                          out->user_data_present);
         break;
       default:
-        if (fseek(fd, header.size, SEEK_CUR) == -1) {
-          return MuTFFErrorIOError;
-        }
-        ret += header.size;
+        MuTFF_SEEK_CUR(child_size);
         break;
     }
   }
@@ -3473,7 +3375,6 @@ MuTFFError mutff_read_track_atom(FILE *fd, MuTFFTrackAtom *out) {
 MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out) {
   MuTFFError err;
   uint64_t ret = 0;
-  MuTFFAtomHeader header;
   uint64_t size;
   uint32_t type;
   bool movie_header_present = false;
@@ -3489,13 +3390,15 @@ MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out) {
   }
 
   // read child atoms
+  uint64_t child_size;
+  uint32_t child_type;
   while (ret < size) {
-    MuTFF_FIELD(mutff_peek_atom_header, &header);
-    if (ret + header.size > size) {
+    MuTFF_FIELD(mutff_peek_atom_header, &child_size, &child_type);
+    if (ret + child_size > size) {
       return MuTFFErrorBadFormat;
     }
 
-    switch (header.type) {
+    switch (child_type) {
       case MuTFF_FOURCC('m', 'v', 'h', 'd'):
         MuTFF_READ_CHILD(mutff_read_movie_header_atom, &out->movie_header,
                          movie_header_present);
@@ -3526,10 +3429,7 @@ MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out) {
 
       default:
         // unrecognised atom type - skip as per spec
-        if (fseek(fd, header.size, SEEK_CUR) == -1) {
-          return MuTFFErrorIOError;
-        }
-        ret += header.size;
+        MuTFF_SEEK_CUR(child_size);
         break;
     }
   }
@@ -3543,8 +3443,9 @@ MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out) {
 
 MuTFFError mutff_read_movie_file(FILE *fd, MuTFFMovieFile *out) {
   MuTFFError err;
+  uint64_t size;
+  uint32_t type;
   uint64_t ret = 0;
-  MuTFFAtomHeader atom;
   bool movie_present = false;
 
   out->preview_present = false;
@@ -3554,14 +3455,14 @@ MuTFFError mutff_read_movie_file(FILE *fd, MuTFFMovieFile *out) {
   out->wide_count = 0;
 
   rewind(fd);
-  MuTFF_FIELD(mutff_peek_atom_header, &atom);
-  if (atom.type == MuTFF_FOURCC('f', 't', 'y', 'p')) {
+  MuTFF_FIELD(mutff_peek_atom_header, &size, &type);
+  if (type == MuTFF_FOURCC('f', 't', 'y', 'p')) {
     MuTFF_FIELD(mutff_read_file_type_atom, &out->file_type);
     out->file_type_present = true;
   }
 
-  while ((int)mutff_peek_atom_header(fd, &atom) >= 0) {
-    switch (atom.type) {
+  while ((int)mutff_peek_atom_header(fd, &size, &type) >= 0) {
+    switch (type) {
       case MuTFF_FOURCC('f', 't', 'y', 'p'):
         return MuTFFErrorBadFormat;
 
@@ -3609,10 +3510,7 @@ MuTFFError mutff_read_movie_file(FILE *fd, MuTFFMovieFile *out) {
 
       default:
         // unsupported basic type - skip as per spec
-        if (fseek(fd, atom.size, SEEK_CUR) == -1) {
-          return MuTFFErrorIOError;
-        }
-        ret += atom.size;
+        MuTFF_SEEK_CUR(size);
         break;
     }
   }

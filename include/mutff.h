@@ -54,26 +54,6 @@ typedef enum {
 } MuTFFError;
 
 ///
-/// @brief The header + offset of a generic QuickTime atom
-///
-typedef struct {
-  uint32_t size;
-  uint32_t type;
-} MuTFFAtomHeader;
-
-///
-/// @brief Read the header of an atom
-///
-/// The current file offset must be at the start of the atom.
-///
-/// @param [in] fd    The file descriptor
-/// @param [out] out  Output
-/// @return           If the read was successful, the number of bytes read.
-///                   If there was an error, the MuTFFError code.
-///
-extern MuTFFError mutff_peek_atom_header(FILE *fd, MuTFFAtomHeader *out);
-
-///
 /// @brief A QuickDraw rectangle
 /// @see
 /// https://developer.apple.com/library/archive/documentation/mac/pdf/ImagingWithQuickDraw.pdf
