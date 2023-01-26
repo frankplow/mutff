@@ -201,7 +201,7 @@ TEST(MuTFF, ReadFileTypeAtom) {
 // }}}1
 
 // {{{1 movie data atom unit tests
-static const uint32_t mdat_test_data_size = 16;
+static const uint32_t mdat_test_data_size = 8;
 // clang-format off
 #define MDAT_TEST_DATA         \
     mdat_test_data_size >> 24, \
@@ -214,7 +214,7 @@ static const unsigned char mdat_test_data[mdat_test_data_size] =
     ARR(MDAT_TEST_DATA);
 // clang-format off
 static const MuTFFMovieDataAtom mdat_test_struct = {
-    8,
+    0,
 };
 // clang-format on
 
@@ -1435,26 +1435,18 @@ TEST(MuTFF, ReadCompressedMatteAtom) {
 // }}}1
 
 // {{{1 track matte atom unit tests
-static const uint32_t matt_test_data_size = 44;
+static const uint32_t matt_test_data_size = 8 + kmat_test_data_size;
 // clang-format off
-static const unsigned char matt_test_data[matt_test_data_size] = {
-    matt_test_data_size >> 24,           // size
-    matt_test_data_size >> 16,
-    matt_test_data_size >> 8,
-    matt_test_data_size,
-    'm', 'a', 't', 't',                  // type
-    0x00, 0x00, 0x00, 36,                // kmat.size
-    'k', 'm', 'a', 't',                  // kmat.type
-    0x00,                                // kmat.version
-    0x00, 0x01, 0x02,                    // kmat.flags
-    0x00, 0x00, 0x00, 0x14,              // kmat.desc.size
-    'a', 'b', 'c', 'd',                  // kmat.desc.data format
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // kmat.desc.reserved
-    0x00, 0x01,                          // kmat.desc.data reference index
-    0x00, 0x01, 0x02, 0x03,              // kmat.desc.media-specific data
-    0x00, 0x01, 0x02, 0x03,              // kmat.matte data
-};
+#define MATT_TEST_DATA                     \
+    matt_test_data_size >> 24,  /* size */ \
+    matt_test_data_size >> 16,             \
+    matt_test_data_size >> 8,              \
+    matt_test_data_size,                   \
+    'm', 'a', 't', 't',         /* type */ \
+    KMAT_TEST_DATA
 // clang-format on
+static const unsigned char matt_test_data[matt_test_data_size] =
+    ARR(MATT_TEST_DATA);
 // clang-format off
 static const MuTFFTrackMatteAtom matt_test_struct = {
     kmat_test_struct,      // compressed matte
@@ -1477,6 +1469,11 @@ TEST(MuTFF, WriteTrackMatteAtom) {
   }
 }
 
+static inline void expect_matt_eq(const MuTFFTrackMatteAtom *a,
+                                  const MuTFFTrackMatteAtom *b) {
+  expect_kmat_eq(&a->compressed_matte_atom, &b->compressed_matte_atom);
+}
+
 TEST(MuTFF, ReadTrackMatteAtom) {
   MuTFFError ret;
   MuTFFTrackMatteAtom atom;
@@ -1486,6 +1483,7 @@ TEST(MuTFF, ReadTrackMatteAtom) {
   ret = mutff_read_track_matte_atom(fd, &atom);
   ASSERT_EQ(ret, matt_test_data_size);
 
+  expect_matt_eq(&atom, &matt_test_struct);
   EXPECT_EQ(ftell(fd), matt_test_data_size);
 }
 // }}}1
@@ -1870,7 +1868,7 @@ static const uint32_t load_test_data_size = 24;
     0x00, 0x01, 0x02, 0x03,     /* preload start time */ \
     0x10, 0x11, 0x12, 0x13,     /* preload duration */   \
     0x20, 0x21, 0x22, 0x23,     /* preload flags */      \
-    0x30, 0x31, 0x32, 0x33,     /* default hints */
+    0x30, 0x31, 0x32, 0x33      /* default hints */
 // clang-format on
 static const unsigned char load_test_data[load_test_data_size] =
     ARR(LOAD_TEST_DATA);
@@ -2378,77 +2376,6 @@ TEST(MuTFF, ReadHandlerReferenceAtom) {
 }
 // }}}1
 
-// {{{1 video media information header atom unit tests
-static const uint32_t vmhd_test_data_size = 20;
-// clang-format off
-#define VMHD_TEST_DATA                              \
-    vmhd_test_data_size >> 24,  /* size */          \
-    vmhd_test_data_size >> 16,                      \
-    vmhd_test_data_size >> 8,                       \
-    vmhd_test_data_size,                            \
-    'v', 'm', 'h', 'd',         /* type */          \
-    0x00,                       /* version */       \
-    0x00, 0x01, 0x02,           /* flags */         \
-    0x00, 0x01,                 /* graphics mode */ \
-    0x10, 0x11,                 /* opcolor[0] */    \
-    0x20, 0x21,                 /* opcolor[1] */    \
-    0x30, 0x31                  /* opcolor[2] */
-// clang-format on
-static const unsigned char vmhd_test_data[vmhd_test_data_size] =
-    ARR(VMHD_TEST_DATA);
-// clang-format off
-static const MuTFFVideoMediaInformationHeaderAtom vmhd_test_struct = {
-    0x00,                    // version
-    0x000102,                // flags
-    0x0001,                  // graphics mode
-    0x1011,                  // opcolor[0]
-    0x2021,                  // opcolor[1]
-    0x3031,                  // opcolor[2]
-};
-// clang-format on
-
-TEST(MuTFF, WriteVideoMediaInformationHeaderAtom) {
-  // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  const MuTFFError ret =
-      mutff_write_video_media_information_header_atom(fd, &vmhd_test_struct);
-  ASSERT_EQ(ret, vmhd_test_data_size);
-
-  const size_t file_size = ftell(fd);
-  rewind(fd);
-  unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
-  EXPECT_EQ(file_size, vmhd_test_data_size);
-  for (size_t i = 0; i < file_size; ++i) {
-    EXPECT_EQ(data[i], vmhd_test_data[i]);
-  }
-}
-
-static inline void expect_vmhd_eq(
-    const MuTFFVideoMediaInformationHeaderAtom *a,
-    const MuTFFVideoMediaInformationHeaderAtom *b) {
-  EXPECT_EQ(a->version, b->version);
-  EXPECT_EQ(a->flags, b->flags);
-  EXPECT_EQ(a->graphics_mode, b->graphics_mode);
-  EXPECT_EQ(a->opcolor[0], b->opcolor[0]);
-  EXPECT_EQ(a->opcolor[1], b->opcolor[1]);
-  EXPECT_EQ(a->opcolor[2], b->opcolor[2]);
-}
-
-TEST(MuTFF, ReadVideoMediaInformationHeaderAtom) {
-  MuTFFError ret;
-  MuTFFVideoMediaInformationHeaderAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
-  fwrite(vmhd_test_data, vmhd_test_data_size, 1, fd);
-  rewind(fd);
-  ret = mutff_read_video_media_information_header_atom(fd, &atom);
-  ASSERT_EQ(ret, vmhd_test_data_size);
-
-  expect_vmhd_eq(&atom, &vmhd_test_struct);
-  EXPECT_EQ(ftell(fd), vmhd_test_data_size);
-}
-// }}}1
-
 // {{{1 data reference unit tests
 static const uint32_t data_ref_test_data_size = 16;
 // clang-format off
@@ -2848,7 +2775,7 @@ static const uint32_t ctts_entry_test_data_size = 8;
 // clang-format off
 #define CTTS_ENTRY_TEST_DATA                          \
     0x00, 0x01, 0x02, 0x03,  /* sample count */       \
-    0x10, 0x11, 0x12, 0x13,  /* composition offset */
+    0x10, 0x11, 0x12, 0x13   /* composition offset */
 // clang-format on
 static const unsigned char ctts_entry_test_data[ctts_entry_test_data_size] =
     ARR(CTTS_ENTRY_TEST_DATA);
@@ -3529,9 +3456,291 @@ TEST(MuTFF, ReadSampleDependencyFlagsAtom) {
 // }}}1
 
 // {{{1 sample table atom unit tests
+static const uint32_t stbl_test_data_size =
+    8 + stsd_test_data_size + stts_test_data_size + ctts_test_data_size +
+    cslg_test_data_size + stss_test_data_size + stps_test_data_size +
+    stsc_test_data_size + stsz_test_data_size + stco_test_data_size +
+    sdtp_test_data_size;
+// clang-format off
+#define STBL_TEST_DATA                            \
+    stbl_test_data_size >> 24 & 0xFF,  /* size */ \
+    stbl_test_data_size >> 16 & 0xFF,             \
+    stbl_test_data_size >> 8 & 0xFF,              \
+    stbl_test_data_size & 0xFF,                   \
+    's', 't', 'b', 'l',                /* type */ \
+    STSD_TEST_DATA,                               \
+    STTS_TEST_DATA,                               \
+    CTTS_TEST_DATA,                               \
+    CSLG_TEST_DATA,                               \
+    STSS_TEST_DATA,                               \
+    STPS_TEST_DATA,                               \
+    STSC_TEST_DATA,                               \
+    STSZ_TEST_DATA,                               \
+    STCO_TEST_DATA,                               \
+    SDTP_TEST_DATA
+// clang-format on
+static const unsigned char stbl_test_data[stbl_test_data_size] =
+    ARR(STBL_TEST_DATA);
+// clang-format off
+static const MuTFFSampleTableAtom stbl_test_struct = {
+  stsd_test_struct,
+  stts_test_struct,
+  true,
+  ctts_test_struct,
+  true,
+  cslg_test_struct,
+  true,
+  stss_test_struct,
+  true,
+  stps_test_struct,
+  true,
+  stsc_test_struct,
+  true,
+  stsz_test_struct,
+  true,
+  stco_test_struct,
+  true,
+  sdtp_test_struct,
+};
+// clang-format on
+
+TEST(MuTFF, WriteSampleTableAtom) {
+  // clang-format on
+  FILE *fd = fopen("temp.mov", "w+b");
+  const MuTFFError ret = mutff_write_sample_table_atom(fd, &stbl_test_struct);
+  ASSERT_EQ(ret, stbl_test_data_size);
+
+  const size_t file_size = ftell(fd);
+  rewind(fd);
+  unsigned char data[file_size];
+  fread(data, file_size, 1, fd);
+  EXPECT_EQ(file_size, stbl_test_data_size);
+  for (size_t i = 0; i < file_size; ++i) {
+    EXPECT_EQ(data[i], stbl_test_data[i]);
+  }
+}
+
+static inline void expect_stbl_eq(const MuTFFSampleTableAtom *a,
+                                  const MuTFFSampleTableAtom *b) {
+  expect_stsd_eq(&a->sample_description, &b->sample_description);
+  expect_stts_eq(&a->time_to_sample, &b->time_to_sample);
+  EXPECT_EQ(a->composition_offset_present, b->composition_offset_present);
+  const bool composition_offset_present =
+      a->composition_offset_present && b->composition_offset_present;
+  if (composition_offset_present) {
+    expect_ctts_eq(&a->composition_offset, &b->composition_offset);
+  }
+  EXPECT_EQ(a->composition_shift_least_greatest_present,
+            b->composition_shift_least_greatest_present);
+  const bool composition_shift_least_greatest_present =
+      a->composition_shift_least_greatest_present &&
+      b->composition_shift_least_greatest_present;
+  if (composition_shift_least_greatest_present) {
+    expect_cslg_eq(&a->composition_shift_least_greatest,
+                   &b->composition_shift_least_greatest);
+  }
+  EXPECT_EQ(a->sync_sample_present, b->sync_sample_present);
+  const bool sync_sample_present =
+      a->sync_sample_present && b->sync_sample_present;
+  if (sync_sample_present) {
+    expect_stss_eq(&a->sync_sample, &b->sync_sample);
+  }
+  EXPECT_EQ(a->partial_sync_sample_present, b->partial_sync_sample_present);
+  const bool partial_sync_sample_present =
+      a->partial_sync_sample_present && b->partial_sync_sample_present;
+  if (partial_sync_sample_present) {
+    expect_stps_eq(&a->partial_sync_sample, &b->partial_sync_sample);
+  }
+  EXPECT_EQ(a->sample_to_chunk_present, b->sample_to_chunk_present);
+  const bool sample_to_chunk_present =
+      a->sample_to_chunk_present && b->sample_to_chunk_present;
+  if (sample_to_chunk_present) {
+    expect_stsc_eq(&a->sample_to_chunk, &b->sample_to_chunk);
+  }
+  EXPECT_EQ(a->sample_size_present, b->sample_size_present);
+  const bool sample_size_present =
+      a->sample_size_present && b->sample_size_present;
+  if (sample_size_present) {
+    expect_stsz_eq(&a->sample_size, &b->sample_size);
+  }
+  EXPECT_EQ(a->chunk_offset_present, b->chunk_offset_present);
+  const bool chunk_offset_present =
+      a->chunk_offset_present && b->chunk_offset_present;
+  if (chunk_offset_present) {
+    expect_stco_eq(&a->chunk_offset, &b->chunk_offset);
+  }
+  EXPECT_EQ(a->sample_dependency_flags_present,
+            b->sample_dependency_flags_present);
+  const bool sample_dependency_flags_present =
+      a->sample_dependency_flags_present && b->sample_dependency_flags_present;
+  if (sample_dependency_flags_present) {
+    expect_sdtp_eq(&a->sample_dependency_flags, &b->sample_dependency_flags);
+  }
+}
+
+TEST(MuTFF, ReadSampleTableAtom) {
+  MuTFFError ret;
+  MuTFFSampleTableAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  fwrite(stbl_test_data, stbl_test_data_size, 1, fd);
+  rewind(fd);
+  ret = mutff_read_sample_table_atom(fd, &atom);
+  ASSERT_EQ(ret, stbl_test_data_size);
+
+  expect_stbl_eq(&atom, &stbl_test_struct);
+  EXPECT_EQ(ftell(fd), stbl_test_data_size);
+}
+// }}}1
+
+// {{{1 video media information header atom unit tests
+static const uint32_t vmhd_test_data_size = 20;
+// clang-format off
+#define VMHD_TEST_DATA                              \
+    vmhd_test_data_size >> 24,  /* size */          \
+    vmhd_test_data_size >> 16,                      \
+    vmhd_test_data_size >> 8,                       \
+    vmhd_test_data_size,                            \
+    'v', 'm', 'h', 'd',         /* type */          \
+    0x00,                       /* version */       \
+    0x00, 0x01, 0x02,           /* flags */         \
+    0x00, 0x01,                 /* graphics mode */ \
+    0x10, 0x11,                 /* opcolor[0] */    \
+    0x20, 0x21,                 /* opcolor[1] */    \
+    0x30, 0x31                  /* opcolor[2] */
+// clang-format on
+static const unsigned char vmhd_test_data[vmhd_test_data_size] =
+    ARR(VMHD_TEST_DATA);
+// clang-format off
+static const MuTFFVideoMediaInformationHeaderAtom vmhd_test_struct = {
+    0x00,                    // version
+    0x000102,                // flags
+    0x0001,                  // graphics mode
+    0x1011,                  // opcolor[0]
+    0x2021,                  // opcolor[1]
+    0x3031,                  // opcolor[2]
+};
+// clang-format on
+
+TEST(MuTFF, WriteVideoMediaInformationHeaderAtom) {
+  // clang-format on
+  FILE *fd = fopen("temp.mov", "w+b");
+  const MuTFFError ret =
+      mutff_write_video_media_information_header_atom(fd, &vmhd_test_struct);
+  ASSERT_EQ(ret, vmhd_test_data_size);
+
+  const size_t file_size = ftell(fd);
+  rewind(fd);
+  unsigned char data[file_size];
+  fread(data, file_size, 1, fd);
+  EXPECT_EQ(file_size, vmhd_test_data_size);
+  for (size_t i = 0; i < file_size; ++i) {
+    EXPECT_EQ(data[i], vmhd_test_data[i]);
+  }
+}
+
+static inline void expect_vmhd_eq(
+    const MuTFFVideoMediaInformationHeaderAtom *a,
+    const MuTFFVideoMediaInformationHeaderAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->graphics_mode, b->graphics_mode);
+  EXPECT_EQ(a->opcolor[0], b->opcolor[0]);
+  EXPECT_EQ(a->opcolor[1], b->opcolor[1]);
+  EXPECT_EQ(a->opcolor[2], b->opcolor[2]);
+}
+
+TEST(MuTFF, ReadVideoMediaInformationHeaderAtom) {
+  MuTFFError ret;
+  MuTFFVideoMediaInformationHeaderAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  fwrite(vmhd_test_data, vmhd_test_data_size, 1, fd);
+  rewind(fd);
+  ret = mutff_read_video_media_information_header_atom(fd, &atom);
+  ASSERT_EQ(ret, vmhd_test_data_size);
+
+  expect_vmhd_eq(&atom, &vmhd_test_struct);
+  EXPECT_EQ(ftell(fd), vmhd_test_data_size);
+}
 // }}}1
 
 // {{{1 video media information atom unit tests
+static const uint32_t video_minf_test_data_size =
+    8 + vmhd_test_data_size + hdlr_test_data_size + dinf_test_data_size +
+    stbl_test_data_size;
+// clang-format off
+#define VIDEO_MINF_TEST_DATA                            \
+    video_minf_test_data_size >> 24 & 0xFF,  /* size */ \
+    video_minf_test_data_size >> 16 & 0xFF,             \
+    video_minf_test_data_size >> 8 & 0xFF,              \
+    video_minf_test_data_size & 0xFF,                   \
+    'm', 'i', 'n', 'f',                      /* type */ \
+    VMHD_TEST_DATA,                                     \
+    HDLR_TEST_DATA,                                     \
+    DINF_TEST_DATA,                                     \
+    STBL_TEST_DATA
+// clang-format on
+static const unsigned char video_minf_test_data[video_minf_test_data_size] =
+    ARR(VIDEO_MINF_TEST_DATA);
+// clang-format off
+static const MuTFFVideoMediaInformationAtom video_minf_test_struct = {
+  vmhd_test_struct,
+  hdlr_test_struct,
+  true,
+  dinf_test_struct,
+  true,
+  stbl_test_struct,
+};
+// clang-format on
+
+TEST(MuTFF, WriteVideoMediaInformationAtom) {
+  // clang-format on
+  FILE *fd = fopen("temp.mov", "w+b");
+  const MuTFFError ret =
+      mutff_write_video_media_information_atom(fd, &video_minf_test_struct);
+  ASSERT_EQ(ret, video_minf_test_data_size);
+
+  const size_t file_size = ftell(fd);
+  rewind(fd);
+  unsigned char data[file_size];
+  fread(data, file_size, 1, fd);
+  EXPECT_EQ(file_size, video_minf_test_data_size);
+  for (size_t i = 0; i < file_size; ++i) {
+    EXPECT_EQ(data[i], video_minf_test_data[i]);
+  }
+}
+
+static inline void expect_video_minf_eq(
+    const MuTFFVideoMediaInformationAtom *a,
+    const MuTFFVideoMediaInformationAtom *b) {
+  expect_vmhd_eq(&a->video_media_information_header,
+                 &b->video_media_information_header);
+  expect_hdlr_eq(&a->handler_reference, &b->handler_reference);
+  EXPECT_EQ(a->data_information_present, b->data_information_present);
+  const bool data_information_present =
+      a->data_information_present && b->data_information_present;
+  if (data_information_present) {
+    expect_dinf_eq(&a->data_information, &b->data_information);
+  }
+  EXPECT_EQ(a->sample_table_present, b->sample_table_present);
+  const bool sample_table_present =
+      a->sample_table_present && b->sample_table_present;
+  if (sample_table_present) {
+    expect_stbl_eq(&a->sample_table, &b->sample_table);
+  }
+}
+
+TEST(MuTFF, ReadVideoMediaInformationAtom) {
+  MuTFFError ret;
+  MuTFFVideoMediaInformationAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  fwrite(video_minf_test_data, video_minf_test_data_size, 1, fd);
+  rewind(fd);
+  ret = mutff_read_video_media_information_atom(fd, &atom);
+  ASSERT_EQ(ret, video_minf_test_data_size);
+
+  expect_video_minf_eq(&atom, &video_minf_test_struct);
+  EXPECT_EQ(ftell(fd), video_minf_test_data_size);
+}
 // }}}1
 
 // {{{1 sound media information header atom unit tests
@@ -3598,6 +3807,83 @@ TEST(MuTFF, ReadSoundMediaInformationHeaderAtom) {
 // }}}1
 
 // {{{1 sound media information atom unit tests
+static const uint32_t sound_minf_test_data_size =
+    8 + smhd_test_data_size + hdlr_test_data_size + dinf_test_data_size +
+    stbl_test_data_size;
+// clang-format off
+#define SOUND_MINF_TEST_DATA                            \
+    sound_minf_test_data_size >> 24 & 0xFF,  /* size */ \
+    sound_minf_test_data_size >> 16 & 0xFF,             \
+    sound_minf_test_data_size >> 8 & 0xFF,              \
+    sound_minf_test_data_size & 0xFF,                   \
+    'm', 'i', 'n', 'f',                      /* type */ \
+    SMHD_TEST_DATA,                                     \
+    HDLR_TEST_DATA,                                     \
+    DINF_TEST_DATA,                                     \
+    STBL_TEST_DATA
+// clang-format on
+static const unsigned char sound_minf_test_data[sound_minf_test_data_size] =
+    ARR(SOUND_MINF_TEST_DATA);
+// clang-format off
+static const MuTFFSoundMediaInformationAtom sound_minf_test_struct = {
+  smhd_test_struct,
+  hdlr_test_struct,
+  true,
+  dinf_test_struct,
+  true,
+  stbl_test_struct,
+};
+// clang-format on
+
+TEST(MuTFF, WriteSoundMediaInformationAtom) {
+  // clang-format on
+  FILE *fd = fopen("temp.mov", "w+b");
+  const MuTFFError ret =
+      mutff_write_sound_media_information_atom(fd, &sound_minf_test_struct);
+  ASSERT_EQ(ret, sound_minf_test_data_size);
+
+  const size_t file_size = ftell(fd);
+  rewind(fd);
+  unsigned char data[file_size];
+  fread(data, file_size, 1, fd);
+  EXPECT_EQ(file_size, sound_minf_test_data_size);
+  for (size_t i = 0; i < file_size; ++i) {
+    EXPECT_EQ(data[i], sound_minf_test_data[i]);
+  }
+}
+
+static inline void expect_sound_minf_eq(
+    const MuTFFSoundMediaInformationAtom *a,
+    const MuTFFSoundMediaInformationAtom *b) {
+  expect_smhd_eq(&a->sound_media_information_header,
+                 &b->sound_media_information_header);
+  expect_hdlr_eq(&a->handler_reference, &b->handler_reference);
+  EXPECT_EQ(a->data_information_present, b->data_information_present);
+  const bool data_information_present =
+      a->data_information_present && b->data_information_present;
+  if (data_information_present) {
+    expect_dinf_eq(&a->data_information, &b->data_information);
+  }
+  EXPECT_EQ(a->sample_table_present, b->sample_table_present);
+  const bool sample_table_present =
+      a->sample_table_present && b->sample_table_present;
+  if (sample_table_present) {
+    expect_stbl_eq(&a->sample_table, &b->sample_table);
+  }
+}
+
+TEST(MuTFF, ReadSoundMediaInformationAtom) {
+  MuTFFError ret;
+  MuTFFSoundMediaInformationAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  fwrite(sound_minf_test_data, sound_minf_test_data_size, 1, fd);
+  rewind(fd);
+  ret = mutff_read_sound_media_information_atom(fd, &atom);
+  ASSERT_EQ(ret, sound_minf_test_data_size);
+
+  expect_sound_minf_eq(&atom, &sound_minf_test_struct);
+  EXPECT_EQ(ftell(fd), sound_minf_test_data_size);
+}
 // }}}1
 
 // {{{1 base media info atom unit tests
@@ -3825,20 +4111,20 @@ TEST(MuTFF, ReadBaseMediaInformationHeaderAtom) {
 // }}}1
 
 // {{{1 base media information atom unit tests
-static const uint32_t minf_test_data_size = 8 + gmhd_test_data_size;
+static const uint32_t base_minf_test_data_size = 8 + gmhd_test_data_size;
 // clang-format off
-#define MINF_TEST_DATA                     \
-    minf_test_data_size >> 24,  /* size */ \
-    minf_test_data_size >> 16,             \
-    minf_test_data_size >> 8,              \
-    minf_test_data_size,                   \
-    'm', 'i', 'n', 'f',         /* type */ \
+#define BASE_MINF_TEST_DATA                     \
+    base_minf_test_data_size >> 24,  /* size */ \
+    base_minf_test_data_size >> 16,             \
+    base_minf_test_data_size >> 8,              \
+    base_minf_test_data_size,                   \
+    'm', 'i', 'n', 'f',         /* type */      \
     GMHD_TEST_DATA
 // clang-format on
-static const unsigned char minf_test_data[minf_test_data_size] =
-    ARR(MINF_TEST_DATA);
+static const unsigned char base_minf_test_data[base_minf_test_data_size] =
+    ARR(BASE_MINF_TEST_DATA);
 // clang-format off
-static const MuTFFBaseMediaInformationAtom minf_test_struct = {
+static const MuTFFBaseMediaInformationAtom base_minf_test_struct = {
     gmhd_test_struct,        // base media information header
 };
 // clang-format on
@@ -3847,21 +4133,21 @@ TEST(MuTFF, WriteBaseMediaInformationAtom) {
   // clang-format on
   FILE *fd = fopen("temp.mov", "w+b");
   const MuTFFError ret =
-      mutff_write_base_media_information_atom(fd, &minf_test_struct);
-  ASSERT_EQ(ret, minf_test_data_size);
+      mutff_write_base_media_information_atom(fd, &base_minf_test_struct);
+  ASSERT_EQ(ret, base_minf_test_data_size);
 
   const size_t file_size = ftell(fd);
   rewind(fd);
   unsigned char data[file_size];
   fread(data, file_size, 1, fd);
-  EXPECT_EQ(file_size, minf_test_data_size);
+  EXPECT_EQ(file_size, base_minf_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
-    EXPECT_EQ(data[i], minf_test_data[i]);
+    EXPECT_EQ(data[i], base_minf_test_data[i]);
   }
 }
 
-static inline void expect_minf_eq(const MuTFFBaseMediaInformationAtom *a,
-                                  const MuTFFBaseMediaInformationAtom *b) {
+static inline void expect_base_minf_eq(const MuTFFBaseMediaInformationAtom *a,
+                                       const MuTFFBaseMediaInformationAtom *b) {
   expect_gmhd_eq(&a->base_media_information_header,
                  &b->base_media_information_header);
 }
@@ -3870,26 +4156,506 @@ TEST(MuTFF, ReadBaseMediaInformationAtom) {
   MuTFFError ret;
   MuTFFBaseMediaInformationAtom atom;
   FILE *fd = fopen("temp.mov", "w+b");
-  fwrite(minf_test_data, minf_test_data_size, 1, fd);
+  fwrite(base_minf_test_data, base_minf_test_data_size, 1, fd);
   rewind(fd);
   ret = mutff_read_base_media_information_atom(fd, &atom);
-  ASSERT_EQ(ret, minf_test_data_size);
+  ASSERT_EQ(ret, base_minf_test_data_size);
 
-  expect_minf_eq(&atom, &minf_test_struct);
-  EXPECT_EQ(ftell(fd), minf_test_data_size);
+  expect_base_minf_eq(&atom, &base_minf_test_struct);
+  EXPECT_EQ(ftell(fd), base_minf_test_data_size);
 }
 // }}}1
 
 // {{{1 media atom unit tests
+static const uint32_t video_hdlr_test_data_size = 32;
+// clang-format off
+#define VIDEO_HDLR_TEST_DATA                            \
+  video_hdlr_test_data_size >> 24,                      \
+  video_hdlr_test_data_size >> 16,                      \
+  video_hdlr_test_data_size >> 8,                       \
+  video_hdlr_test_data_size,                            \
+  'h', 'd', 'l', 'r',                                   \
+  0x00,                    /* version */                \
+  0x00, 0x01, 0x02,        /* flags */                  \
+  'm', 'h', 'l', 'r',      /* component type */         \
+  'v', 'i', 'd', 'e',      /* component subtype */      \
+  0x00, 0x00, 0x00, 0x00,  /* component manufacturer */ \
+  0x00, 0x00, 0x00, 0x00,  /* component flags */        \
+  0x00, 0x00, 0x00, 0x00   /* component flags mask */
+// clang-format on
+static const unsigned char video_hdlr_test_data[video_hdlr_test_data_size] =
+    ARR(VIDEO_HDLR_TEST_DATA);
+static const MuTFFHandlerReferenceAtom video_hdlr_test_struct = {
+    0x00,
+    0x000102,
+    MuTFF_FOURCC('m', 'h', 'l', 'r'),
+    MuTFF_FOURCC('v', 'i', 'd', 'e'),
+    0,
+    0,
+    0,
+    {},
+};
+
+static const uint32_t mdia_test_data_size =
+    8 + mdhd_test_data_size + elng_test_data_size + video_hdlr_test_data_size +
+    video_minf_test_data_size + udta_test_data_size;
+// clang-format off
+#define MDIA_TEST_DATA                            \
+    mdia_test_data_size >> 24 & 0xFF,  /* size */ \
+    mdia_test_data_size >> 16 & 0xFF,             \
+    mdia_test_data_size >> 8 & 0xFF,              \
+    mdia_test_data_size & 0xFF,                   \
+    'm', 'd', 'i', 'a',                /* type */ \
+    MDHD_TEST_DATA,                               \
+    ELNG_TEST_DATA,                               \
+    VIDEO_HDLR_TEST_DATA,                         \
+    VIDEO_MINF_TEST_DATA,                         \
+    UDTA_TEST_DATA
+// clang-format on
+static const unsigned char mdia_test_data[mdia_test_data_size] =
+    ARR(MDIA_TEST_DATA);
+// clang-format off
+static const MuTFFMediaAtom mdia_test_struct = {
+  mdhd_test_struct,
+  true,
+  elng_test_struct,
+  true,
+  video_hdlr_test_struct,
+  true,
+  video_minf_test_struct,
+  {},
+  {},
+  true,
+  udta_test_struct
+};
+// clang-format on
+
+TEST(MuTFF, WriteMediaAtom) {
+  // clang-format on
+  FILE *fd = fopen("temp.mov", "w+b");
+  const MuTFFError ret = mutff_write_media_atom(fd, &mdia_test_struct);
+  ASSERT_EQ(ret, mdia_test_data_size);
+
+  const size_t file_size = ftell(fd);
+  rewind(fd);
+  unsigned char data[file_size];
+  fread(data, file_size, 1, fd);
+  EXPECT_EQ(file_size, mdia_test_data_size);
+  for (size_t i = 0; i < file_size; ++i) {
+    EXPECT_EQ(data[i], mdia_test_data[i]);
+  }
+}
+
+static inline void expect_mdia_eq(const MuTFFMediaAtom *a,
+                                  const MuTFFMediaAtom *b) {
+  expect_mdhd_eq(&a->media_header, &b->media_header);
+  EXPECT_EQ(a->extended_language_tag_present, b->extended_language_tag_present);
+  const bool extended_language_tag_present =
+      a->extended_language_tag_present && b->extended_language_tag_present;
+  if (extended_language_tag_present) {
+    expect_elng_eq(&a->extended_language_tag, &b->extended_language_tag);
+  }
+  EXPECT_EQ(a->handler_reference_present, b->handler_reference_present);
+  const bool handler_reference_present =
+      a->handler_reference_present && b->handler_reference_present;
+  if (handler_reference_present) {
+    expect_hdlr_eq(&a->handler_reference, &b->handler_reference);
+  }
+  EXPECT_EQ(a->media_information_present, b->media_information_present);
+  const bool media_information_present =
+      a->media_information_present && b->media_information_present;
+  if (media_information_present) {
+    MuTFFMediaType a_type;
+    MuTFFMediaType b_type;
+    ASSERT_EQ(mutff_media_type(&a_type, a), 0);
+    ASSERT_EQ(mutff_media_type(&b_type, b), 0);
+    EXPECT_EQ(a_type, b_type);
+    switch (mutff_media_information_type(a_type)) {
+      case MuTFFVideoMediaInformation:
+        expect_video_minf_eq(&a->video_media_information,
+                             &b->video_media_information);
+        break;
+      case MuTFFSoundMediaInformation:
+        expect_sound_minf_eq(&a->sound_media_information,
+                             &b->sound_media_information);
+        break;
+      case MuTFFBaseMediaInformation:
+        expect_base_minf_eq(&a->base_media_information,
+                            &b->base_media_information);
+        break;
+      default:
+        FAIL();
+        break;
+    }
+  }
+  EXPECT_EQ(a->user_data_present, b->user_data_present);
+  const bool user_data_present = a->user_data_present && b->user_data_present;
+  if (user_data_present) {
+    expect_udta_eq(&a->user_data, &b->user_data);
+  }
+}
+
+TEST(MuTFF, ReadMediaAtom) {
+  MuTFFError ret;
+  MuTFFMediaAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  fwrite(mdia_test_data, mdia_test_data_size, 1, fd);
+  rewind(fd);
+  ret = mutff_read_media_atom(fd, &atom);
+  ASSERT_EQ(ret, mdia_test_data_size);
+
+  expect_mdia_eq(&atom, &mdia_test_struct);
+  EXPECT_EQ(ftell(fd), mdia_test_data_size);
+}
 // }}}1
 
 // {{{1 track atom unit tests
+static const uint32_t trak_test_data_size =
+    8 + tkhd_test_data_size + mdia_test_data_size + tapt_test_data_size +
+    clip_test_data_size + matt_test_data_size + edts_test_data_size +
+    tref_test_data_size + txas_test_data_size + load_test_data_size +
+    imap_test_data_size + udta_test_data_size;
+// clang-format off
+#define TRAK_TEST_DATA                            \
+    trak_test_data_size >> 24 & 0xFF,  /* size */ \
+    trak_test_data_size >> 16 & 0xFF,             \
+    trak_test_data_size >> 8 & 0xFF,              \
+    trak_test_data_size & 0xFF,                   \
+    't', 'r', 'a', 'k',                /* type */ \
+    TKHD_TEST_DATA,                               \
+    MDIA_TEST_DATA,                               \
+    TAPT_TEST_DATA,                               \
+    CLIP_TEST_DATA,                               \
+    MATT_TEST_DATA,                               \
+    EDTS_TEST_DATA,                               \
+    TREF_TEST_DATA,                               \
+    TXAS_TEST_DATA,                               \
+    LOAD_TEST_DATA,                               \
+    IMAP_TEST_DATA,                               \
+    UDTA_TEST_DATA
+// clang-format on
+static const unsigned char trak_test_data[trak_test_data_size] =
+    ARR(TRAK_TEST_DATA);
+// clang-format off
+static const MuTFFTrackAtom trak_test_struct = {
+  tkhd_test_struct,
+  mdia_test_struct,
+  true,
+  tapt_test_struct,
+  true,
+  clip_test_struct,
+  true,
+  matt_test_struct,
+  true,
+  edts_test_struct,
+  true,
+  tref_test_struct,
+  true,
+  txas_test_struct,
+  true,
+  load_test_struct,
+  true,
+  imap_test_struct,
+  true,
+  udta_test_struct
+};
+// clang-format on
+
+TEST(MuTFF, WriteTrackAtom) {
+  // clang-format on
+  FILE *fd = fopen("temp.mov", "w+b");
+  const MuTFFError ret = mutff_write_track_atom(fd, &trak_test_struct);
+  ASSERT_EQ(ret, trak_test_data_size);
+
+  const size_t file_size = ftell(fd);
+  rewind(fd);
+  unsigned char data[file_size];
+  fread(data, file_size, 1, fd);
+  EXPECT_EQ(file_size, trak_test_data_size);
+  for (size_t i = 0; i < file_size; ++i) {
+    EXPECT_EQ(data[i], trak_test_data[i]);
+  }
+}
+
+static inline void expect_trak_eq(const MuTFFTrackAtom *a,
+                                  const MuTFFTrackAtom *b) {
+  expect_tkhd_eq(&a->track_header, &b->track_header);
+  expect_mdia_eq(&a->media, &b->media);
+  EXPECT_EQ(a->track_aperture_mode_dimensions_present,
+            b->track_exclude_from_autoselection_present);
+  const bool track_aperture_mode_dimensions_present =
+      a->track_aperture_mode_dimensions_present &&
+      b->track_aperture_mode_dimensions_present;
+  if (track_aperture_mode_dimensions_present) {
+    expect_tapt_eq(&a->track_aperture_mode_dimensions,
+                   &b->track_aperture_mode_dimensions);
+  }
+  EXPECT_EQ(a->clipping_present, b->clipping_present);
+  const bool clipping_present = a->clipping_present && b->clipping_present;
+  if (clipping_present) {
+    expect_clip_eq(&a->clipping, &b->clipping);
+  }
+  EXPECT_EQ(a->track_matte_present, b->track_matte_present);
+  const bool track_matte_present =
+      a->track_matte_present && b->track_matte_present;
+  if (track_matte_present) {
+    expect_matt_eq(&a->track_matte, &b->track_matte);
+  }
+  EXPECT_EQ(a->edit_present, b->edit_present);
+  const bool edit_present = a->edit_present && b->edit_present;
+  if (edit_present) {
+    expect_edts_eq(&a->edit, &b->edit);
+  }
+  EXPECT_EQ(a->track_reference_present, b->track_reference_present);
+  const bool track_reference_present =
+      a->track_reference_present && b->track_reference_present;
+  if (track_reference_present) {
+    expect_tref_eq(&a->track_reference, &b->track_reference);
+  }
+  EXPECT_EQ(a->track_exclude_from_autoselection_present,
+            b->track_exclude_from_autoselection_present);
+  const bool track_exclude_from_autoselection_present =
+      a->track_exclude_from_autoselection_present &&
+      b->track_exclude_from_autoselection_present;
+  if (track_exclude_from_autoselection_present) {
+    expect_txas_eq(&a->track_exclude_from_autoselection,
+                   &b->track_exclude_from_autoselection);
+  }
+  EXPECT_EQ(a->track_load_settings_present, b->track_load_settings_present);
+  const bool track_load_settings_present =
+      a->track_load_settings_present && b->track_load_settings_present;
+  if (track_load_settings_present) {
+    expect_load_eq(&a->track_load_settings, &b->track_load_settings);
+  }
+  EXPECT_EQ(a->track_input_map_present, b->track_input_map_present);
+  const bool track_input_map_present =
+      a->track_input_map_present && b->track_input_map_present;
+  if (track_input_map_present) {
+    expect_imap_eq(&a->track_input_map, &b->track_input_map);
+  }
+  EXPECT_EQ(a->user_data_present, b->user_data_present);
+  const bool user_data_present = a->user_data_present && b->user_data_present;
+  if (user_data_present) {
+    expect_udta_eq(&a->user_data, &b->user_data);
+  }
+}
+
+TEST(MuTFF, ReadTrackAtom) {
+  MuTFFError ret;
+  MuTFFTrackAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  fwrite(trak_test_data, trak_test_data_size, 1, fd);
+  rewind(fd);
+  ret = mutff_read_track_atom(fd, &atom);
+  ASSERT_EQ(ret, trak_test_data_size);
+
+  expect_trak_eq(&atom, &trak_test_struct);
+  EXPECT_EQ(ftell(fd), trak_test_data_size);
+}
 // }}}1
 
 // {{{1 movie atom unit tests
+static const uint32_t moov_test_data_size =
+    8 + mvhd_test_data_size + trak_test_data_size + clip_test_data_size +
+    ctab_test_data_size + udta_test_data_size;
+// clang-format off
+#define MOOV_TEST_DATA                            \
+    moov_test_data_size >> 24 & 0xFF,  /* size */ \
+    moov_test_data_size >> 16 & 0xFF,             \
+    moov_test_data_size >> 8 & 0xFF,              \
+    moov_test_data_size & 0xFF,                   \
+    'm', 'o', 'o', 'v',                /* type */ \
+    MVHD_TEST_DATA,                               \
+    TRAK_TEST_DATA,                               \
+    CLIP_TEST_DATA,                               \
+    CTAB_TEST_DATA,                               \
+    UDTA_TEST_DATA
+// clang-format on
+static const unsigned char moov_test_data[moov_test_data_size] =
+    ARR(MOOV_TEST_DATA);
+// clang-format off
+static const MuTFFMovieAtom moov_test_struct = {
+  mvhd_test_struct,
+  1,
+  {
+    trak_test_struct,
+  },
+  true,
+  clip_test_struct,
+  true,
+  ctab_test_struct,
+  true,
+  udta_test_struct,
+};
+// clang-format on
+
+TEST(MuTFF, WriteMovieAtom) {
+  // clang-format on
+  FILE *fd = fopen("temp.mov", "w+b");
+  const MuTFFError ret = mutff_write_movie_atom(fd, &moov_test_struct);
+  ASSERT_EQ(ret, moov_test_data_size);
+
+  const size_t file_size = ftell(fd);
+  rewind(fd);
+  unsigned char data[file_size];
+  fread(data, file_size, 1, fd);
+  EXPECT_EQ(file_size, moov_test_data_size);
+  for (size_t i = 0; i < file_size; ++i) {
+    EXPECT_EQ(data[i], moov_test_data[i]);
+  }
+}
+
+static inline void expect_moov_eq(const MuTFFMovieAtom *a,
+                                  const MuTFFMovieAtom *b) {
+  expect_mvhd_eq(&a->movie_header, &b->movie_header);
+  EXPECT_EQ(a->track_count, b->track_count);
+  const size_t track_count =
+      a->track_count > b->track_count ? b->track_count : a->track_count;
+  for (size_t i = 0; i < track_count; ++i) {
+    expect_trak_eq(&a->track[i], &b->track[i]);
+  }
+  EXPECT_EQ(a->clipping_present, b->clipping_present);
+  const bool clipping_present = a->clipping_present && b->clipping_present;
+  if (clipping_present) {
+    expect_clip_eq(&a->clipping, &b->clipping);
+  }
+  EXPECT_EQ(a->color_table_present, b->color_table_present);
+  const bool color_table_present =
+      a->color_table_present && b->color_table_present;
+  if (color_table_present) {
+    expect_ctab_eq(&a->color_table, &b->color_table);
+  }
+  EXPECT_EQ(a->user_data_present, b->user_data_present);
+  const bool user_data_present = a->user_data_present && b->user_data_present;
+  if (user_data_present) {
+    expect_udta_eq(&a->user_data, &b->user_data);
+  }
+}
+
+TEST(MuTFF, ReadMovieAtom) {
+  MuTFFError ret;
+  MuTFFMovieAtom atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  fwrite(moov_test_data, moov_test_data_size, 1, fd);
+  rewind(fd);
+  ret = mutff_read_movie_atom(fd, &atom);
+  ASSERT_EQ(ret, moov_test_data_size);
+
+  expect_moov_eq(&atom, &moov_test_struct);
+  EXPECT_EQ(ftell(fd), moov_test_data_size);
+}
 // }}}1
 
 // {{{1 movie file unit tests
+static const uint32_t file_test_data_size =
+    ftyp_test_data_size + wide_test_data_size + mdat_test_data_size +
+    free_test_data_size + skip_test_data_size + moov_test_data_size +
+    pnot_test_data_size;
+// clang-format off
+#define FILE_TEST_DATA \
+  FTYP_TEST_DATA,      \
+  MOOV_TEST_DATA,      \
+  MDAT_TEST_DATA,      \
+  FREE_TEST_DATA,      \
+  SKIP_TEST_DATA,      \
+  WIDE_TEST_DATA,      \
+  PNOT_TEST_DATA
+static const unsigned char file_test_data[file_test_data_size] =
+    ARR(FILE_TEST_DATA);
+// clang-format off
+static const MuTFFMovieFile file_test_struct = {
+  true,
+  ftyp_test_struct,
+  moov_test_struct,
+  1,
+  {
+    mdat_test_struct,
+  },
+  1,
+  {
+    free_test_struct,
+  },
+  1,
+  {
+    skip_test_struct,
+  },
+  1,
+  {
+    wide_test_struct,
+  },
+  true,
+  pnot_test_struct
+};
+// clang-format on
+
+TEST(MuTFF, WriteMovieFile) {
+  // clang-format on
+  FILE *fd = fopen("temp.mov", "w+b");
+  const MuTFFError ret = mutff_write_movie_file(fd, &file_test_struct);
+  ASSERT_EQ(ret, file_test_data_size);
+
+  const size_t file_size = ftell(fd);
+  rewind(fd);
+  unsigned char data[file_size];
+  fread(data, file_size, 1, fd);
+  EXPECT_EQ(file_size, file_test_data_size);
+  for (size_t i = 0; i < file_size; ++i) {
+    EXPECT_EQ(data[i], file_test_data[i]);
+  }
+}
+
+static inline void expect_file_eq(const MuTFFMovieFile *a,
+                                  const MuTFFMovieFile *b) {
+  EXPECT_EQ(a->file_type_present, b->file_type_present);
+  const bool file_type_present = a->file_type_present && b->file_type_present;
+  if (file_type_present) {
+    expect_filetype_eq(&a->file_type, &b->file_type);
+  }
+  expect_moov_eq(&a->movie, &b->movie);
+  EXPECT_EQ(a->movie_data_count, b->movie_data_count);
+  const size_t movie_data_count = a->movie_data_count > b->movie_data_count
+                                      ? b->movie_data_count
+                                      : a->movie_data_count;
+  for (size_t i = 0; i < movie_data_count; ++i) {
+    expect_mdat_eq(&a->movie_data[i], &b->movie_data[i]);
+  }
+  EXPECT_EQ(a->free_count, b->free_count);
+  const size_t free_count =
+      a->free_count > b->free_count ? b->free_count : a->free_count;
+  for (size_t i = 0; i < free_count; ++i) {
+    expect_free_eq(&a->free[i], &b->free[i]);
+  }
+  EXPECT_EQ(a->skip_count, b->skip_count);
+  const size_t skip_count =
+      a->skip_count > b->skip_count ? b->skip_count : a->skip_count;
+  for (size_t i = 0; i < skip_count; ++i) {
+    expect_skip_eq(&a->skip[i], &b->skip[i]);
+  }
+  EXPECT_EQ(a->wide_count, b->wide_count);
+  const size_t wide_count =
+      a->wide_count > b->wide_count ? b->wide_count : a->wide_count;
+  for (size_t i = 0; i < wide_count; ++i) {
+    expect_wide_eq(&a->wide[i], &b->wide[i]);
+  }
+  EXPECT_EQ(a->preview_present, b->preview_present);
+  const bool preview_present = a->preview_present && b->preview_present;
+  if (preview_present) {
+    expect_pnot_eq(&a->preview, &b->preview);
+  }
+}
+
+TEST(MuTFF, ReadMovieFile) {
+  MuTFFError ret;
+  MuTFFMovieFile atom;
+  FILE *fd = fopen("temp.mov", "w+b");
+  fwrite(file_test_data, file_test_data_size, 1, fd);
+  rewind(fd);
+  ret = mutff_read_movie_file(fd, &atom);
+  ASSERT_EQ(ret, file_test_data_size);
+
+  expect_file_eq(&atom, &file_test_struct);
+  EXPECT_EQ(ftell(fd), file_test_data_size);
+}
 // }}}1
 
 // {{{1 test.mov tests

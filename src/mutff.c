@@ -953,11 +953,17 @@ MuTFFError mutff_read_track_header_atom(FILE *fd, MuTFFTrackHeaderAtom *out) {
   return ret;
 }
 
+static inline uint64_t mutff_track_header_atom_size(
+    const MuTFFTrackHeaderAtom *atom) {
+  return mutff_atom_size(84);
+}
+
 MuTFFError mutff_write_track_header_atom(FILE *fd,
                                          const MuTFFTrackHeaderAtom *in) {
   MuTFFError err;
   uint64_t ret = 0;
-  MuTFF_FIELD(mutff_write_header, 92, MuTFF_FOURCC('t', 'k', 'h', 'd'));
+  const uint64_t size = mutff_track_header_atom_size(in);
+  MuTFF_FIELD(mutff_write_header, size, MuTFF_FOURCC('t', 'k', 'h', 'd'));
   MuTFF_FIELD(mutff_write_u8, in->version);
   MuTFF_FIELD(mutff_write_u24, in->flags);
   MuTFF_FIELD(mutff_write_u32, in->creation_time);
@@ -2776,6 +2782,79 @@ MuTFFError mutff_read_sample_table_atom(FILE *fd, MuTFFSampleTableAtom *out) {
   return ret;
 }
 
+static inline uint64_t mutff_sample_table_atom_size(
+    const MuTFFSampleTableAtom *atom) {
+  uint64_t size =
+      mutff_sample_description_atom_size(&atom->sample_description) +
+      mutff_time_to_sample_atom_size(&atom->time_to_sample);
+  if (atom->composition_offset_present) {
+    size += mutff_composition_offset_atom_size(&atom->composition_offset);
+  }
+  if (atom->composition_shift_least_greatest_present) {
+    size += mutff_composition_shift_least_greatest_atom_size(
+        &atom->composition_shift_least_greatest);
+  }
+  if (atom->sync_sample_present) {
+    size += mutff_sync_sample_atom_size(&atom->sync_sample);
+  }
+  if (atom->partial_sync_sample_present) {
+    size += mutff_partial_sync_sample_atom_size(&atom->partial_sync_sample);
+  }
+  if (atom->sample_to_chunk_present) {
+    size += mutff_sample_to_chunk_atom_size(&atom->sample_to_chunk);
+  }
+  if (atom->sample_size_present) {
+    size += mutff_sample_size_atom_size(&atom->sample_size);
+  }
+  if (atom->chunk_offset_present) {
+    size += mutff_chunk_offset_atom_size(&atom->chunk_offset);
+  }
+  if (atom->sample_dependency_flags_present) {
+    size +=
+        mutff_sample_dependency_flags_atom_size(&atom->sample_dependency_flags);
+  }
+  return mutff_atom_size(size);
+}
+
+MuTFFError mutff_write_sample_table_atom(FILE *fd,
+                                         const MuTFFSampleTableAtom *in) {
+  MuTFFError err;
+  uint64_t ret = 0;
+
+  const uint64_t size = mutff_sample_table_atom_size(in);
+  MuTFF_FIELD(mutff_write_header, size, MuTFF_FOURCC('s', 't', 'b', 'l'));
+  MuTFF_FIELD(mutff_write_sample_description_atom, &in->sample_description);
+  MuTFF_FIELD(mutff_write_time_to_sample_atom, &in->time_to_sample);
+  if (in->composition_offset_present) {
+    MuTFF_FIELD(mutff_write_composition_offset_atom, &in->composition_offset);
+  }
+  if (in->composition_shift_least_greatest_present) {
+    MuTFF_FIELD(mutff_write_composition_shift_least_greatest_atom,
+                &in->composition_shift_least_greatest);
+  }
+  if (in->sync_sample_present) {
+    MuTFF_FIELD(mutff_write_sync_sample_atom, &in->sync_sample);
+  }
+  if (in->partial_sync_sample_present) {
+    MuTFF_FIELD(mutff_write_partial_sync_sample_atom, &in->partial_sync_sample);
+  }
+  if (in->sample_to_chunk_present) {
+    MuTFF_FIELD(mutff_write_sample_to_chunk_atom, &in->sample_to_chunk);
+  }
+  if (in->sample_size_present) {
+    MuTFF_FIELD(mutff_write_sample_size_atom, &in->sample_size);
+  }
+  if (in->chunk_offset_present) {
+    MuTFF_FIELD(mutff_write_chunk_offset_atom, &in->chunk_offset);
+  }
+  if (in->sample_dependency_flags_present) {
+    MuTFF_FIELD(mutff_write_sample_dependency_flags_atom,
+                &in->sample_dependency_flags);
+  }
+
+  return ret;
+}
+
 MuTFFError mutff_read_video_media_information_atom(
     FILE *fd, MuTFFVideoMediaInformationAtom *out) {
   MuTFFError err;
@@ -2833,6 +2912,40 @@ MuTFFError mutff_read_video_media_information_atom(
   return ret;
 }
 
+static inline uint64_t mutff_video_media_information_atom_size(
+    const MuTFFVideoMediaInformationAtom *atom) {
+  uint64_t size = mutff_video_media_information_header_atom_size(
+                      &atom->video_media_information_header) +
+                  mutff_handler_reference_atom_size(&atom->handler_reference);
+  if (atom->data_information_present) {
+    size += mutff_data_information_atom_size(&atom->data_information);
+  }
+  if (atom->sample_table_present) {
+    size += mutff_sample_table_atom_size(&atom->sample_table);
+  }
+  return mutff_atom_size(size);
+}
+
+MuTFFError mutff_write_video_media_information_atom(
+    FILE *fd, const MuTFFVideoMediaInformationAtom *in) {
+  MuTFFError err;
+  uint64_t ret = 0;
+
+  const uint64_t size = mutff_video_media_information_atom_size(in);
+  MuTFF_FIELD(mutff_write_header, size, MuTFF_FOURCC('m', 'i', 'n', 'f'));
+  MuTFF_FIELD(mutff_write_video_media_information_header_atom,
+              &in->video_media_information_header);
+  MuTFF_FIELD(mutff_write_handler_reference_atom, &in->handler_reference);
+  if (in->data_information_present) {
+    MuTFF_FIELD(mutff_write_data_information_atom, &in->data_information);
+  }
+  if (in->sample_table_present) {
+    MuTFF_FIELD(mutff_write_sample_table_atom, &in->sample_table);
+  }
+
+  return ret;
+}
+
 MuTFFError mutff_read_sound_media_information_header_atom(
     FILE *fd, MuTFFSoundMediaInformationHeaderAtom *out) {
   MuTFFError err;
@@ -2850,7 +2963,7 @@ MuTFFError mutff_read_sound_media_information_header_atom(
   return ret;
 }
 
-static inline uint64_t mutff_sound_media_information_header_atom(
+static inline uint64_t mutff_sound_media_information_header_atom_size(
     const MuTFFSoundMediaInformationHeaderAtom *atom) {
   return mutff_atom_size(8);
 }
@@ -2859,7 +2972,7 @@ MuTFFError mutff_write_sound_media_information_header_atom(
     FILE *fd, const MuTFFSoundMediaInformationHeaderAtom *in) {
   MuTFFError err;
   uint64_t ret = 0;
-  const uint64_t size = mutff_sound_media_information_header_atom(in);
+  const uint64_t size = mutff_sound_media_information_header_atom_size(in);
   MuTFF_FIELD(mutff_write_header, size, MuTFF_FOURCC('s', 'm', 'h', 'd'));
   MuTFF_FIELD(mutff_write_u8, in->version);
   MuTFF_FIELD(mutff_write_u24, in->flags);
@@ -2922,6 +3035,40 @@ MuTFFError mutff_read_sound_media_information_atom(
 
   if (!sound_media_information_header_present || !handler_reference_present) {
     return MuTFFErrorBadFormat;
+  }
+
+  return ret;
+}
+
+static inline uint64_t mutff_sound_media_information_atom_size(
+    const MuTFFSoundMediaInformationAtom *atom) {
+  uint64_t size = mutff_sound_media_information_header_atom_size(
+                      &atom->sound_media_information_header) +
+                  mutff_handler_reference_atom_size(&atom->handler_reference);
+  if (atom->data_information_present) {
+    size += mutff_data_information_atom_size(&atom->data_information);
+  }
+  if (atom->sample_table_present) {
+    size += mutff_sample_table_atom_size(&atom->sample_table);
+  }
+  return mutff_atom_size(size);
+}
+
+MuTFFError mutff_write_sound_media_information_atom(
+    FILE *fd, const MuTFFSoundMediaInformationAtom *in) {
+  MuTFFError err;
+  uint64_t ret = 0;
+
+  const uint64_t size = mutff_sound_media_information_atom_size(in);
+  MuTFF_FIELD(mutff_write_header, size, MuTFF_FOURCC('m', 'i', 'n', 'f'));
+  MuTFF_FIELD(mutff_write_sound_media_information_header_atom,
+              &in->sound_media_information_header);
+  MuTFF_FIELD(mutff_write_handler_reference_atom, &in->handler_reference);
+  if (in->data_information_present) {
+    MuTFF_FIELD(mutff_write_data_information_atom, &in->data_information);
+  }
+  if (in->sample_table_present) {
+    MuTFF_FIELD(mutff_write_sample_table_atom, &in->sample_table);
   }
 
   return ret;
@@ -3160,7 +3307,7 @@ static inline bool mutff_is_known_media_type(uint32_t type) {
   }
 }
 
-MuTFFError mutff_media_type(MuTFFMediaType *out, MuTFFMediaAtom *atom) {
+MuTFFError mutff_media_type(MuTFFMediaType *out, const MuTFFMediaAtom *atom) {
   if (!atom->handler_reference_present) {
     return MuTFFErrorBadFormat;
   }
@@ -3280,6 +3427,94 @@ MuTFFError mutff_read_media_atom(FILE *fd, MuTFFMediaAtom *out) {
   return ret;
 }
 
+static uint64_t mutff_media_atom_size(const MuTFFMediaAtom *atom) {
+  uint64_t size = mutff_media_header_atom_size(&atom->media_header);
+  if (atom->extended_language_tag_present) {
+    size += mutff_extended_language_tag_atom_size(&atom->extended_language_tag);
+  }
+  if (atom->handler_reference_present) {
+    size += mutff_handler_reference_atom_size(&atom->handler_reference);
+  }
+  if (atom->media_information_present) {
+    MuTFFMediaType type;
+    MuTFFError err;
+    err = mutff_media_type(&type, atom);
+    if ((int)err < 0) {
+      // @TODO: don't exit
+      exit(1);
+    }
+
+    switch (mutff_media_information_type(type)) {
+      case MuTFFVideoMediaInformation:
+        size += mutff_video_media_information_atom_size(
+            &atom->video_media_information);
+        break;
+      case MuTFFSoundMediaInformation:
+        size += mutff_sound_media_information_atom_size(
+            &atom->sound_media_information);
+        break;
+      case MuTFFBaseMediaInformation:
+        size += mutff_base_media_information_atom_size(
+            &atom->base_media_information);
+        break;
+      default:
+        // @TODO: don't exit
+        exit(1);
+        break;
+    }
+  }
+  if (atom->user_data_present) {
+    size += mutff_user_data_atom_size(&atom->user_data);
+  }
+  return mutff_atom_size(size);
+}
+
+MuTFFError mutff_write_media_atom(FILE *fd, const MuTFFMediaAtom *in) {
+  MuTFFError err;
+  uint64_t ret = 0;
+
+  const uint64_t size = mutff_media_atom_size(in);
+  MuTFF_FIELD(mutff_write_header, size, MuTFF_FOURCC('m', 'd', 'i', 'a'));
+  MuTFF_FIELD(mutff_write_media_header_atom, &in->media_header);
+  if (in->extended_language_tag_present) {
+    MuTFF_FIELD(mutff_write_extended_language_tag_atom,
+                &in->extended_language_tag);
+  }
+  if (in->handler_reference_present) {
+    MuTFF_FIELD(mutff_write_handler_reference_atom, &in->handler_reference);
+  }
+  if (in->media_information_present) {
+    MuTFFMediaType type;
+    MuTFFError err;
+    err = mutff_media_type(&type, in);
+    if ((int)err < 0) {
+      return err;
+    }
+
+    switch (mutff_media_information_type(type)) {
+      case MuTFFVideoMediaInformation:
+        MuTFF_FIELD(mutff_write_video_media_information_atom,
+                    &in->video_media_information);
+        break;
+      case MuTFFSoundMediaInformation:
+        MuTFF_FIELD(mutff_write_sound_media_information_atom,
+                    &in->sound_media_information);
+        break;
+      case MuTFFBaseMediaInformation:
+        MuTFF_FIELD(mutff_write_base_media_information_atom,
+                    &in->base_media_information);
+        break;
+      default:
+        return MuTFFErrorBadFormat;
+    }
+  }
+  if (in->user_data_present) {
+    MuTFF_FIELD(mutff_write_user_data_atom, &in->user_data);
+  }
+
+  return ret;
+}
+
 MuTFFError mutff_read_track_atom(FILE *fd, MuTFFTrackAtom *out) {
   MuTFFError err;
   uint64_t ret = 0;
@@ -3340,7 +3575,7 @@ MuTFFError mutff_read_track_atom(FILE *fd, MuTFFTrackAtom *out) {
       case MuTFF_FOURCC('t', 'x', 'a', 's'):
         MuTFF_READ_CHILD(mutff_read_track_exclude_from_autoselection_atom,
                          &out->track_exclude_from_autoselection,
-                         out->track_aperture_mode_dimensions_present);
+                         out->track_exclude_from_autoselection_present);
         break;
       case MuTFF_FOURCC('l', 'o', 'a', 'd'):
         MuTFF_READ_CHILD(mutff_read_track_load_settings_atom,
@@ -3366,6 +3601,82 @@ MuTFFError mutff_read_track_atom(FILE *fd, MuTFFTrackAtom *out) {
 
   if (!track_header_present || !media_present) {
     return MuTFFErrorBadFormat;
+  }
+
+  return ret;
+}
+
+static inline uint64_t mutff_track_atom_size(const MuTFFTrackAtom *atom) {
+  uint64_t size = mutff_track_header_atom_size(&atom->track_header) +
+                  mutff_media_atom_size(&atom->media);
+  if (atom->track_aperture_mode_dimensions_present) {
+    size += mutff_track_aperture_mode_dimensions_atom_size(
+        &atom->track_aperture_mode_dimensions);
+  }
+  if (atom->clipping_present) {
+    size += mutff_clipping_atom_size(&atom->clipping);
+  }
+  if (atom->track_matte_present) {
+    size += mutff_track_matte_atom_size(&atom->track_matte);
+  }
+  if (atom->edit_present) {
+    size += mutff_edit_atom_size(&atom->edit);
+  }
+  if (atom->track_reference_present) {
+    size += mutff_track_reference_atom_size(&atom->track_reference);
+  }
+  if (atom->track_exclude_from_autoselection_present) {
+    size += mutff_track_exclude_from_autoselection_atom_size(
+        &atom->track_exclude_from_autoselection);
+  }
+  if (atom->track_load_settings_present) {
+    size += mutff_track_load_settings_atom_size(&atom->track_load_settings);
+  }
+  if (atom->track_input_map_present) {
+    size += mutff_track_input_map_atom_size(&atom->track_input_map);
+  }
+  if (atom->user_data_present) {
+    size += mutff_user_data_atom_size(&atom->user_data);
+  }
+  return mutff_atom_size(size);
+}
+
+MuTFFError mutff_write_track_atom(FILE *fd, const MuTFFTrackAtom *in) {
+  MuTFFError err;
+  uint64_t ret = 0;
+
+  const uint64_t size = mutff_track_atom_size(in);
+  MuTFF_FIELD(mutff_write_header, size, MuTFF_FOURCC('t', 'r', 'a', 'k'));
+  MuTFF_FIELD(mutff_write_track_header_atom, &in->track_header);
+  MuTFF_FIELD(mutff_write_media_atom, &in->media);
+  if (in->track_aperture_mode_dimensions_present) {
+    MuTFF_FIELD(mutff_write_track_aperture_mode_dimensions_atom,
+                &in->track_aperture_mode_dimensions);
+  }
+  if (in->clipping_present) {
+    MuTFF_FIELD(mutff_write_clipping_atom, &in->clipping);
+  }
+  if (in->track_matte_present) {
+    MuTFF_FIELD(mutff_write_track_matte_atom, &in->track_matte);
+  }
+  if (in->edit_present) {
+    MuTFF_FIELD(mutff_write_edit_atom, &in->edit);
+  }
+  if (in->track_reference_present) {
+    MuTFF_FIELD(mutff_write_track_reference_atom, &in->track_reference);
+  }
+  if (in->track_exclude_from_autoselection_present) {
+    MuTFF_FIELD(mutff_write_track_exclude_from_autoselection_atom,
+                &in->track_exclude_from_autoselection);
+  }
+  if (in->track_load_settings_present) {
+    MuTFF_FIELD(mutff_write_track_load_settings_atom, &in->track_load_settings);
+  }
+  if (in->track_input_map_present) {
+    MuTFF_FIELD(mutff_write_track_input_map_atom, &in->track_input_map);
+  }
+  if (in->user_data_present) {
+    MuTFF_FIELD(mutff_write_user_data_atom, &in->user_data);
   }
 
   return ret;
@@ -3435,6 +3746,46 @@ MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out) {
 
   if (!movie_header_present) {
     return MuTFFErrorBadFormat;
+  }
+
+  return ret;
+}
+
+static inline uint64_t mutff_movie_atom_size(const MuTFFMovieAtom *atom) {
+  uint64_t size = mutff_movie_header_atom_size(&atom->movie_header);
+  for (size_t i = 0; i < atom->track_count; ++i) {
+    size += mutff_track_atom_size(&atom->track[i]);
+  }
+  if (atom->clipping_present) {
+    size += mutff_clipping_atom_size(&atom->clipping);
+  }
+  if (atom->color_table_present) {
+    size += mutff_color_table_atom_size(&atom->color_table);
+  }
+  if (atom->user_data_present) {
+    size += mutff_user_data_atom_size(&atom->user_data);
+  }
+  return mutff_atom_size(size);
+}
+
+MuTFFError mutff_write_movie_atom(FILE *fd, const MuTFFMovieAtom *in) {
+  MuTFFError err;
+  uint64_t ret = 0;
+
+  const uint64_t size = mutff_movie_atom_size(in);
+  MuTFF_FIELD(mutff_write_header, size, MuTFF_FOURCC('m', 'o', 'o', 'v'));
+  MuTFF_FIELD(mutff_write_movie_header_atom, &in->movie_header);
+  for (size_t i = 0; i < in->track_count; ++i) {
+    MuTFF_FIELD(mutff_write_track_atom, &in->track[i]);
+  }
+  if (in->clipping_present) {
+    MuTFF_FIELD(mutff_write_clipping_atom, &in->clipping);
+  }
+  if (in->color_table_present) {
+    MuTFF_FIELD(mutff_write_color_table_atom, &in->color_table);
+  }
+  if (in->user_data_present) {
+    MuTFF_FIELD(mutff_write_user_data_atom, &in->user_data);
   }
 
   return ret;
@@ -3521,8 +3872,29 @@ MuTFFError mutff_read_movie_file(FILE *fd, MuTFFMovieFile *out) {
   return ret;
 }
 
-/* MuTFFError mutff_write_movie_file(FILE *fd, MuTFFMovieFile *in) { */
-/*   mutff_write_file_type(fd, &in->file_type);
- */
-/*   mutff_write_movie(fd, &in->movie); */
-/* } */
+MuTFFError mutff_write_movie_file(FILE *fd, const MuTFFMovieFile *in) {
+  MuTFFError err;
+  uint64_t ret = 0;
+
+  if (in->file_type_present) {
+    MuTFF_FIELD(mutff_write_file_type_atom, &in->file_type);
+  }
+  MuTFF_FIELD(mutff_write_movie_atom, &in->movie);
+  for (size_t i = 0; i < in->movie_data_count; ++i) {
+    MuTFF_FIELD(mutff_write_movie_data_atom, &in->movie_data[i]);
+  }
+  for (size_t i = 0; i < in->free_count; ++i) {
+    MuTFF_FIELD(mutff_write_free_atom, &in->free[i]);
+  }
+  for (size_t i = 0; i < in->skip_count; ++i) {
+    MuTFF_FIELD(mutff_write_skip_atom, &in->skip[i]);
+  }
+  for (size_t i = 0; i < in->wide_count; ++i) {
+    MuTFF_FIELD(mutff_write_wide_atom, &in->wide[i]);
+  }
+  if (in->preview_present) {
+    MuTFF_FIELD(mutff_write_preview_atom, &in->preview);
+  }
+
+  return ret;
+}

@@ -1991,6 +1991,17 @@ typedef struct {
 MuTFFError mutff_read_sample_table_atom(FILE *fd, MuTFFSampleTableAtom *out);
 
 ///
+/// @brief Write a sample table atom
+///
+/// @param [in] fd    The file descriptor to write to
+/// @param [in] in    The file
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
+///
+MuTFFError mutff_write_sample_table_atom(FILE *fd,
+                                         const MuTFFSampleTableAtom *in);
+
+///
 /// @brief Video media header atom
 /// @note MuTFFVideoMediaInformationAtom, MuTFFSoundMediaInformationAtom and
 /// MuTFFBaseMediaInformationAtom all have type `minf`
@@ -2019,6 +2030,17 @@ typedef struct {
 ///
 MuTFFError mutff_read_video_media_information_atom(
     FILE *fd, MuTFFVideoMediaInformationAtom *out);
+
+///
+/// @brief Write a video media information atom
+///
+/// @param [in] fd    The file descriptor to write to
+/// @param [in] in    The file
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
+///
+MuTFFError mutff_write_video_media_information_atom(
+    FILE *fd, const MuTFFVideoMediaInformationAtom *in);
 
 ///
 /// @brief Sound media information header atom
@@ -2080,6 +2102,17 @@ typedef struct {
 ///
 MuTFFError mutff_read_sound_media_information_atom(
     FILE *fd, MuTFFSoundMediaInformationAtom *out);
+
+///
+/// @brief Write a sound media information atom
+///
+/// @param [in] fd    The file descriptor to write to
+/// @param [in] in    The file
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
+///
+MuTFFError mutff_write_sound_media_information_atom(
+    FILE *fd, const MuTFFSoundMediaInformationAtom *in);
 
 ///
 /// @brief Base media info atom
@@ -2286,7 +2319,7 @@ typedef struct {
 /// @param [in] atom  The atom to determine the type of
 /// @return           If successful, 0, otherwise the MuTFFError code
 ///
-MuTFFError mutff_media_type(MuTFFMediaType *out, MuTFFMediaAtom *atom);
+MuTFFError mutff_media_type(MuTFFMediaType *out, const MuTFFMediaAtom *atom);
 
 /// @brief Read a media atom
 ///
@@ -2296,6 +2329,16 @@ MuTFFError mutff_media_type(MuTFFMediaType *out, MuTFFMediaAtom *atom);
 ///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_media_atom(FILE *fd, MuTFFMediaAtom *out);
+
+///
+/// @brief Write a media atom
+///
+/// @param [in] fd    The file descriptor to write to
+/// @param [in] in    The file
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
+///
+MuTFFError mutff_write_media_atom(FILE *fd, const MuTFFMediaAtom *in);
 
 ///
 /// @brief Track atom
@@ -2346,6 +2389,16 @@ typedef struct {
 MuTFFError mutff_read_track_atom(FILE *fd, MuTFFTrackAtom *out);
 
 ///
+/// @brief Write a track atom
+///
+/// @param [in] fd    The file descriptor to write to
+/// @param [in] in    The file
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
+///
+MuTFFError mutff_write_track_atom(FILE *fd, const MuTFFTrackAtom *in);
+
+///
 /// @brief The maximum number of track atoms in a movie atom
 ///
 #define MuTFF_MAX_TRACK_ATOMS 4U
@@ -2384,6 +2437,16 @@ typedef struct {
 ///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_movie_atom(FILE *fd, MuTFFMovieAtom *out);
+
+///
+/// @brief Write a movie atom
+///
+/// @param [in] fd    The file descriptor to write to
+/// @param [in] in    The file
+/// @return           If the atom was written successfully, then the number of
+///                   bytes written, otherwise the (negative) MuTFFError code.
+///
+MuTFFError mutff_write_movie_atom(FILE *fd, const MuTFFMovieAtom *in);
 
 #define MuTFF_MAX_MOVIE_DATA_ATOMS 4U
 #define MuTFF_MAX_FREE_ATOMS 4U
@@ -2447,7 +2510,7 @@ MuTFFError mutff_read_movie_file(FILE *fd, MuTFFMovieFile *out);
 /// @return           If the file was written successfully, then the number of
 ///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
-MuTFFError mutff_write_movie_file(FILE *fd, MuTFFMovieFile *in);
+MuTFFError mutff_write_movie_file(FILE *fd, const MuTFFMovieFile *in);
 
 /// @} MuTFF
 
