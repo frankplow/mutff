@@ -8,16 +8,21 @@ extern "C" {
 #include "mutff.h"
 }
 
+#define ARR(...) \
+  { __VA_ARGS__ }
+
 // {{{1 quickdraw rect unit tests
 static const uint32_t quickdraw_rect_test_data_size = 8;
 // clang-format off
-static const unsigned char quickdraw_rect_test_data[quickdraw_rect_test_data_size] = {
-    0x00, 0x01,
-    0x10, 0x11,
-    0x20, 0x21,
-    0x30, 0x31,
-};
+#define QUICKDRAW_RECT_TEST_DATA \
+    0x00, 0x01,                  \
+    0x10, 0x11,                  \
+    0x20, 0x21,                  \
+    0x30, 0x31
 // clang-format on
+static const unsigned char
+    quickdraw_rect_test_data[quickdraw_rect_test_data_size] =
+        ARR(QUICKDRAW_RECT_TEST_DATA);
 // clang-format off
 static const MuTFFQuickDrawRect quickdraw_rect_test_struct = {
   0x0001,
@@ -44,6 +49,14 @@ TEST(MuTFF, WriteQuickDrawRect) {
   }
 }
 
+static inline void expect_quickdraw_rect_eq(const MuTFFQuickDrawRect *a,
+                                            const MuTFFQuickDrawRect *b) {
+  EXPECT_EQ(a->top, b->top);
+  EXPECT_EQ(a->left, b->left);
+  EXPECT_EQ(a->bottom, b->bottom);
+  EXPECT_EQ(a->right, b->right);
+}
+
 TEST(MuTFF, ReadQuickDrawRect) {
   MuTFFError ret;
   MuTFFQuickDrawRect rect;
@@ -53,36 +66,28 @@ TEST(MuTFF, ReadQuickDrawRect) {
   ret = mutff_read_quickdraw_rect(fd, &rect);
   ASSERT_EQ(ret, quickdraw_rect_test_data_size);
 
-  EXPECT_EQ(rect.top, quickdraw_rect_test_struct.top);
-  EXPECT_EQ(rect.left, quickdraw_rect_test_struct.left);
-  EXPECT_EQ(rect.bottom, quickdraw_rect_test_struct.bottom);
-  EXPECT_EQ(rect.right, quickdraw_rect_test_struct.right);
+  expect_quickdraw_rect_eq(&rect, &quickdraw_rect_test_struct);
   EXPECT_EQ(ftell(fd), quickdraw_rect_test_data_size);
 }
 // }}}1
 
 // {{{1 quickdraw region unit tests
-static const uint32_t quickdraw_region_test_data_size = 14;
+static const uint32_t quickdraw_region_test_data_size =
+    quickdraw_rect_test_data_size + 6;
 // clang-format off
-static const unsigned char quickdraw_region_test_data[quickdraw_region_test_data_size] = {
-    0x00, 0x0e,
-    0x00, 0x01,
-    0x10, 0x11,
-    0x20, 0x21,
-    0x30, 0x31,
-    0x40, 0x41, 0x42, 0x43,
-};
+#define QUICKDRAW_REGION_TEST_DATA \
+  0x00, 0x0e,                      \
+  QUICKDRAW_RECT_TEST_DATA,        \
+  0x40, 0x41, 0x42, 0x43
 // clang-format on
+static const unsigned char
+    quickdraw_region_test_data[quickdraw_region_test_data_size] =
+        ARR(QUICKDRAW_REGION_TEST_DATA);
 // clang-format off
 static const MuTFFQuickDrawRegion quickdraw_region_test_struct = {
-    0x000e,                  // size
-    (MuTFFQuickDrawRect) {   // rect
-      0x0001,  // top
-      0x1011,  // left
-      0x2021,  // bottom
-      0x3031,  // right
-    },
-    0x40, 0x41, 0x42, 0x43,  // data
+    0x000e,                      // size
+    quickdraw_rect_test_struct,  // rect
+    0x40, 0x41, 0x42, 0x43,      // data
 };
 // clang-format on
 
@@ -103,6 +108,15 @@ TEST(MuTFF, WriteQuickDrawRegion) {
   }
 }
 
+static inline void expect_quickdraw_region_eq(const MuTFFQuickDrawRegion *a,
+                                              const MuTFFQuickDrawRegion *b) {
+  EXPECT_EQ(a->size, b->size);
+  expect_quickdraw_rect_eq(&a->rect, &b->rect);
+  for (uint16_t i = 0; i < b->size - 10; ++i) {
+    EXPECT_EQ(a->data[i], b->data[i]);
+  }
+}
+
 TEST(MuTFF, ReadQuickDrawRegion) {
   MuTFFError ret;
   MuTFFQuickDrawRegion region;
@@ -112,14 +126,7 @@ TEST(MuTFF, ReadQuickDrawRegion) {
   ret = mutff_read_quickdraw_region(fd, &region);
   ASSERT_EQ(ret, quickdraw_region_test_data_size);
 
-  EXPECT_EQ(region.size, quickdraw_region_test_struct.size);
-  EXPECT_EQ(region.rect.top, quickdraw_region_test_struct.rect.top);
-  EXPECT_EQ(region.rect.left, quickdraw_region_test_struct.rect.left);
-  EXPECT_EQ(region.rect.bottom, quickdraw_region_test_struct.rect.bottom);
-  EXPECT_EQ(region.rect.right, quickdraw_region_test_struct.rect.right);
-  for (uint16_t i = 0; i < quickdraw_region_test_struct.size - 10; ++i) {
-    EXPECT_EQ(region.data[i], quickdraw_region_test_struct.data[i]);
-  }
+  expect_quickdraw_region_eq(&region, &quickdraw_region_test_struct);
   EXPECT_EQ(ftell(fd), quickdraw_region_test_data_size);
 }
 // }}}1
@@ -127,23 +134,24 @@ TEST(MuTFF, ReadQuickDrawRegion) {
 // {{{1 file type compatibility atom unit tests
 static const uint32_t ftyp_test_data_size = 20;
 // clang-format off
-static const unsigned char ftyp_test_data[ftyp_test_data_size] = {
-    ftyp_test_data_size >> 24,  // size
-    ftyp_test_data_size >> 16,
-    ftyp_test_data_size >> 8,
-    ftyp_test_data_size,
-    'f', 't', 'y', 'p',         // type
-    'q', 't', ' ', ' ',         // major brand
-    0x14, 0x04, 0x06, 0x00,     // minor version
-    'q', 't', ' ', ' ',         // compatible brands[0]
-};
+#define FTYP_TEST_DATA         \
+    ftyp_test_data_size >> 24, \
+    ftyp_test_data_size >> 16, \
+    ftyp_test_data_size >> 8,  \
+    ftyp_test_data_size,       \
+    'f', 't', 'y', 'p',        \
+    'q', 't', ' ', ' ',        \
+    0x14, 0x04, 0x06, 0x00,    \
+    'q', 't', ' ', ' '
 // clang-format on
+static const unsigned char ftyp_test_data[ftyp_test_data_size] =
+    ARR(FTYP_TEST_DATA);
 // clang-format off
 static const MuTFFFileTypeAtom ftyp_test_struct = {
-    MuTFF_FOURCC('q', 't', ' ', ' '),    // major brand
-    0x14040600,              // minor version
-    1,                       // compatible brands count
-    MuTFF_FOURCC('q', 't', ' ', ' '),    // compatible brands[0]
+    MuTFF_FOURCC('q', 't', ' ', ' '),  // major brand
+    0x14040600,                        // minor version
+    1,                                 // compatible brands count
+    MuTFF_FOURCC('q', 't', ' ', ' '),  // compatible brands[0]
 };
 // clang-format on
 
@@ -162,6 +170,22 @@ TEST(MuTFF, WriteFileTypeAtom) {
   }
 }
 
+static inline void expect_filetype_eq(const MuTFFFileTypeAtom *a,
+                                      const MuTFFFileTypeAtom *b) {
+  EXPECT_EQ(a->major_brand, b->major_brand);
+  EXPECT_EQ(a->minor_version, b->minor_version);
+  EXPECT_EQ(a->compatible_brands_count, b->compatible_brands_count);
+  size_t count;
+  if (a->compatible_brands_count <= b->compatible_brands_count) {
+    count = a->compatible_brands_count;
+  } else {
+    count = b->compatible_brands_count;
+  }
+  for (size_t i = 0; i < count; ++i) {
+    EXPECT_EQ(a->compatible_brands[i], b->compatible_brands[i]);
+  }
+}
+
 TEST(MuTFF, ReadFileTypeAtom) {
   MuTFFError ret;
   MuTFFFileTypeAtom atom;
@@ -171,11 +195,7 @@ TEST(MuTFF, ReadFileTypeAtom) {
   ret = mutff_read_file_type_atom(fd, &atom);
   ASSERT_EQ(ret, ftyp_test_data_size);
 
-  EXPECT_EQ(atom.major_brand, ftyp_test_struct.major_brand);
-  EXPECT_EQ(atom.minor_version, ftyp_test_struct.minor_version);
-  EXPECT_EQ(atom.compatible_brands_count,
-            ftyp_test_struct.compatible_brands_count);
-  EXPECT_EQ(atom.compatible_brands[0], ftyp_test_struct.compatible_brands[0]);
+  expect_filetype_eq(&atom, &ftyp_test_struct);
   EXPECT_EQ(ftell(fd), ftyp_test_data_size);
 }
 // }}}1
@@ -183,14 +203,15 @@ TEST(MuTFF, ReadFileTypeAtom) {
 // {{{1 movie data atom unit tests
 static const uint32_t mdat_test_data_size = 16;
 // clang-format off
-static const unsigned char mdat_test_data[mdat_test_data_size] = {
-    mdat_test_data_size >> 24,  // size
-    mdat_test_data_size >> 16,
-    mdat_test_data_size >> 8,
-    mdat_test_data_size,
-    'm', 'd', 'a', 't',         // type
-};
+#define MDAT_TEST_DATA         \
+    mdat_test_data_size >> 24, \
+    mdat_test_data_size >> 16, \
+    mdat_test_data_size >> 8,  \
+    mdat_test_data_size,       \
+    'm', 'd', 'a', 't'
 // clang-format on
+static const unsigned char mdat_test_data[mdat_test_data_size] =
+    ARR(MDAT_TEST_DATA);
 // clang-format off
 static const MuTFFMovieDataAtom mdat_test_struct = {
     8,
@@ -212,6 +233,11 @@ TEST(MuTFF, WriteMovieDataAtom) {
   }
 }
 
+static inline void expect_mdat_eq(const MuTFFMovieDataAtom *a,
+                                  const MuTFFMovieDataAtom *b) {
+  EXPECT_EQ(a->data_size, b->data_size);
+}
+
 TEST(MuTFF, ReadMovieDataAtom) {
   MuTFFError ret;
   MuTFFMovieDataAtom atom;
@@ -221,7 +247,7 @@ TEST(MuTFF, ReadMovieDataAtom) {
   ret = mutff_read_movie_data_atom(fd, &atom);
   ASSERT_EQ(ret, mdat_test_data_size);
 
-  EXPECT_EQ(atom.data_size, mdat_test_struct.data_size);
+  expect_mdat_eq(&atom, &mdat_test_struct);
   EXPECT_EQ(ftell(fd), mdat_test_data_size);
 }
 // }}}1
@@ -229,19 +255,20 @@ TEST(MuTFF, ReadMovieDataAtom) {
 // {{{1 free atom unit tests
 static const uint32_t free_test_data_size = 16;
 // clang-format off
-static const unsigned char free_test_data[free_test_data_size] = {
-    free_test_data_size >> 24,  // size
-    free_test_data_size >> 16,
-    free_test_data_size >> 8,
-    free_test_data_size,
-    'f', 'r', 'e', 'e',         // type
-    0x00, 0x00, 0x00, 0x00,     // data
-    0x00, 0x00, 0x00, 0x00,
-};
+#define FREE_TEST_DATA         \
+    free_test_data_size >> 24, \
+    free_test_data_size >> 16, \
+    free_test_data_size >> 8,  \
+    free_test_data_size,       \
+    'f', 'r', 'e', 'e',        \
+    0x00, 0x00, 0x00, 0x00,    \
+    0x00, 0x00, 0x00, 0x00
 // clang-format on
+static const unsigned char free_test_data[free_test_data_size] =
+    ARR(FREE_TEST_DATA);
 // clang-format off
 static const MuTFFFreeAtom free_test_struct = {
-    8,
+    free_test_data_size,
 };
 // clang-format on
 
@@ -260,6 +287,11 @@ TEST(MuTFF, WriteFreeAtom) {
   }
 }
 
+static inline void expect_free_eq(const MuTFFFreeAtom *a,
+                                  const MuTFFFreeAtom *b) {
+  EXPECT_EQ(a->atom_size, b->atom_size);
+}
+
 TEST(MuTFF, ReadFreeAtom) {
   MuTFFError ret;
   MuTFFFreeAtom atom;
@@ -269,7 +301,7 @@ TEST(MuTFF, ReadFreeAtom) {
   ret = mutff_read_free_atom(fd, &atom);
   ASSERT_EQ(ret, free_test_data_size);
 
-  EXPECT_EQ(atom.data_size, free_test_struct.data_size);
+  expect_free_eq(&atom, &free_test_struct);
   EXPECT_EQ(ftell(fd), free_test_data_size);
 }
 // }}}1
@@ -277,19 +309,20 @@ TEST(MuTFF, ReadFreeAtom) {
 // {{{1 skip atom unit tests
 static const uint32_t skip_test_data_size = 16;
 // clang-format off
-static const unsigned char skip_test_data[skip_test_data_size] = {
-    skip_test_data_size >> 24,  // size
-    skip_test_data_size >> 16,
-    skip_test_data_size >> 8,
-    skip_test_data_size,
-    's', 'k', 'i', 'p',         // type
-    0x00, 0x00, 0x00, 0x00,     // data
-    0x00, 0x00, 0x00, 0x00,
-};
+#define SKIP_TEST_DATA         \
+    skip_test_data_size >> 24, \
+    skip_test_data_size >> 16, \
+    skip_test_data_size >> 8,  \
+    skip_test_data_size,       \
+    's', 'k', 'i', 'p',        \
+    0x00, 0x00, 0x00, 0x00,    \
+    0x00, 0x00, 0x00, 0x00
 // clang-format on
+static const unsigned char skip_test_data[skip_test_data_size] =
+    ARR(SKIP_TEST_DATA);
 // clang-format off
 static const MuTFFSkipAtom skip_test_struct = {
-    8,
+    skip_test_data_size,
 };
 // clang-format on
 
@@ -308,6 +341,11 @@ TEST(MuTFF, WriteSkipAtom) {
   }
 }
 
+static inline void expect_skip_eq(const MuTFFSkipAtom *a,
+                                  const MuTFFSkipAtom *b) {
+  EXPECT_EQ(a->atom_size, b->atom_size);
+}
+
 TEST(MuTFF, ReadSkipAtom) {
   MuTFFError ret;
   MuTFFSkipAtom atom;
@@ -317,7 +355,7 @@ TEST(MuTFF, ReadSkipAtom) {
   ret = mutff_read_skip_atom(fd, &atom);
   ASSERT_EQ(ret, skip_test_data_size);
 
-  EXPECT_EQ(atom.data_size, skip_test_struct.data_size);
+  expect_skip_eq(&atom, &skip_test_struct);
   EXPECT_EQ(ftell(fd), skip_test_data_size);
 }
 // }}}1
@@ -325,19 +363,20 @@ TEST(MuTFF, ReadSkipAtom) {
 // {{{1 wide atom unit tests
 static const uint32_t wide_test_data_size = 16;
 // clang-format off
-static const unsigned char wide_test_data[wide_test_data_size] = {
-    wide_test_data_size >> 24,  // size
-    wide_test_data_size >> 16,
-    wide_test_data_size >> 8,
-    wide_test_data_size,
-    'w', 'i', 'd', 'e',         // type
-    0x00, 0x00, 0x00, 0x00,     // data
-    0x00, 0x00, 0x00, 0x00,
-};
+#define WIDE_TEST_DATA         \
+    wide_test_data_size >> 24, \
+    wide_test_data_size >> 16, \
+    wide_test_data_size >> 8,  \
+    wide_test_data_size,       \
+    'w', 'i', 'd', 'e',        \
+    0x00, 0x00, 0x00, 0x00,    \
+    0x00, 0x00, 0x00, 0x00
 // clang-format on
+static const unsigned char wide_test_data[wide_test_data_size] =
+    ARR(WIDE_TEST_DATA);
 // clang-format off
 static const MuTFFWideAtom wide_test_struct = {
-    8,
+    wide_test_data_size,
 };
 // clang-format on
 
@@ -356,6 +395,11 @@ TEST(MuTFF, WriteWideAtom) {
   }
 }
 
+static inline void expect_wide_eq(const MuTFFWideAtom *a,
+                                  const MuTFFWideAtom *b) {
+  EXPECT_EQ(a->atom_size, b->atom_size);
+}
+
 TEST(MuTFF, ReadWideAtom) {
   MuTFFError ret;
   MuTFFWideAtom atom;
@@ -365,7 +409,7 @@ TEST(MuTFF, ReadWideAtom) {
   ret = mutff_read_wide_atom(fd, &atom);
   ASSERT_EQ(ret, wide_test_data_size);
 
-  EXPECT_EQ(atom.data_size, wide_test_struct.data_size);
+  expect_wide_eq(&atom, &wide_test_struct);
   EXPECT_EQ(ftell(fd), wide_test_data_size);
 }
 // }}}1
@@ -373,24 +417,25 @@ TEST(MuTFF, ReadWideAtom) {
 // {{{1 preview atom unit tests
 static const uint32_t pnot_test_data_size = 20;
 // clang-format off
-static const unsigned char pnot_test_data[pnot_test_data_size] = {
-    pnot_test_data_size >> 24,  // size
-    pnot_test_data_size >> 16,
-    pnot_test_data_size >> 8,
-    pnot_test_data_size,
-    'p',  'n',  'o',  't',      // type
-    0x01, 0x02, 0x03, 0x04,     // modification_time
-    0x01, 0x02,                 // version
-    'a',  'b',  'c',  'd',      // atom_type
-    0x01, 0x02,                 // atom_index
-};
+#define PNOT_TEST_DATA         \
+    pnot_test_data_size >> 24, \
+    pnot_test_data_size >> 16, \
+    pnot_test_data_size >> 8,  \
+    pnot_test_data_size,       \
+    'p',  'n',  'o',  't',     \
+    0x01, 0x02, 0x03, 0x04,    \
+    0x01, 0x02,                \
+    'a',  'b',  'c',  'd',     \
+    0x01, 0x02
 // clang-format on
+static const unsigned char pnot_test_data[pnot_test_data_size] =
+    ARR(PNOT_TEST_DATA);
 // clang-format off
 static const MuTFFPreviewAtom pnot_test_struct = {
-    0x01020304,            // modification time
-    0x0102,                // version
+    0x01020304,                        // modification time
+    0x0102,                            // version
     MuTFF_FOURCC('a', 'b', 'c', 'd'),  // atom type
-    0x0102,                // atom indezcx
+    0x0102,                            // atom index
 };
 // clang-format on
 
@@ -409,6 +454,14 @@ TEST(MuTFF, WritePreviewAtom) {
   }
 }
 
+static inline void expect_pnot_eq(const MuTFFPreviewAtom *a,
+                                  const MuTFFPreviewAtom *b) {
+  EXPECT_EQ(a->modification_time, b->modification_time);
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->atom_type, b->atom_type);
+  EXPECT_EQ(a->atom_index, b->atom_index);
+}
+
 TEST(MuTFF, ReadPreviewAtom) {
   MuTFFError ret;
   MuTFFPreviewAtom atom;
@@ -418,10 +471,7 @@ TEST(MuTFF, ReadPreviewAtom) {
   ret = mutff_read_preview_atom(fd, &atom);
   ASSERT_EQ(ret, pnot_test_data_size);
 
-  EXPECT_EQ(atom.modification_time, pnot_test_struct.modification_time);
-  EXPECT_EQ(atom.version, pnot_test_struct.version);
-  EXPECT_EQ(atom.atom_type, pnot_test_struct.atom_type);
-  EXPECT_EQ(atom.atom_index, pnot_test_struct.atom_index);
+  expect_pnot_eq(&atom, &pnot_test_struct);
   EXPECT_EQ(ftell(fd), pnot_test_data_size);
 }
 // }}}1
@@ -429,40 +479,41 @@ TEST(MuTFF, ReadPreviewAtom) {
 // {{{1 movie header atom unit tests
 static const uint32_t mvhd_test_data_size = 108;
 // clang-format off
-static const unsigned char mvhd_test_data[mvhd_test_data_size] = {
-    mvhd_test_data_size >> 24,     // size
-    mvhd_test_data_size >> 16,
-    mvhd_test_data_size >> 8,
-    mvhd_test_data_size,
-    'm', 'v', 'h', 'd',            // type
-    0x01,                          // version
-    0x01, 0x02, 0x03,              // flags
-    0x01, 0x02, 0x03, 0x04,        // creation_time
-    0x01, 0x02, 0x03, 0x04,        // modification_time
-    0x01, 0x02, 0x03, 0x04,        // time_scale
-    0x01, 0x02, 0x03, 0x04,        // duration
-    0x01, 0x02, 0x03, 0x04,        // preferred_rate
-    0x01, 0x02,                    // preferred_volume
-    0x00, 0x00, 0x00, 0x00, 0x00,  
-    0x00, 0x00, 0x00, 0x00, 0x00,  // reserved
-    0x01, 0x02, 0x03, 0x04,
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x0a, 0x0b, 0x0c,
-    0x0d, 0x0e, 0x0f, 0x10,
-    0x11, 0x12, 0x13, 0x14,
-    0x15, 0x16, 0x17, 0x18,
-    0x19, 0x1a, 0x1b, 0x1c,
-    0x1d, 0x1e, 0x1f, 0x20,
-    0x21, 0x22, 0x23, 0x24,        // matrix_strucuture
-    0x01, 0x02, 0x03, 0x04,        // preview_time
-    0x01, 0x02, 0x03, 0x04,        // preview_duration
-    0x01, 0x02, 0x03, 0x04,        // poster_time
-    0x01, 0x02, 0x03, 0x04,        // selection_time
-    0x01, 0x02, 0x03, 0x04,        // selection_duration
-    0x01, 0x02, 0x03, 0x04,        // current_time
-    0x01, 0x02, 0x03, 0x04,        // next_track_id
-};
+#define MVHD_TEST_DATA                                      \
+    mvhd_test_data_size >> 24,     /* size */               \
+    mvhd_test_data_size >> 16,                              \
+    mvhd_test_data_size >> 8,                               \
+    mvhd_test_data_size,                                    \
+    'm', 'v', 'h', 'd',            /* type */               \
+    0x01,                          /* version */            \
+    0x01, 0x02, 0x03,              /* flags */              \
+    0x01, 0x02, 0x03, 0x04,        /* creation_time */      \
+    0x01, 0x02, 0x03, 0x04,        /* modification_time */  \
+    0x01, 0x02, 0x03, 0x04,        /* time_scale */         \
+    0x01, 0x02, 0x03, 0x04,        /* duration */           \
+    0x01, 0x02, 0x03, 0x04,        /* preferred_rate */     \
+    0x01, 0x02,                    /* preferred_volume */   \
+    0x00, 0x00, 0x00, 0x00, 0x00,                           \
+    0x00, 0x00, 0x00, 0x00, 0x00,  /* reserved */           \
+    0x01, 0x02, 0x03, 0x04,        /* matrix_structure */   \
+    0x05, 0x06, 0x07, 0x08,                                 \
+    0x09, 0x0a, 0x0b, 0x0c,                                 \
+    0x0d, 0x0e, 0x0f, 0x10,                                 \
+    0x11, 0x12, 0x13, 0x14,                                 \
+    0x15, 0x16, 0x17, 0x18,                                 \
+    0x19, 0x1a, 0x1b, 0x1c,                                 \
+    0x1d, 0x1e, 0x1f, 0x20,                                 \
+    0x21, 0x22, 0x23, 0x24,                                 \
+    0x01, 0x02, 0x03, 0x04,        /* preview_time */       \
+    0x01, 0x02, 0x03, 0x04,        /* preview_duration */   \
+    0x01, 0x02, 0x03, 0x04,        /* poster_time */        \
+    0x01, 0x02, 0x03, 0x04,        /* selection_time */     \
+    0x01, 0x02, 0x03, 0x04,        /* selection_duration */ \
+    0x01, 0x02, 0x03, 0x04,        /* current_time */       \
+    0x01, 0x02, 0x03, 0x04         /* next_track_id */
 // clang-format on
+static const unsigned char mvhd_test_data[mvhd_test_data_size] =
+    ARR(MVHD_TEST_DATA);
 // clang-format off
 static const MuTFFMovieHeaderAtom mvhd_test_struct = {
     0x01,                          // version
@@ -507,6 +558,32 @@ TEST(MuTFF, WriteMovieHeaderAtom) {
   }
 }
 
+static inline void expect_mvhd_eq(const MuTFFMovieHeaderAtom *a,
+                                  const MuTFFMovieHeaderAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->creation_time, b->creation_time);
+  EXPECT_EQ(a->modification_time, b->modification_time);
+  EXPECT_EQ(a->time_scale, b->time_scale);
+  EXPECT_EQ(a->duration, b->duration);
+  EXPECT_EQ(a->preferred_rate.integral, b->preferred_rate.integral);
+  EXPECT_EQ(a->preferred_rate.fractional, b->preferred_rate.fractional);
+  EXPECT_EQ(a->preferred_volume.integral, b->preferred_volume.integral);
+  EXPECT_EQ(a->preferred_volume.fractional, b->preferred_volume.fractional);
+  for (size_t j = 0; j < 3; ++j) {
+    for (size_t i = 0; i < 3; ++i) {
+      EXPECT_EQ(a->matrix_structure[j][i], b->matrix_structure[j][i]);
+    }
+  }
+  EXPECT_EQ(a->preview_time, b->preview_time);
+  EXPECT_EQ(a->preview_duration, b->preview_duration);
+  EXPECT_EQ(a->poster_time, b->poster_time);
+  EXPECT_EQ(a->selection_time, b->selection_time);
+  EXPECT_EQ(a->selection_duration, b->selection_duration);
+  EXPECT_EQ(a->current_time, b->current_time);
+  EXPECT_EQ(a->next_track_id, b->next_track_id);
+}
+
 TEST(MuTFF, ReadMovieHeaderAtom) {
   MuTFFError ret;
   MuTFFMovieHeaderAtom atom;
@@ -516,57 +593,27 @@ TEST(MuTFF, ReadMovieHeaderAtom) {
   ret = mutff_read_movie_header_atom(fd, &atom);
   ASSERT_EQ(ret, mvhd_test_data_size);
 
-  EXPECT_EQ(atom.version, mvhd_test_struct.version);
-  EXPECT_EQ(atom.flags, mvhd_test_struct.flags);
-  EXPECT_EQ(atom.creation_time, mvhd_test_struct.creation_time);
-  EXPECT_EQ(atom.modification_time, mvhd_test_struct.modification_time);
-  EXPECT_EQ(atom.time_scale, mvhd_test_struct.time_scale);
-  EXPECT_EQ(atom.duration, mvhd_test_struct.duration);
-  EXPECT_EQ(atom.preferred_rate.integral,
-            mvhd_test_struct.preferred_rate.integral);
-  EXPECT_EQ(atom.preferred_rate.fractional,
-            mvhd_test_struct.preferred_rate.fractional);
-  EXPECT_EQ(atom.preferred_volume.integral,
-            mvhd_test_struct.preferred_volume.integral);
-  EXPECT_EQ(atom.preferred_volume.fractional,
-            mvhd_test_struct.preferred_volume.fractional);
-  for (size_t j = 0; j < 3; ++j) {
-    for (size_t i = 0; i < 3; ++i) {
-      EXPECT_EQ(atom.matrix_structure[j][i],
-                mvhd_test_struct.matrix_structure[j][i]);
-    }
-  }
-  EXPECT_EQ(atom.preview_time, mvhd_test_struct.preview_time);
-  EXPECT_EQ(atom.preview_duration, mvhd_test_struct.preview_duration);
-  EXPECT_EQ(atom.poster_time, mvhd_test_struct.poster_time);
-  EXPECT_EQ(atom.selection_time, mvhd_test_struct.selection_time);
-  EXPECT_EQ(atom.selection_duration, mvhd_test_struct.selection_duration);
-  EXPECT_EQ(atom.current_time, mvhd_test_struct.current_time);
-  EXPECT_EQ(atom.next_track_id, mvhd_test_struct.next_track_id);
+  expect_mvhd_eq(&atom, &mvhd_test_struct);
   EXPECT_EQ(ftell(fd), mvhd_test_data_size);
 }
 // }}}1
 
 // {{{1 clipping region atom unit tests
-static const uint32_t crgn_test_data_size = 18;
+static const uint32_t crgn_test_data_size = 8 + quickdraw_region_test_data_size;
 // clang-format off
-static const unsigned char crgn_test_data[crgn_test_data_size] = {
-    crgn_test_data_size >> 24,                       // size
-    crgn_test_data_size >> 16,
-    crgn_test_data_size >> 8,
-    crgn_test_data_size,
-    'c', 'r', 'g', 'n',                              // type
-    0x00, 0x0a,                                      // region size
-    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,  // region boundary box
-};
+#define CRGN_TEST_DATA                      \
+    crgn_test_data_size >> 24,  /* size */  \
+    crgn_test_data_size >> 16,              \
+    crgn_test_data_size >> 8,               \
+    crgn_test_data_size,                    \
+    'c', 'r', 'g', 'n',         /* type */  \
+    QUICKDRAW_REGION_TEST_DATA  /* region*/
 // clang-format on
+static const unsigned char crgn_test_data[crgn_test_data_size] =
+    ARR(CRGN_TEST_DATA);
 // clang-format off
 static const MuTFFClippingRegionAtom crgn_test_struct = {
-    0x000a,                // region.size
-    0x0001,                // region.top
-    0x0203,                // region.left
-    0x0405,                // region.bottom
-    0x0607,                // region.right
+  quickdraw_region_test_struct
 };
 // clang-format on
 
@@ -586,6 +633,11 @@ TEST(MuTFF, WriteClippingRegionAtom) {
   }
 }
 
+static inline void expect_crgn_eq(const MuTFFClippingRegionAtom *a,
+                                  const MuTFFClippingRegionAtom *b) {
+  expect_quickdraw_region_eq(&a->region, &b->region);
+}
+
 TEST(MuTFF, ReadClippingRegionAtom) {
   MuTFFError ret;
   MuTFFClippingRegionAtom atom;
@@ -595,45 +647,27 @@ TEST(MuTFF, ReadClippingRegionAtom) {
   ret = mutff_read_clipping_region_atom(fd, &atom);
   ASSERT_EQ(ret, crgn_test_data_size);
 
-  EXPECT_EQ(atom.region.size, crgn_test_struct.region.size);
-  EXPECT_EQ(atom.region.rect.top, crgn_test_struct.region.rect.top);
-  EXPECT_EQ(atom.region.rect.left, crgn_test_struct.region.rect.left);
-  EXPECT_EQ(atom.region.rect.bottom, crgn_test_struct.region.rect.bottom);
-  EXPECT_EQ(atom.region.rect.right, crgn_test_struct.region.rect.right);
-  for (size_t i = 0; i < atom.region.size - 10; ++i) {
-    EXPECT_EQ(atom.region.data[i], crgn_test_struct.region.data[i]);
-  }
+  expect_crgn_eq(&atom, &crgn_test_struct);
   EXPECT_EQ(ftell(fd), crgn_test_data_size);
 }
 // }}}1
 
-// {{{1 cliping atom unit tests
-static const uint32_t clip_test_data_size = 26;
+// {{{1 clipping atom unit tests
+static const uint32_t clip_test_data_size = 8 + crgn_test_data_size;
 // clang-format off
-static const unsigned char clip_test_data[clip_test_data_size] = {
-    clip_test_data_size >> 24,                       // size
-    clip_test_data_size >> 16,
-    clip_test_data_size >> 8,
-    clip_test_data_size,
-    'c', 'l', 'i', 'p',                              // type
-    (clip_test_data_size - 8) >> 24,                 // size
-    (clip_test_data_size - 8) >> 16,
-    (clip_test_data_size - 8) >> 8,
-    (clip_test_data_size - 8),
-    'c', 'r', 'g', 'n',                              // region type
-    0x00, 0x0a,                                      // region region size
-    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,  // region boundary box
-};
+#define CLIP_TEST_DATA                     \
+    clip_test_data_size >> 24,  /* size */ \
+    clip_test_data_size >> 16,             \
+    clip_test_data_size >> 8,              \
+    clip_test_data_size,                   \
+    'c', 'l', 'i', 'p',         /* type */ \
+    CRGN_TEST_DATA
 // clang-format on
+static const unsigned char clip_test_data[clip_test_data_size] =
+    ARR(CLIP_TEST_DATA);
 // clang-format off
 static const MuTFFClippingAtom clip_test_struct = {
-    {
-        0x000a,
-        0x0001,                   // region.top
-        0x0203,                   // region.left
-        0x0405,                   // region.bottom
-        0x0607,                   // region.right
-    }
+  crgn_test_struct  // clipping_region
 };
 // clang-format on
 
@@ -652,6 +686,11 @@ TEST(MuTFF, WriteClippingAtom) {
   }
 }
 
+static inline void expect_clip_eq(const MuTFFClippingAtom *a,
+                                  const MuTFFClippingAtom *b) {
+  expect_crgn_eq(&a->clipping_region, &b->clipping_region);
+}
+
 TEST(MuTFF, ReadClippingAtom) {
   MuTFFError ret;
   MuTFFClippingAtom atom;
@@ -661,6 +700,7 @@ TEST(MuTFF, ReadClippingAtom) {
   ret = mutff_read_clipping_atom(fd, &atom);
   ASSERT_EQ(ret, clip_test_data_size);
 
+  expect_clip_eq(&atom, &clip_test_struct);
   EXPECT_EQ(ftell(fd), clip_test_data_size);
 }
 // }}}1
@@ -668,32 +708,33 @@ TEST(MuTFF, ReadClippingAtom) {
 // {{{1 color table atom unit tests
 static const uint32_t ctab_test_data_size = 32;
 // clang-format off
-static const unsigned char ctab_test_data[ctab_test_data_size] = {
-    ctab_test_data_size >> 24,                       // size
-    ctab_test_data_size >> 16,
-    ctab_test_data_size >> 8,
-    ctab_test_data_size,
-    'c',  't',  'a',  'b',                           // type
-    0x00, 0x01, 0x02, 0x03,                          // seed
-    0x00, 0x01,                                      // flags
-    0x00, 0x01,                                      // color table size
-    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,  // color table[0]
-    0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,  // color table[1]
-};
+#define CTAB_TEST_DATA                                                      \
+    ctab_test_data_size >> 24,                       /* size */             \
+    ctab_test_data_size >> 16,                                              \
+    ctab_test_data_size >> 8,                                               \
+    ctab_test_data_size,                                                    \
+    'c',  't',  'a',  'b',                           /* type */             \
+    0x00, 0x01, 0x02, 0x03,                          /* seed */             \
+    0x00, 0x01,                                      /* flags */            \
+    0x00, 0x01,                                      /* color table size */ \
+    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,  /* color table[0] */   \
+    0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17   /* color table[1] */
 // clang-format on
+static const unsigned char ctab_test_data[ctab_test_data_size] =
+    ARR(CTAB_TEST_DATA);
 // clang-format off
 static const MuTFFColorTableAtom ctab_test_struct = {
-    0x00010203,            // color table seed
-    0x0001,                // color table flags
-    0x0001,                // color table size
-    0x0001,                // color table[0][0]
-    0x0203,                // color table[0][1]
-    0x0405,                // color table[0][2]
-    0x0607,                // color table[0][3]
-    0x1011,                // color table[1][0]
-    0x1213,                // color table[1][1]
-    0x1415,                // color table[1][2]
-    0x1617,                // color table[1][3]
+    0x00010203,  // color table seed
+    0x0001,      // color table flags
+    0x0001,      // color table size
+    0x0001,      // color table[0][0]
+    0x0203,      // color table[0][1]
+    0x0405,      // color table[0][2]
+    0x0607,      // color table[0][3]
+    0x1011,      // color table[1][0]
+    0x1213,      // color table[1][1]
+    0x1415,      // color table[1][2]
+    0x1617,      // color table[1][3]
 };
 // clang-format on
 
@@ -712,6 +753,19 @@ TEST(MuTFF, WriteColorTableAtom) {
   }
 }
 
+static inline void expect_ctab_eq(const MuTFFColorTableAtom *a,
+                                  const MuTFFColorTableAtom *b) {
+  EXPECT_EQ(a->color_table_seed, b->color_table_seed);
+  EXPECT_EQ(a->color_table_flags, b->color_table_flags);
+  EXPECT_EQ(a->color_table_size, b->color_table_size);
+  for (size_t i = 0; i < a->color_table_size; ++i) {
+    EXPECT_EQ(a->color_array[i][0], b->color_array[i][0]);
+    EXPECT_EQ(a->color_array[i][1], b->color_array[i][1]);
+    EXPECT_EQ(a->color_array[i][2], b->color_array[i][2]);
+    EXPECT_EQ(a->color_array[i][3], b->color_array[i][3]);
+  }
+}
+
 TEST(MuTFF, ReadColorTableAtom) {
   MuTFFError ret;
   MuTFFColorTableAtom atom;
@@ -721,15 +775,7 @@ TEST(MuTFF, ReadColorTableAtom) {
   ret = mutff_read_color_table_atom(fd, &atom);
   ASSERT_EQ(ret, ctab_test_data_size);
 
-  EXPECT_EQ(atom.color_table_seed, ctab_test_struct.color_table_seed);
-  EXPECT_EQ(atom.color_table_flags, ctab_test_struct.color_table_flags);
-  EXPECT_EQ(atom.color_table_size, ctab_test_struct.color_table_size);
-  for (size_t i = 0; i < atom.color_table_size; ++i) {
-    EXPECT_EQ(atom.color_array[i][0], ctab_test_struct.color_array[i][0]);
-    EXPECT_EQ(atom.color_array[i][1], ctab_test_struct.color_array[i][1]);
-    EXPECT_EQ(atom.color_array[i][2], ctab_test_struct.color_array[i][2]);
-    EXPECT_EQ(atom.color_array[i][3], ctab_test_struct.color_array[i][3]);
-  }
+  expect_ctab_eq(&atom, &ctab_test_struct);
   EXPECT_EQ(ftell(fd), ctab_test_data_size);
 }
 // }}}1
@@ -737,21 +783,22 @@ TEST(MuTFF, ReadColorTableAtom) {
 // {{{1 user data list entry unit tests
 static const uint32_t udta_entry_test_data_size = 16;
 // clang-format off
-static const unsigned char udta_entry_test_data[udta_entry_test_data_size] = {
-    udta_entry_test_data_size >> 24,  // size
-    udta_entry_test_data_size >> 16,
-    udta_entry_test_data_size >> 8,
-    udta_entry_test_data_size,
-    'a', 'b', 'c', 'd',               // type
-    'e', 'f', 'g', 'h',               // data
-    0, 1, 2, 3,
-};
+#define UDTA_ENTRY_TEST_DATA                           \
+    udta_entry_test_data_size >> 24,  /* size */ \
+    udta_entry_test_data_size >> 16,             \
+    udta_entry_test_data_size >> 8,              \
+    udta_entry_test_data_size,                   \
+    'a', 'b', 'c', 'd',               /* type */ \
+    'e', 'f', 'g', 'h',               /* data */ \
+    0, 1, 2, 3
 // clang-format on
+static const unsigned char udta_entry_test_data[udta_entry_test_data_size] =
+    ARR(UDTA_ENTRY_TEST_DATA);
 // clang-format off
 static const MuTFFUserDataListEntry udta_entry_test_struct = {
-    MuTFF_FOURCC('a', 'b', 'c', 'd'),       // type
-    8,                          // data size
-    {                           // data
+    MuTFF_FOURCC('a', 'b', 'c', 'd'),  // type
+    8,                                 // data size
+    {                                  // data
       'e', 'f', 'g', 'h',
       0, 1, 2, 3,
     }
@@ -775,6 +822,14 @@ TEST(MuTFF, WriteUserDataListEntry) {
   }
 }
 
+static inline void expect_udta_entry_eq(const MuTFFUserDataListEntry *a,
+                                        const MuTFFUserDataListEntry *b) {
+  EXPECT_EQ(a->type, b->type);
+  for (size_t i = 0; i < a->data_size; ++i) {
+    EXPECT_EQ(a->data[i], b->data[i]);
+  }
+}
+
 TEST(MuTFF, ReadUserDataListEntry) {
   MuTFFError ret;
   MuTFFUserDataListEntry atom;
@@ -784,45 +839,30 @@ TEST(MuTFF, ReadUserDataListEntry) {
   ret = mutff_read_user_data_list_entry(fd, &atom);
   ASSERT_EQ(ret, udta_entry_test_data_size);
 
-  EXPECT_EQ(atom.type, udta_entry_test_struct.type);
-  for (size_t i = 0; i < atom.data_size; ++i) {
-    EXPECT_EQ(atom.data[i], udta_entry_test_struct.data[i]);
-  }
+  expect_udta_entry_eq(&atom, &udta_entry_test_struct);
   EXPECT_EQ(ftell(fd), udta_entry_test_data_size);
 }
 // }}}1
 
+// @TODO: test multiple entries
 // {{{1 user data atom unit tests
-static const uint32_t udta_test_data_size = 28;
+static const uint32_t udta_test_data_size = 8 + udta_entry_test_data_size;
 // clang-format off
-static const unsigned char udta_test_data[udta_test_data_size] = {
-    udta_test_data_size >> 24,  // size
-    udta_test_data_size >> 16,
-    udta_test_data_size >> 8,
-    udta_test_data_size,
-    'u',  'd',  't',  'a',      // type
-    0x00, 0x00, 0x00, 0x0c,     // user_data_list[0].size
-    'a',  'b',  'c',  'd',      // user_data_list[0].type
-    'e',  'f',  'g',  'h',      // user_data_list[0].data
-    0x00, 0x00, 0x00, 0x08,     // user_data_list[1].size
-    'i',  'j',  'k',  'l',      // user_data_list[1].type
-};
+#define UDTA_TEST_DATA                                  \
+    udta_test_data_size >> 24,  /* size */              \
+    udta_test_data_size >> 16,                          \
+    udta_test_data_size >> 8,                           \
+    udta_test_data_size,                                \
+    'u',  'd',  't',  'a',      /* type */              \
+    UDTA_ENTRY_TEST_DATA        /* user_data_list[0] */
 // clang-format on
+static const unsigned char udta_test_data[udta_test_data_size] =
+    ARR(UDTA_TEST_DATA);
 // clang-format off
 static const MuTFFUserDataAtom udta_test_struct = {
-    2,
+    1,
     {
-      {
-          MuTFF_FOURCC('a', 'b', 'c', 'd'),
-          4,
-          {
-            'e', 'f', 'g', 'h',
-          }
-      },
-      {
-          MuTFF_FOURCC('i', 'j', 'k', 'l'),
-          0,
-      },
+      udta_entry_test_struct,
     }
 };
 // clang-format on
@@ -842,6 +882,16 @@ TEST(MuTFF, WriteUserDataAtom) {
   }
 }
 
+static inline void expect_udta_eq(const MuTFFUserDataAtom *a,
+                                  const MuTFFUserDataAtom *b) {
+  EXPECT_EQ(a->list_entries, b->list_entries);
+  size_t list_entries =
+      a->list_entries > b->list_entries ? b->list_entries : a->list_entries;
+  for (size_t i = 0; i < list_entries; ++i) {
+    expect_udta_entry_eq(&a->user_data_list[i], &b->user_data_list[i]);
+  }
+}
+
 TEST(MuTFF, ReadUserDataAtom) {
   MuTFFError ret;
   MuTFFUserDataAtom atom;
@@ -851,6 +901,7 @@ TEST(MuTFF, ReadUserDataAtom) {
   ret = mutff_read_user_data_atom(fd, &atom);
   ASSERT_EQ(ret, udta_test_data_size);
 
+  expect_udta_eq(&atom, &udta_test_struct);
   EXPECT_EQ(ftell(fd), udta_test_data_size);
 }
 // }}}1
@@ -858,68 +909,69 @@ TEST(MuTFF, ReadUserDataAtom) {
 // {{{1 track header atom unit tests
 static const uint32_t tkhd_test_data_size = 92;
 // clang-format off
-static const unsigned char tkhd_test_data[tkhd_test_data_size] = {
-    tkhd_test_data_size >> 24,  // size
-    tkhd_test_data_size >> 16,
-    tkhd_test_data_size >> 8,
-    tkhd_test_data_size,
-    't', 'k', 'h', 'd',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x01, 0x02, 0x03,     // creation time
-    0x00, 0x01, 0x02, 0x03,     // modification time
-    0x00, 0x01, 0x02, 0x03,     // track ID
-    0x00, 0x00, 0x00, 0x00,     // reserved
-    0x00, 0x01, 0x02, 0x03,     // duration
-    0x00, 0x00, 0x00, 0x00,     // reserved
-    0x00, 0x00, 0x00, 0x00,     // reserved
-    0x00, 0x01,                 // layer
-    0x00, 0x01,                 // alternate group
-    0x00, 0x01,                 // volume
-    0x00, 0x00,                 // reserved
-    0x01, 0x02, 0x03, 0x04,     // matrix[0][0]
-    0x05, 0x06, 0x07, 0x08,     // matrix[0][1]
-    0x09, 0x0a, 0x0b, 0x0c,     // matrix[0][2]
-    0x0d, 0x0e, 0x0f, 0x10,     // matrix[1][0]
-    0x11, 0x12, 0x13, 0x14,     // matrix[1][1]
-    0x15, 0x16, 0x17, 0x18,     // matrix[1][2]
-    0x19, 0x1a, 0x1b, 0x1c,     // matrix[2][0]
-    0x1d, 0x1e, 0x1f, 0x20,     // matrix[2][1]
-    0x21, 0x22, 0x23, 0x24,     // matrix[2][2]
-    0x00, 0x01, 0x02, 0x03,     // track width
-    0x00, 0x01, 0x02, 0x03,     // track height
-};
+#define TKHD_TEST_DATA                                  \
+    tkhd_test_data_size >> 24,  /* size */              \
+    tkhd_test_data_size >> 16,                          \
+    tkhd_test_data_size >> 8,                           \
+    tkhd_test_data_size,                                \
+    't', 'k', 'h', 'd',         /* type */              \
+    0x00,                       /* version */           \
+    0x00, 0x01, 0x02,           /* flags */             \
+    0x00, 0x01, 0x02, 0x03,     /* creation time */     \
+    0x00, 0x01, 0x02, 0x03,     /* modification time */ \
+    0x00, 0x01, 0x02, 0x03,     /* track ID */          \
+    0x00, 0x00, 0x00, 0x00,     /* reserved */          \
+    0x00, 0x01, 0x02, 0x03,     /* duration */          \
+    0x00, 0x00, 0x00, 0x00,     /* reserved */          \
+    0x00, 0x00, 0x00, 0x00,     /* reserved */          \
+    0x00, 0x01,                 /* layer */             \
+    0x00, 0x01,                 /* alternate group */   \
+    0x00, 0x01,                 /* volume */            \
+    0x00, 0x00,                 /* reserved */          \
+    0x01, 0x02, 0x03, 0x04,     /* matrix[0][0] */      \
+    0x05, 0x06, 0x07, 0x08,     /* matrix[0][1] */      \
+    0x09, 0x0a, 0x0b, 0x0c,     /* matrix[0][2] */      \
+    0x0d, 0x0e, 0x0f, 0x10,     /* matrix[1][0] */      \
+    0x11, 0x12, 0x13, 0x14,     /* matrix[1][1] */      \
+    0x15, 0x16, 0x17, 0x18,     /* matrix[1][2] */      \
+    0x19, 0x1a, 0x1b, 0x1c,     /* matrix[2][0] */      \
+    0x1d, 0x1e, 0x1f, 0x20,     /* matrix[2][1] */      \
+    0x21, 0x22, 0x23, 0x24,     /* matrix[2][2] */      \
+    0x00, 0x01, 0x02, 0x03,     /* track width */       \
+    0x00, 0x01, 0x02, 0x03      /* track height */
 // clang-format on
+static const unsigned char tkhd_test_data[tkhd_test_data_size] =
+    ARR(TKHD_TEST_DATA);
 // clang-format off
 static const MuTFFTrackHeaderAtom tkhd_test_struct = {
-    0x00,                    // version
-    0x000102,                // flags
-    0x00010203,              // creation time
-    0x00010203,              // modification time
-    0x00010203,              // track id
-    0x00010203,              // duration
-    0x0001,                  // layer
-    0x0001,                  // alternate group
-    {0x00, 0x01},            // volume
+    0x00,              // version
+    0x000102,          // flags
+    0x00010203,        // creation time
+    0x00010203,        // modification time
+    0x00010203,        // track id
+    0x00010203,        // duration
+    0x0001,            // layer
+    0x0001,            // alternate group
+    {0x00, 0x01},      // volume
     {
       {
-        0x01020304,          // matrix[0][0]
-        0x05060708,          // matrix[0][1]
-        0x090a0b0c,          // matrix[0][2]
+        0x01020304,    // matrix[0][0]
+        0x05060708,    // matrix[0][1]
+        0x090a0b0c,    // matrix[0][2]
       },
       {
-        0x0d0e0f10,          // matrix[1][0]
-        0x11121314,          // matrix[1][1]
-        0x15161718,          // matrix[1][2]
+        0x0d0e0f10,    // matrix[1][0]
+        0x11121314,    // matrix[1][1]
+        0x15161718,    // matrix[1][2]
       },
       {
-        0x191a1b1c,          // matrix[2][0]
-        0x1d1e1f20,          // matrix[2][1]
-        0x21222324,          // matrix[2][2]
+        0x191a1b1c,    // matrix[2][0]
+        0x1d1e1f20,    // matrix[2][1]
+        0x21222324,    // matrix[2][2]
       }
     },
-    {0x0001, 0x0203},        // track width
-    {0x0001, 0x0203},        // track height
+    {0x0001, 0x0203},  // track width
+    {0x0001, 0x0203},  // track height
 };
 // clang-format on
 
@@ -939,6 +991,28 @@ TEST(MuTFF, WriteTrackHeaderAtom) {
   }
 }
 
+static inline void expect_tkhd_eq(const MuTFFTrackHeaderAtom *a,
+                                  const MuTFFTrackHeaderAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->creation_time, b->creation_time);
+  EXPECT_EQ(a->modification_time, b->modification_time);
+  EXPECT_EQ(a->track_id, b->track_id);
+  EXPECT_EQ(a->duration, b->duration);
+  EXPECT_EQ(a->layer, b->layer);
+  EXPECT_EQ(a->alternate_group, b->alternate_group);
+  EXPECT_EQ(a->volume.integral, b->volume.integral);
+  EXPECT_EQ(a->volume.fractional, b->volume.fractional);
+  for (size_t j = 0; j < 3; ++j) {
+    for (size_t i = 0; i < 3; ++i) {
+      EXPECT_EQ(a->matrix_structure[j][i], b->matrix_structure[j][i]);
+    }
+  }
+  EXPECT_EQ(a->track_width.integral, b->track_width.integral);
+  EXPECT_EQ(a->track_width.fractional, b->track_width.fractional);
+  EXPECT_EQ(a->track_height.integral, b->track_height.integral);
+  EXPECT_EQ(a->track_height.fractional, b->track_height.fractional);
+}
+
 TEST(MuTFF, ReadTrackHeaderAtom) {
   MuTFFError ret;
   MuTFFTrackHeaderAtom atom;
@@ -948,27 +1022,7 @@ TEST(MuTFF, ReadTrackHeaderAtom) {
   ret = mutff_read_track_header_atom(fd, &atom);
   ASSERT_EQ(ret, tkhd_test_data_size);
 
-  EXPECT_EQ(atom.version, tkhd_test_struct.version);
-  EXPECT_EQ(atom.creation_time, tkhd_test_struct.creation_time);
-  EXPECT_EQ(atom.modification_time, tkhd_test_struct.modification_time);
-  EXPECT_EQ(atom.track_id, tkhd_test_struct.track_id);
-  EXPECT_EQ(atom.duration, tkhd_test_struct.duration);
-  EXPECT_EQ(atom.layer, tkhd_test_struct.layer);
-  EXPECT_EQ(atom.alternate_group, tkhd_test_struct.alternate_group);
-  EXPECT_EQ(atom.volume.integral, tkhd_test_struct.volume.integral);
-  EXPECT_EQ(atom.volume.fractional, tkhd_test_struct.volume.fractional);
-  for (size_t j = 0; j < 3; ++j) {
-    for (size_t i = 0; i < 3; ++i) {
-      EXPECT_EQ(atom.matrix_structure[j][i],
-                tkhd_test_struct.matrix_structure[j][i]);
-    }
-  }
-  EXPECT_EQ(atom.track_width.integral, tkhd_test_struct.track_width.integral);
-  EXPECT_EQ(atom.track_width.fractional,
-            tkhd_test_struct.track_width.fractional);
-  EXPECT_EQ(atom.track_height.integral, tkhd_test_struct.track_height.integral);
-  EXPECT_EQ(atom.track_height.fractional,
-            tkhd_test_struct.track_height.fractional);
+  expect_tkhd_eq(&atom, &tkhd_test_struct);
   EXPECT_EQ(ftell(fd), tkhd_test_data_size);
 }
 // }}}1
@@ -976,24 +1030,25 @@ TEST(MuTFF, ReadTrackHeaderAtom) {
 // {{{1 track clean aperture dimensions atom unit tests
 static const uint32_t clef_test_data_size = 20;
 // clang-format off
-static const unsigned char clef_test_data[clef_test_data_size] = {
-    clef_test_data_size >> 24,  // size
-    clef_test_data_size >> 16,
-    clef_test_data_size >> 8,
-    clef_test_data_size,
-    'c', 'l', 'e', 'f',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x01, 0x02, 0x03,     // width
-    0x10, 0x11, 0x12, 0x13,     // height
-};
+#define CLEF_TEST_DATA                        \
+    clef_test_data_size >> 24,  /* size */    \
+    clef_test_data_size >> 16,                \
+    clef_test_data_size >> 8,                 \
+    clef_test_data_size,                      \
+    'c', 'l', 'e', 'f',         /* type */    \
+    0x00,                       /* version */ \
+    0x00, 0x01, 0x02,           /* flags */   \
+    0x00, 0x01, 0x02, 0x03,     /* width */   \
+    0x10, 0x11, 0x12, 0x13      /* height */
 // clang-format on
+static const unsigned char clef_test_data[clef_test_data_size] =
+    ARR(CLEF_TEST_DATA);
 // clang-format off
 static const MuTFFTrackCleanApertureDimensionsAtom clef_test_struct = {
-    0x00,                  // version
-    0x000102,              // flags
-    {0x0001, 0x0203},      // width
-    {0x1011, 0x1213},      // height
+    0x00,              // version
+    0x000102,          // flags
+    {0x0001, 0x0203},  // width
+    {0x1011, 0x1213},  // height
 };
 // clang-format on
 
@@ -1014,6 +1069,17 @@ TEST(MuTFF, WriteTrackCleanApertureDimensionsAtom) {
   }
 }
 
+static inline void expect_clef_eq(
+    const MuTFFTrackCleanApertureDimensionsAtom *a,
+    const MuTFFTrackCleanApertureDimensionsAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->width.integral, b->width.integral);
+  EXPECT_EQ(a->width.fractional, b->width.fractional);
+  EXPECT_EQ(a->height.integral, b->height.integral);
+  EXPECT_EQ(a->height.fractional, b->height.fractional);
+}
+
 TEST(MuTFF, ReadTrackCleanApertureDimensionsAtom) {
   MuTFFError ret;
   MuTFFTrackCleanApertureDimensionsAtom atom;
@@ -1023,12 +1089,7 @@ TEST(MuTFF, ReadTrackCleanApertureDimensionsAtom) {
   ret = mutff_read_track_clean_aperture_dimensions_atom(fd, &atom);
   ASSERT_EQ(ret, clef_test_data_size);
 
-  EXPECT_EQ(atom.version, clef_test_struct.version);
-  EXPECT_EQ(atom.flags, clef_test_struct.flags);
-  EXPECT_EQ(atom.width.integral, clef_test_struct.width.integral);
-  EXPECT_EQ(atom.width.fractional, clef_test_struct.width.fractional);
-  EXPECT_EQ(atom.height.integral, clef_test_struct.height.integral);
-  EXPECT_EQ(atom.height.fractional, clef_test_struct.height.fractional);
+  expect_clef_eq(&atom, &clef_test_struct);
   EXPECT_EQ(ftell(fd), clef_test_data_size);
 }
 // }}}1
@@ -1036,18 +1097,19 @@ TEST(MuTFF, ReadTrackCleanApertureDimensionsAtom) {
 // {{{1 track production aperture dimensions atom unit tests
 static const uint32_t prof_test_data_size = 20;
 // clang-format off
-static const unsigned char prof_test_data[prof_test_data_size] = {
-    prof_test_data_size >> 24,  // size
-    prof_test_data_size >> 16,
-    prof_test_data_size >> 8,
-    prof_test_data_size,
-    'p', 'r', 'o', 'f',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x01, 0x02, 0x03,     // width
-    0x10, 0x11, 0x12, 0x13,     // height
-};
+#define PROF_TEST_DATA                        \
+    prof_test_data_size >> 24,  /* size */    \
+    prof_test_data_size >> 16,                \
+    prof_test_data_size >> 8,                 \
+    prof_test_data_size,                      \
+    'p', 'r', 'o', 'f',         /* type */    \
+    0x00,                       /* version */ \
+    0x00, 0x01, 0x02,           /* flags */   \
+    0x00, 0x01, 0x02, 0x03,     /* width */   \
+    0x10, 0x11, 0x12, 0x13      /* height */
 // clang-format on
+static const unsigned char prof_test_data[prof_test_data_size] =
+    ARR(PROF_TEST_DATA);
 // clang-format off
 static const MuTFFTrackProductionApertureDimensionsAtom prof_test_struct = {
     0x00,                  // version
@@ -1074,6 +1136,17 @@ TEST(MuTFF, WriteTrackProductionApertureDimensionsAtom) {
   }
 }
 
+static inline void expect_prof_eq(
+    const MuTFFTrackProductionApertureDimensionsAtom *a,
+    const MuTFFTrackProductionApertureDimensionsAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->width.integral, b->width.integral);
+  EXPECT_EQ(a->width.fractional, b->width.fractional);
+  EXPECT_EQ(a->height.integral, b->height.integral);
+  EXPECT_EQ(a->height.fractional, b->height.fractional);
+}
+
 TEST(MuTFF, ReadTrackProductionApertureDimensionsAtom) {
   MuTFFError ret;
   MuTFFTrackProductionApertureDimensionsAtom atom;
@@ -1083,12 +1156,7 @@ TEST(MuTFF, ReadTrackProductionApertureDimensionsAtom) {
   ret = mutff_read_track_production_aperture_dimensions_atom(fd, &atom);
   ASSERT_EQ(ret, prof_test_data_size);
 
-  EXPECT_EQ(atom.version, prof_test_struct.version);
-  EXPECT_EQ(atom.flags, prof_test_struct.flags);
-  EXPECT_EQ(atom.width.integral, prof_test_struct.width.integral);
-  EXPECT_EQ(atom.width.fractional, prof_test_struct.width.fractional);
-  EXPECT_EQ(atom.height.integral, prof_test_struct.height.integral);
-  EXPECT_EQ(atom.height.fractional, prof_test_struct.height.fractional);
+  expect_prof_eq(&atom, &prof_test_struct);
   EXPECT_EQ(ftell(fd), prof_test_data_size);
 }
 // }}}1
@@ -1096,18 +1164,19 @@ TEST(MuTFF, ReadTrackProductionApertureDimensionsAtom) {
 // {{{1 track encoded pixels dimensions atom unit tests
 static const uint32_t enof_test_data_size = 20;
 // clang-format off
-static const unsigned char enof_test_data[enof_test_data_size] = {
-    enof_test_data_size >> 24,  // size
-    enof_test_data_size >> 16,
-    enof_test_data_size >> 8,
-    enof_test_data_size,
-    'e', 'n', 'o', 'f',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x01, 0x02, 0x03,     // width
-    0x10, 0x11, 0x12, 0x13,     // height
-};
+#define ENOF_TEST_DATA                        \
+    enof_test_data_size >> 24,  /* size */    \
+    enof_test_data_size >> 16,                \
+    enof_test_data_size >> 8,                 \
+    enof_test_data_size,                      \
+    'e', 'n', 'o', 'f',         /* type */    \
+    0x00,                       /* version */ \
+    0x00, 0x01, 0x02,           /* flags */   \
+    0x00, 0x01, 0x02, 0x03,     /* width */   \
+    0x10, 0x11, 0x12, 0x13      /* height */
 // clang-format on
+static const unsigned char enof_test_data[enof_test_data_size] =
+    ARR(ENOF_TEST_DATA);
 // clang-format off
 static const MuTFFTrackEncodedPixelsDimensionsAtom enof_test_struct = {
     0x00,                  // version
@@ -1134,6 +1203,17 @@ TEST(MuTFF, WriteTrackEncodedPixelsDimensionsAtom) {
   }
 }
 
+static inline void expect_enof_eq(
+    const MuTFFTrackEncodedPixelsDimensionsAtom *a,
+    const MuTFFTrackEncodedPixelsDimensionsAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->width.integral, b->width.integral);
+  EXPECT_EQ(a->width.fractional, b->width.fractional);
+  EXPECT_EQ(a->height.integral, b->height.integral);
+  EXPECT_EQ(a->height.fractional, b->height.fractional);
+}
+
 TEST(MuTFF, ReadTrackEncodedPixelsDimensionsAtom) {
   MuTFFError ret;
   MuTFFTrackEncodedPixelsDimensionsAtom atom;
@@ -1143,12 +1223,7 @@ TEST(MuTFF, ReadTrackEncodedPixelsDimensionsAtom) {
   ret = mutff_read_track_encoded_pixels_dimensions_atom(fd, &atom);
   ASSERT_EQ(ret, enof_test_data_size);
 
-  EXPECT_EQ(atom.version, enof_test_struct.version);
-  EXPECT_EQ(atom.flags, enof_test_struct.flags);
-  EXPECT_EQ(atom.width.integral, enof_test_struct.width.integral);
-  EXPECT_EQ(atom.width.fractional, enof_test_struct.width.fractional);
-  EXPECT_EQ(atom.height.integral, enof_test_struct.height.integral);
-  EXPECT_EQ(atom.height.fractional, enof_test_struct.height.fractional);
+  expect_enof_eq(&atom, &enof_test_struct);
   EXPECT_EQ(ftell(fd), enof_test_data_size);
 }
 // }}}1
@@ -1156,32 +1231,18 @@ TEST(MuTFF, ReadTrackEncodedPixelsDimensionsAtom) {
 // {{{1 track aperture mode dimensions atom unit tests
 static const uint32_t tapt_test_data_size = 68;
 // clang-format off
-static const unsigned char tapt_test_data[tapt_test_data_size] = {
-    tapt_test_data_size >> 24,  // size
-    tapt_test_data_size >> 16,
-    tapt_test_data_size >> 8,
-    tapt_test_data_size,
-    't', 'a', 'p', 't',         // type
-    0x00, 0x00, 0x00, 0x14,     // clef.size
-    'c', 'l', 'e', 'f',         // clef.type
-    0x00,                       // clef.version
-    0x00, 0x01, 0x02,           // clef.flags
-    0x00, 0x01, 0x02, 0x03,     // clef.width
-    0x10, 0x11, 0x12, 0x13,     // clef.height
-    0x00, 0x00, 0x00, 0x14,     // prof.size
-    'p', 'r', 'o', 'f',         // prof.type
-    0x00,                       // prof.version
-    0x00, 0x01, 0x02,           // prof.flags
-    0x00, 0x01, 0x02, 0x03,     // prof.width
-    0x10, 0x11, 0x12, 0x13,     // prof.height
-    0x00, 0x00, 0x00, 0x14,     // enof.size
-    'e', 'n', 'o', 'f',         // enof.type
-    0x00,                       // enof.version
-    0x00, 0x01, 0x02,           // enof.flags
-    0x00, 0x01, 0x02, 0x03,     // enof.width
-    0x10, 0x11, 0x12, 0x13,     // enof.height
-};
+#define TAPT_TEST_DATA                     \
+    tapt_test_data_size >> 24,  /* size */ \
+    tapt_test_data_size >> 16,             \
+    tapt_test_data_size >> 8,              \
+    tapt_test_data_size,                   \
+    't', 'a', 'p', 't',         /* type */ \
+    CLEF_TEST_DATA,                        \
+    PROF_TEST_DATA,                        \
+    ENOF_TEST_DATA
 // clang-format on
+static const unsigned char tapt_test_data[tapt_test_data_size] =
+    ARR(TAPT_TEST_DATA);
 // clang-format off
 static const MuTFFTrackApertureModeDimensionsAtom tapt_test_struct = {
     clef_test_struct,
@@ -1207,6 +1268,17 @@ TEST(MuTFF, WriteTrackApertureModeDimensionsAtom) {
   }
 }
 
+static inline void expect_tapt_eq(
+    const MuTFFTrackApertureModeDimensionsAtom *a,
+    const MuTFFTrackApertureModeDimensionsAtom *b) {
+  expect_clef_eq(&a->track_clean_aperture_dimensions,
+                 &b->track_clean_aperture_dimensions);
+  expect_prof_eq(&a->track_production_aperture_dimensions,
+                 &b->track_production_aperture_dimensions);
+  expect_enof_eq(&a->track_encoded_pixels_dimensions,
+                 &b->track_encoded_pixels_dimensions);
+}
+
 TEST(MuTFF, ReadTrackApertureModeDimensionsAtom) {
   MuTFFError ret;
   MuTFFTrackApertureModeDimensionsAtom atom;
@@ -1216,6 +1288,7 @@ TEST(MuTFF, ReadTrackApertureModeDimensionsAtom) {
   ret = mutff_read_track_aperture_mode_dimensions_atom(fd, &atom);
   ASSERT_EQ(ret, tapt_test_data_size);
 
+  expect_tapt_eq(&atom, &tapt_test_struct);
   EXPECT_EQ(ftell(fd), tapt_test_data_size);
 }
 // }}}1
@@ -1223,17 +1296,18 @@ TEST(MuTFF, ReadTrackApertureModeDimensionsAtom) {
 // {{{1 sample description unit tests
 static const uint32_t sample_desc_test_data_size = 20;
 // clang-format off
-static const unsigned char sample_desc_test_data[sample_desc_test_data_size] = {
-    sample_desc_test_data_size >> 24,    // size
-    sample_desc_test_data_size >> 16,
-    sample_desc_test_data_size >> 8,
-    sample_desc_test_data_size,
-    'a', 'b', 'c', 'd',                  // data format
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // reserved
-    0x00, 0x01,                          // data reference index
-    0x00, 0x01, 0x02, 0x03,              // media-specific data
-};
+#define SAMPLE_DESC_TEST_DATA                                       \
+    sample_desc_test_data_size >> 24,    /* size */                 \
+    sample_desc_test_data_size >> 16,                               \
+    sample_desc_test_data_size >> 8,                                \
+    sample_desc_test_data_size,                                     \
+    'a', 'b', 'c', 'd',                  /* data format */          \
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  /* reserved */             \
+    0x00, 0x01,                          /* data reference index */ \
+    0x00, 0x01, 0x02, 0x03               /* media-specific data */
 // clang-format on
+static const unsigned char sample_desc_test_data[sample_desc_test_data_size] =
+    ARR(SAMPLE_DESC_TEST_DATA);
 // clang-format off
 static const MuTFFSampleDescription sample_desc_test_struct = {
     sample_desc_test_data_size,     // size
@@ -1262,6 +1336,16 @@ TEST(MuTFF, WriteSampleDescription) {
   }
 }
 
+static inline void expect_sample_desc_eq(const MuTFFSampleDescription *a,
+                                         const MuTFFSampleDescription *b) {
+  EXPECT_EQ(a->size, b->size);
+  EXPECT_EQ(a->data_format, b->data_format);
+  EXPECT_EQ(a->data_reference_index, b->data_reference_index);
+  for (size_t i = 0; i < a->size - 16; ++i) {
+    EXPECT_EQ(a->additional_data[i], b->additional_data[i]);
+  }
+}
+
 TEST(MuTFF, ReadSampleDescription) {
   MuTFFError ret;
   MuTFFSampleDescription atom;
@@ -1271,14 +1355,7 @@ TEST(MuTFF, ReadSampleDescription) {
   ret = mutff_read_sample_description(fd, &atom);
   ASSERT_EQ(ret, sample_desc_test_data_size);
 
-  EXPECT_EQ(atom.size, sample_desc_test_struct.size);
-  EXPECT_EQ(atom.data_format, sample_desc_test_struct.data_format);
-  EXPECT_EQ(atom.data_reference_index,
-            sample_desc_test_struct.data_reference_index);
-  for (size_t i = 0; i < atom.size - 16; ++i) {
-    EXPECT_EQ(atom.additional_data[i],
-              sample_desc_test_struct.additional_data[i]);
-  }
+  expect_sample_desc_eq(&atom, &sample_desc_test_struct);
   EXPECT_EQ(ftell(fd), sample_desc_test_data_size);
 }
 // }}}1
@@ -1286,22 +1363,19 @@ TEST(MuTFF, ReadSampleDescription) {
 // {{{1 compressed matte atom unit tests
 static const uint32_t kmat_test_data_size = 36;
 // clang-format off
-static const unsigned char kmat_test_data[kmat_test_data_size] = {
-    kmat_test_data_size >> 24,           // size
-    kmat_test_data_size >> 16,
-    kmat_test_data_size >> 8,
-    kmat_test_data_size,
-    'k', 'm', 'a', 't',                  // type
-    0x00,                                // version
-    0x00, 0x01, 0x02,                    // flags
-    0x00, 0x00, 0x00, 0x14,              // desc.size
-    'a', 'b', 'c', 'd',                  // desc.data format
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // desc.reserved
-    0x00, 0x01,                          // desc.data reference index
-    0x00, 0x01, 0x02, 0x03,              // desc.media-specific data
-    0x00, 0x01, 0x02, 0x03,              // matte data
-};
+#define KMAT_TEST_DATA                                    \
+    kmat_test_data_size >> 24,           /* size */       \
+    kmat_test_data_size >> 16,                            \
+    kmat_test_data_size >> 8,                             \
+    kmat_test_data_size,                                  \
+    'k', 'm', 'a', 't',                  /* type */       \
+    0x00,                                /* version */    \
+    0x00, 0x01, 0x02,                    /* flags */      \
+    SAMPLE_DESC_TEST_DATA,                                \
+    0x00, 0x01, 0x02, 0x03               /* matte data */
 // clang-format on
+static const unsigned char kmat_test_data[kmat_test_data_size] =
+    ARR(KMAT_TEST_DATA);
 // clang-format off
 static const MuTFFCompressedMatteAtom kmat_test_struct = {
     0x00,                  // version
@@ -1331,6 +1405,21 @@ TEST(MuTFF, WriteCompressedMatteAtom) {
   }
 }
 
+static inline void expect_kmat_eq(const MuTFFCompressedMatteAtom *a,
+                                  const MuTFFCompressedMatteAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  expect_sample_desc_eq(&a->matte_image_description_structure,
+                        &b->matte_image_description_structure);
+  EXPECT_EQ(a->matte_data_len, b->matte_data_len);
+  const size_t matte_data_len = a->matte_data_len > b->matte_data_len
+                                    ? b->matte_data_len
+                                    : a->matte_data_len;
+  for (size_t i = 0; i < matte_data_len; ++i) {
+    EXPECT_EQ(a->matte_data[i], b->matte_data[i]);
+  }
+}
+
 TEST(MuTFF, ReadCompressedMatteAtom) {
   MuTFFError ret;
   MuTFFCompressedMatteAtom atom;
@@ -1340,12 +1429,7 @@ TEST(MuTFF, ReadCompressedMatteAtom) {
   ret = mutff_read_compressed_matte_atom(fd, &atom);
   ASSERT_EQ(ret, kmat_test_data_size);
 
-  EXPECT_EQ(atom.version, kmat_test_struct.version);
-  EXPECT_EQ(atom.flags, kmat_test_struct.flags);
-  EXPECT_EQ(atom.matte_data_len, kmat_test_struct.matte_data_len);
-  for (size_t i = 0; i < kmat_test_struct.matte_data_len; ++i) {
-    EXPECT_EQ(atom.matte_data[i], kmat_test_struct.matte_data[i]);
-  }
+  expect_kmat_eq(&atom, &kmat_test_struct);
   EXPECT_EQ(ftell(fd), kmat_test_data_size);
 }
 // }}}1
@@ -1409,12 +1493,14 @@ TEST(MuTFF, ReadTrackMatteAtom) {
 // {{{1 edit list entry unit tests
 static const uint32_t edit_list_entry_test_data_size = 12;
 // clang-format off
-static const unsigned char edit_list_entry_test_data[edit_list_entry_test_data_size] = {
-    0x00, 0x01, 0x02, 0x03,  // track duration
-    0x10, 0x11, 0x12, 0x13,  // media time
-    0x20, 0x21, 0x22, 0x23,  // media rate
-};
+#define EDIT_LIST_ENTRY_TEST_DATA                 \
+    0x00, 0x01, 0x02, 0x03,  /* track duration */ \
+    0x10, 0x11, 0x12, 0x13,  /* media time */     \
+    0x20, 0x21, 0x22, 0x23   /* media rate */
 // clang-format on
+static const unsigned char
+    edit_list_entry_test_data[edit_list_entry_test_data_size] =
+        ARR(EDIT_LIST_ENTRY_TEST_DATA);
 // clang-format off
 static const MuTFFEditListEntry edit_list_entry_test_struct = {
     0x00010203,        // track duration
@@ -1440,6 +1526,14 @@ TEST(MuTFF, WriteEditListEntry) {
   }
 }
 
+static inline void expect_edit_list_entry_eq(const MuTFFEditListEntry *a,
+                                             const MuTFFEditListEntry *b) {
+  EXPECT_EQ(a->track_duration, b->track_duration);
+  EXPECT_EQ(a->media_time, b->media_time);
+  EXPECT_EQ(a->media_rate.integral, b->media_rate.integral);
+  EXPECT_EQ(a->media_rate.fractional, b->media_rate.fractional);
+}
+
 TEST(MuTFF, ReadEditListEntry) {
   MuTFFError ret;
   MuTFFEditListEntry atom;
@@ -1449,52 +1543,35 @@ TEST(MuTFF, ReadEditListEntry) {
   ret = mutff_read_edit_list_entry(fd, &atom);
   ASSERT_EQ(ret, edit_list_entry_test_data_size);
 
-  EXPECT_EQ(atom.track_duration, edit_list_entry_test_struct.track_duration);
-  EXPECT_EQ(atom.media_time, edit_list_entry_test_struct.media_time);
-  EXPECT_EQ(atom.media_rate.integral,
-            edit_list_entry_test_struct.media_rate.integral);
-  EXPECT_EQ(atom.media_rate.fractional,
-            edit_list_entry_test_struct.media_rate.fractional);
+  expect_edit_list_entry_eq(&atom, &edit_list_entry_test_struct);
   EXPECT_EQ(ftell(fd), edit_list_entry_test_data_size);
 }
 // }}}1
 
+// @TODO: test multiple entries
 // {{{1 edit list atom unit tests
-static const uint32_t elst_test_data_size = 40;
+static const uint32_t elst_test_data_size = 16 + edit_list_entry_test_data_size;
 // clang-format off
-static const unsigned char elst_test_data[elst_test_data_size] = {
-    elst_test_data_size >> 24,  // size
-    elst_test_data_size >> 16,
-    elst_test_data_size >> 8,
-    elst_test_data_size,
-    'e', 'l', 's', 't',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x00, 0x00, 0x02,     // number of entries
-    0x00, 0x01, 0x02, 0x03,     // entry[0].track duration
-    0x10, 0x11, 0x12, 0x13,     // entry[0].media time
-    0x20, 0x21, 0x22, 0x23,     // entry[0].media rate
-    0x30, 0x31, 0x32, 0x33,     // entry[1].track duration
-    0x40, 0x41, 0x42, 0x43,     // entry[1].media time
-    0x50, 0x51, 0x52, 0x53,     // entry[1].media rate
-};
+#define ELST_TEST_DATA                                  \
+    elst_test_data_size >> 24,  /* size */              \
+    elst_test_data_size >> 16,                          \
+    elst_test_data_size >> 8,                           \
+    elst_test_data_size,                                \
+    'e', 'l', 's', 't',         /* type */              \
+    0x00,                       /* version */           \
+    0x00, 0x01, 0x02,           /* flags */             \
+    0x00, 0x00, 0x00, 0x01,     /* number of entries */ \
+    EDIT_LIST_ENTRY_TEST_DATA
 // clang-format on
+static const unsigned char elst_test_data[elst_test_data_size] =
+    ARR(ELST_TEST_DATA);
 // clang-format off
 static const MuTFFEditListAtom elst_test_struct = {
     0x00,                  // version
     0x000102,              // flags
-    0x00000002,            // number of entries
+    1,            // number of entries
     {
-      {
-        0x00010203,        // entry[0].track duration
-        0x10111213,        // entry[0].media time
-        {0x2021, 0x2223},  // entry[0].media rate
-      },
-      {
-        0x30313233,        // entry[1].track duration
-        0x40414243,        // entry[1].media time
-        {0x5051, 0x5253},  // entry[1].media rate
-      }
+      edit_list_entry_test_struct
     }
 };
 // clang-format on
@@ -1515,6 +1592,19 @@ TEST(MuTFF, WriteEditListAtom) {
   }
 }
 
+static inline void expect_elst_eq(const MuTFFEditListAtom *a,
+                                  const MuTFFEditListAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->number_of_entries, b->number_of_entries);
+  const size_t number_of_entries = a->number_of_entries > b->number_of_entries
+                                       ? b->number_of_entries
+                                       : a->number_of_entries;
+  for (size_t i = 0; i < number_of_entries; ++i) {
+    expect_edit_list_entry_eq(&a->edit_list_table[i], &b->edit_list_table[i]);
+  }
+}
+
 TEST(MuTFF, ReadEditListAtom) {
   MuTFFError ret;
   MuTFFEditListAtom atom;
@@ -1524,45 +1614,23 @@ TEST(MuTFF, ReadEditListAtom) {
   ret = mutff_read_edit_list_atom(fd, &atom);
   ASSERT_EQ(ret, elst_test_data_size);
 
-  EXPECT_EQ(atom.version, elst_test_struct.version);
-  EXPECT_EQ(atom.flags, elst_test_struct.flags);
-  EXPECT_EQ(atom.number_of_entries, elst_test_struct.number_of_entries);
-  for (size_t i = 0; i < elst_test_struct.number_of_entries; ++i) {
-    EXPECT_EQ(atom.edit_list_table[i].track_duration,
-              atom.edit_list_table[i].track_duration);
-    EXPECT_EQ(atom.edit_list_table[i].media_time,
-              atom.edit_list_table[i].media_time);
-    EXPECT_EQ(atom.edit_list_table[i].media_rate.integral,
-              atom.edit_list_table[i].media_rate.integral);
-    EXPECT_EQ(atom.edit_list_table[i].media_rate.fractional,
-              atom.edit_list_table[i].media_rate.fractional);
-  }
   EXPECT_EQ(ftell(fd), elst_test_data_size);
 }
 // }}}1
 
 // {{{1 edit atom unit tests
-static const uint32_t edts_test_data_size = 48;
+static const uint32_t edts_test_data_size = 8 + elst_test_data_size;
 // clang-format off
-static const unsigned char edts_test_data[edts_test_data_size] = {
-    edts_test_data_size >> 24,  // size
-    edts_test_data_size >> 16,
-    edts_test_data_size >> 8,
-    edts_test_data_size,
-    'e', 'd', 't', 's',         // type
-    0x00, 0x00, 0x00, 40,       // elst.size
-    'e', 'l', 's', 't',         // elst.type
-    0x00,                       // elst.version
-    0x00, 0x01, 0x02,           // elst.flags
-    0x00, 0x00, 0x00, 0x02,     // elst.number of entries
-    0x00, 0x01, 0x02, 0x03,     // elst.entry[0].track duration
-    0x10, 0x11, 0x12, 0x13,     // elst.entry[0].media time
-    0x20, 0x21, 0x22, 0x23,     // elst.entry[0].media rate
-    0x30, 0x31, 0x32, 0x33,     // elst.entry[1].track duration
-    0x40, 0x41, 0x42, 0x43,     // elst.entry[1].media time
-    0x50, 0x51, 0x52, 0x53,     // elst.entry[1].media rate
-};
+#define EDTS_TEST_DATA                     \
+    edts_test_data_size >> 24,  /* size */ \
+    edts_test_data_size >> 16,             \
+    edts_test_data_size >> 8,              \
+    edts_test_data_size,                   \
+    'e', 'd', 't', 's',         /* type */ \
+    ELST_TEST_DATA
 // clang-format on
+static const unsigned char edts_test_data[edts_test_data_size] =
+    ARR(EDTS_TEST_DATA);
 // clang-format off
 static const MuTFFEditAtom edts_test_struct = {
     elst_test_struct,        // edit list atom
@@ -1585,6 +1653,11 @@ TEST(MuTFF, WriteEditAtom) {
   }
 }
 
+static inline void expect_edts_eq(const MuTFFEditAtom *a,
+                                  const MuTFFEditAtom *b) {
+  expect_elst_eq(&a->edit_list_atom, &b->edit_list_atom);
+}
+
 TEST(MuTFF, ReadEditAtom) {
   MuTFFError ret;
   MuTFFEditAtom atom;
@@ -1594,31 +1667,7 @@ TEST(MuTFF, ReadEditAtom) {
   ret = mutff_read_edit_atom(fd, &atom);
   ASSERT_EQ(ret, edts_test_data_size);
 
-  EXPECT_EQ(atom.edit_list_atom.version,
-            edts_test_struct.edit_list_atom.version);
-  EXPECT_EQ(atom.edit_list_atom.flags, edts_test_struct.edit_list_atom.flags);
-  EXPECT_EQ(atom.edit_list_atom.number_of_entries,
-            edts_test_struct.edit_list_atom.number_of_entries);
-  EXPECT_EQ(atom.edit_list_atom.edit_list_table[0].track_duration,
-            edts_test_struct.edit_list_atom.edit_list_table[0].track_duration);
-  EXPECT_EQ(atom.edit_list_atom.edit_list_table[0].media_time,
-            edts_test_struct.edit_list_atom.edit_list_table[0].media_time);
-  EXPECT_EQ(
-      atom.edit_list_atom.edit_list_table[0].media_rate.integral,
-      edts_test_struct.edit_list_atom.edit_list_table[0].media_rate.integral);
-  EXPECT_EQ(
-      atom.edit_list_atom.edit_list_table[0].media_rate.fractional,
-      edts_test_struct.edit_list_atom.edit_list_table[0].media_rate.fractional);
-  EXPECT_EQ(atom.edit_list_atom.edit_list_table[1].track_duration,
-            edts_test_struct.edit_list_atom.edit_list_table[1].track_duration);
-  EXPECT_EQ(atom.edit_list_atom.edit_list_table[1].media_time,
-            edts_test_struct.edit_list_atom.edit_list_table[1].media_time);
-  EXPECT_EQ(
-      atom.edit_list_atom.edit_list_table[1].media_rate.integral,
-      edts_test_struct.edit_list_atom.edit_list_table[1].media_rate.integral);
-  EXPECT_EQ(
-      atom.edit_list_atom.edit_list_table[1].media_rate.fractional,
-      edts_test_struct.edit_list_atom.edit_list_table[1].media_rate.fractional);
+  expect_edts_eq(&atom, &edts_test_struct);
   EXPECT_EQ(ftell(fd), edts_test_data_size);
 }
 // }}}1
@@ -1626,22 +1675,24 @@ TEST(MuTFF, ReadEditAtom) {
 // {{{1 track reference type atom unit tests
 static const uint32_t track_ref_atom_test_data_size = 16;
 // clang-format off
-static const unsigned char track_ref_atom_test_data[track_ref_atom_test_data_size] = {
-    track_ref_atom_test_data_size >> 24,  // size
-    track_ref_atom_test_data_size >> 16,
-    track_ref_atom_test_data_size >> 8,
-    track_ref_atom_test_data_size,
-    'a', 'b', 'c', 'd',           // type
-    0x00, 0x01, 0x02, 0x03,       // track_ids[0]
-    0x10, 0x11, 0x12, 0x13,       // track_ids[1]
-};
+#define TRACK_REF_TEST_DATA                                  \
+    track_ref_atom_test_data_size >> 24,  /* size */         \
+    track_ref_atom_test_data_size >> 16,                     \
+    track_ref_atom_test_data_size >> 8,                      \
+    track_ref_atom_test_data_size,                           \
+    'a', 'b', 'c', 'd',                   /* type */         \
+    0x00, 0x01, 0x02, 0x03,               /* track_ids[0] */ \
+    0x10, 0x11, 0x12, 0x13                /* track_ids[1] */
 // clang-format on
+static const unsigned char
+    track_ref_atom_test_data[track_ref_atom_test_data_size] =
+        ARR(TRACK_REF_TEST_DATA);
 // clang-format off
 static const MuTFFTrackReferenceTypeAtom track_ref_atom_test_struct = {
-    MuTFF_FOURCC('a', 'b', 'c', 'd'),            // type
-    2,                               // track id count
-    0x00010203,                      // track ids[0]
-    0x10111213,                      // track ids[1]
+    MuTFF_FOURCC('a', 'b', 'c', 'd'),  // type
+    2,                                 // track id count
+    0x00010203,                        // track ids[0]
+    0x10111213,                        // track ids[1]
 };
 // clang-format on
 
@@ -1662,6 +1713,18 @@ TEST(MuTFF, WriteTrackReferenceTypeAtom) {
   }
 }
 
+static inline void expect_track_ref_eq(const MuTFFTrackReferenceTypeAtom *a,
+                                       const MuTFFTrackReferenceTypeAtom *b) {
+  EXPECT_EQ(a->type, b->type);
+  EXPECT_EQ(a->track_id_count, b->track_id_count);
+  const size_t track_id_count = a->track_id_count > b->track_id_count
+                                    ? b->track_id_count
+                                    : a->track_id_count;
+  for (size_t i = 0; i < track_id_count; ++i) {
+    EXPECT_EQ(a->track_ids[i], b->track_ids[i]);
+  }
+}
+
 TEST(MuTFF, ReadTrackReferenceTypeAtom) {
   MuTFFError ret;
   MuTFFTrackReferenceTypeAtom atom;
@@ -1671,54 +1734,30 @@ TEST(MuTFF, ReadTrackReferenceTypeAtom) {
   ret = mutff_read_track_reference_type_atom(fd, &atom);
   ASSERT_EQ(ret, track_ref_atom_test_data_size);
 
-  EXPECT_EQ(atom.type, track_ref_atom_test_struct.type);
-  EXPECT_EQ(atom.track_id_count, track_ref_atom_test_struct.track_id_count);
-  for (size_t i = 0; i < track_ref_atom_test_struct.track_id_count; ++i) {
-    EXPECT_EQ(atom.track_ids[i], track_ref_atom_test_struct.track_ids[i]);
-  }
+  expect_track_ref_eq(&atom, &track_ref_atom_test_struct);
   EXPECT_EQ(ftell(fd), track_ref_atom_test_data_size);
 }
 // }}}1
 
+// @TODO: test multiple entries
 // {{{1 track reference atom unit tests
-static const uint32_t tref_test_data_size = 40;
+static const uint32_t tref_test_data_size = 8 + track_ref_atom_test_data_size;
 // clang-format off
-static const unsigned char tref_test_data[tref_test_data_size] = {
-    tref_test_data_size >> 24,  // size
-    tref_test_data_size >> 16,
-    tref_test_data_size >> 8,
-    tref_test_data_size,
-    't', 'r', 'e', 'f',         // type
-    0x00, 0x00, 0x00, 0x10,     // track reference type[0].size
-    'a', 'b', 'c', 'd',         // track reference type[0].type
-    0x00, 0x01, 0x02, 0x03,     // track reference type[0].track_ids[0]
-    0x10, 0x11, 0x12, 0x13,     // track reference type[0].track_ids[1]
-    0x00, 0x00, 0x00, 0x10,     // track reference type[1].size
-    'e', 'f', 'g', 'h',         // track reference type[1].type
-    0x20, 0x21, 0x22, 0x23,     // track reference type[1].track_ids[0]
-    0x30, 0x31, 0x32, 0x33,     // track reference type[1].track_ids[1]
-};
+#define TREF_TEST_DATA                     \
+    tref_test_data_size >> 24,  /* size */ \
+    tref_test_data_size >> 16,             \
+    tref_test_data_size >> 8,              \
+    tref_test_data_size,                   \
+    't', 'r', 'e', 'f',         /* type */ \
+    TRACK_REF_TEST_DATA
 // clang-format on
+static const unsigned char tref_test_data[tref_test_data_size] =
+    ARR(TREF_TEST_DATA);
 // clang-format off
 static const MuTFFTrackReferenceAtom tref_test_struct = {
-    2,                         // track reference type count
+    1,                            // track reference type count
     {
-      {
-        MuTFF_FOURCC('a', 'b', 'c', 'd'),  // track reference type[0].type
-        2,
-        {
-          0x00010203,          // track reference type[0].track_ids[0]
-          0x10111213,          // track reference type[0].track_ids[1]
-        },
-      },
-      {
-        MuTFF_FOURCC('e', 'f', 'g', 'h'),  // track reference type[1].type
-        2,
-        {
-          0x20212223,          // track reference type[1].track_ids[0]
-          0x30313233,          // track reference type[1].track_ids[1]
-        },
-      },
+      track_ref_atom_test_struct
     },
 };
 // clang-format on
@@ -1740,6 +1779,19 @@ TEST(MuTFF, WriteTrackReferenceAtom) {
   }
 }
 
+static inline void expect_tref_eq(const MuTFFTrackReferenceAtom *a,
+                                  const MuTFFTrackReferenceAtom *b) {
+  EXPECT_EQ(a->track_reference_type_count, b->track_reference_type_count);
+  const size_t track_reference_type_count =
+      a->track_reference_type_count > b->track_reference_type_count
+          ? b->track_reference_type_count
+          : a->track_reference_type_count;
+  for (size_t i = 0; i < track_reference_type_count; ++i) {
+    expect_track_ref_eq(&a->track_reference_type[i],
+                        &b->track_reference_type[i]);
+  }
+}
+
 TEST(MuTFF, ReadTrackReferenceAtom) {
   MuTFFError ret;
   MuTFFTrackReferenceAtom atom;
@@ -1749,18 +1801,7 @@ TEST(MuTFF, ReadTrackReferenceAtom) {
   ret = mutff_read_track_reference_atom(fd, &atom);
   ASSERT_EQ(ret, tref_test_data_size);
 
-  EXPECT_EQ(atom.track_reference_type[0].type,
-            tref_test_struct.track_reference_type[0].type);
-  EXPECT_EQ(atom.track_reference_type[0].track_ids[0],
-            tref_test_struct.track_reference_type[0].track_ids[0]);
-  EXPECT_EQ(atom.track_reference_type[0].track_ids[1],
-            tref_test_struct.track_reference_type[0].track_ids[1]);
-  EXPECT_EQ(atom.track_reference_type[1].type,
-            tref_test_struct.track_reference_type[1].type);
-  EXPECT_EQ(atom.track_reference_type[1].track_ids[0],
-            tref_test_struct.track_reference_type[1].track_ids[0]);
-  EXPECT_EQ(atom.track_reference_type[1].track_ids[1],
-            tref_test_struct.track_reference_type[1].track_ids[1]);
+  expect_tref_eq(&atom, &tref_test_struct);
   EXPECT_EQ(ftell(fd), tref_test_data_size);
 }
 // }}}1
@@ -1768,14 +1809,15 @@ TEST(MuTFF, ReadTrackReferenceAtom) {
 // {{{1 track exclude from autoselection atom unit tests
 static const uint32_t txas_test_data_size = 8;
 // clang-format off
-static const unsigned char txas_test_data[txas_test_data_size] = {
-    txas_test_data_size >> 24,  // size
-    txas_test_data_size >> 16,
-    txas_test_data_size >> 8,
-    txas_test_data_size,
-    't', 'x', 'a', 's',         // type
-};
+#define TXAS_TEST_DATA                     \
+    txas_test_data_size >> 24,  /* size */ \
+    txas_test_data_size >> 16,             \
+    txas_test_data_size >> 8,              \
+    txas_test_data_size,                   \
+    't', 'x', 'a', 's'          /* type */
 // clang-format on
+static const unsigned char txas_test_data[txas_test_data_size] =
+    ARR(TXAS_TEST_DATA);
 // clang-format off
 static const MuTFFTrackExcludeFromAutoselectionAtom txas_test_struct = {
 };
@@ -1798,6 +1840,10 @@ TEST(MuTFF, WriteTrackExcludeFromAutoselectionAtom) {
   }
 }
 
+static inline void expect_txas_eq(
+    const MuTFFTrackExcludeFromAutoselectionAtom *a,
+    const MuTFFTrackExcludeFromAutoselectionAtom *b) {}
+
 TEST(MuTFF, ReadTrackExcludeFromAutoselectionAtom) {
   MuTFFError ret;
   MuTFFTrackExcludeFromAutoselectionAtom atom;
@@ -1807,6 +1853,7 @@ TEST(MuTFF, ReadTrackExcludeFromAutoselectionAtom) {
   ret = mutff_read_track_exclude_from_autoselection_atom(fd, &atom);
   ASSERT_EQ(ret, txas_test_data_size);
 
+  expect_txas_eq(&atom, &txas_test_struct);
   EXPECT_EQ(ftell(fd), txas_test_data_size);
 }
 // }}}1
@@ -1814,18 +1861,19 @@ TEST(MuTFF, ReadTrackExcludeFromAutoselectionAtom) {
 // {{{1 track load settings atom unit tests
 static const uint32_t load_test_data_size = 24;
 // clang-format off
-static const unsigned char load_test_data[load_test_data_size] = {
-    load_test_data_size >> 24,  // size
-    load_test_data_size >> 16,
-    load_test_data_size >> 8,
-    load_test_data_size,
-    'l', 'o', 'a', 'd',         // type
-    0x00, 0x01, 0x02, 0x03,     // preload start time
-    0x10, 0x11, 0x12, 0x13,     // preload duration
-    0x20, 0x21, 0x22, 0x23,     // preload flags
-    0x30, 0x31, 0x32, 0x33,     // default hints
-};
+#define LOAD_TEST_DATA                                   \
+    load_test_data_size >> 24,  /* size */               \
+    load_test_data_size >> 16,                           \
+    load_test_data_size >> 8,                            \
+    load_test_data_size,                                 \
+    'l', 'o', 'a', 'd',         /* type */               \
+    0x00, 0x01, 0x02, 0x03,     /* preload start time */ \
+    0x10, 0x11, 0x12, 0x13,     /* preload duration */   \
+    0x20, 0x21, 0x22, 0x23,     /* preload flags */      \
+    0x30, 0x31, 0x32, 0x33,     /* default hints */
 // clang-format on
+static const unsigned char load_test_data[load_test_data_size] =
+    ARR(LOAD_TEST_DATA);
 // clang-format off
 static const MuTFFTrackLoadSettingsAtom load_test_struct = {
     0x00010203,            // preload start time
@@ -1852,6 +1900,14 @@ TEST(MuTFF, WriteTrackLoadSettingsAtom) {
   }
 }
 
+static inline void expect_load_eq(const MuTFFTrackLoadSettingsAtom *a,
+                                  const MuTFFTrackLoadSettingsAtom *b) {
+  EXPECT_EQ(a->preload_start_time, b->preload_start_time);
+  EXPECT_EQ(a->preload_duration, b->preload_duration);
+  EXPECT_EQ(a->preload_flags, b->preload_flags);
+  EXPECT_EQ(a->default_hints, b->default_hints);
+}
+
 TEST(MuTFF, ReadTrackLoadSettingsAtom) {
   MuTFFError ret;
   MuTFFTrackLoadSettingsAtom atom;
@@ -1861,10 +1917,7 @@ TEST(MuTFF, ReadTrackLoadSettingsAtom) {
   ret = mutff_read_track_load_settings_atom(fd, &atom);
   ASSERT_EQ(ret, load_test_data_size);
 
-  EXPECT_EQ(atom.preload_start_time, load_test_struct.preload_start_time);
-  EXPECT_EQ(atom.preload_duration, load_test_struct.preload_duration);
-  EXPECT_EQ(atom.preload_flags, load_test_struct.preload_flags);
-  EXPECT_EQ(atom.default_hints, load_test_struct.default_hints);
+  expect_load_eq(&atom, &load_test_struct);
   EXPECT_EQ(ftell(fd), load_test_data_size);
 }
 // }}}1
@@ -1872,15 +1925,16 @@ TEST(MuTFF, ReadTrackLoadSettingsAtom) {
 // {{{1 object id atom unit tests
 static const uint32_t obid_test_data_size = 12;
 // clang-format off
-static const unsigned char obid_test_data[obid_test_data_size] = {
-    obid_test_data_size >> 24,  // size
-    obid_test_data_size >> 16,
-    obid_test_data_size >> 8,
-    obid_test_data_size,
-    'o', 'b', 'i', 'd',         // type
-    0x00, 0x01, 0x02, 0x03,     // object id
-};
+#define OBID_TEST_DATA                          \
+    obid_test_data_size >> 24,  /* size */      \
+    obid_test_data_size >> 16,                  \
+    obid_test_data_size >> 8,                   \
+    obid_test_data_size,                        \
+    'o', 'b', 'i', 'd',         /* type */      \
+    0x00, 0x01, 0x02, 0x03      /* object id */
 // clang-format on
+static const unsigned char obid_test_data[obid_test_data_size] =
+    ARR(OBID_TEST_DATA);
 // clang-format off
 static const MuTFFObjectIDAtom obid_test_struct = {
     0x00010203,              // object id
@@ -1903,6 +1957,11 @@ TEST(MuTFF, WriteObjectIDAtom) {
   }
 }
 
+static inline void expect_obid_eq(const MuTFFObjectIDAtom *a,
+                                  const MuTFFObjectIDAtom *b) {
+  EXPECT_EQ(a->object_id, b->object_id);
+}
+
 TEST(MuTFF, ReadObjectIDAtom) {
   MuTFFError ret;
   MuTFFObjectIDAtom atom;
@@ -1912,7 +1971,7 @@ TEST(MuTFF, ReadObjectIDAtom) {
   ret = mutff_read_object_id_atom(fd, &atom);
   ASSERT_EQ(ret, obid_test_data_size);
 
-  EXPECT_EQ(atom.object_id, obid_test_struct.object_id);
+  expect_obid_eq(&atom, &obid_test_struct);
   EXPECT_EQ(ftell(fd), obid_test_data_size);
 }
 // }}}1
@@ -1920,15 +1979,15 @@ TEST(MuTFF, ReadObjectIDAtom) {
 // {{{1 input type atom unit tests
 static const uint32_t ty_test_data_size = 12;
 // clang-format off
-static const unsigned char ty_test_data[ty_test_data_size] = {
-    ty_test_data_size >> 24,  // size
-    ty_test_data_size >> 16,
-    ty_test_data_size >> 8,
-    ty_test_data_size,
-    '\0', '\0', 't', 'y',     // type
-    0x00, 0x01, 0x02, 0x03,   // input type
-};
+#define TY_TEST_DATA                           \
+    ty_test_data_size >> 24,  /* size */       \
+    ty_test_data_size >> 16,                   \
+    ty_test_data_size >> 8,                    \
+    ty_test_data_size,                         \
+    '\0', '\0', 't', 'y',     /* type */       \
+    0x00, 0x01, 0x02, 0x03    /* input type */
 // clang-format on
+static const unsigned char ty_test_data[ty_test_data_size] = ARR(TY_TEST_DATA);
 // clang-format off
 static const MuTFFInputTypeAtom ty_test_struct = {
     0x00010203,              // input type
@@ -1951,6 +2010,11 @@ TEST(MuTFF, WriteInputTypeAtom) {
   }
 }
 
+static inline void expect_ty_eq(const MuTFFInputTypeAtom *a,
+                                const MuTFFInputTypeAtom *b) {
+  EXPECT_EQ(a->input_type, b->input_type);
+}
+
 TEST(MuTFF, ReadInputTypeAtom) {
   MuTFFError ret;
   MuTFFInputTypeAtom atom;
@@ -1960,32 +2024,29 @@ TEST(MuTFF, ReadInputTypeAtom) {
   ret = mutff_read_input_type_atom(fd, &atom);
   ASSERT_EQ(ret, ty_test_data_size);
 
-  EXPECT_EQ(atom.input_type, ty_test_struct.input_type);
+  expect_ty_eq(&atom, &ty_test_struct);
   EXPECT_EQ(ftell(fd), ty_test_data_size);
 }
 // }}}1
 
 // {{{1 track input atom unit tests
-static const uint32_t in_test_data_size = 44;
+static const uint32_t in_test_data_size =
+    20 + ty_test_data_size + obid_test_data_size;
 // clang-format off
-static const unsigned char in_test_data[in_test_data_size] = {
-    in_test_data_size >> 24,  // size
-    in_test_data_size >> 16,
-    in_test_data_size >> 8,
-    in_test_data_size,
-    '\0', '\0', 'i', 'n',     // type
-    0x00, 0x01, 0x02, 0x03,   // atom id
-    0x00, 0x00,               // reserved
-    0x00, 0x02,               // child count
-    0x00, 0x00, 0x00, 0x00,   // reserved
-    0x00, 0x00, 0x00, 0x0c,   // input type atom.size
-    '\0', '\0', 't', 'y',     // input type atom.type
-    0x00, 0x01, 0x02, 0x03,   // input type atom.input type
-    0x00, 0x00, 0x00, 0x0c,   // object id atom.size
-    'o', 'b', 'i', 'd',       // object id atom.type
-    0x00, 0x01, 0x02, 0x03,   // object id atom.object id
-};
+#define IN_TEST_DATA                            \
+    in_test_data_size >> 24,  /* size */        \
+    in_test_data_size >> 16,                    \
+    in_test_data_size >> 8,                     \
+    in_test_data_size,                          \
+    '\0', '\0', 'i', 'n',     /* type */        \
+    0x00, 0x01, 0x02, 0x03,   /* atom id */     \
+    0x00, 0x00,               /* reserved */    \
+    0x00, 0x02,               /* child count */ \
+    0x00, 0x00, 0x00, 0x00,   /* reserved */    \
+    TY_TEST_DATA,                               \
+    OBID_TEST_DATA
 // clang-format on
+static const unsigned char in_test_data[in_test_data_size] = ARR(IN_TEST_DATA);
 // clang-format off
 static const MuTFFTrackInputAtom in_test_struct = {
     0x00010203,                // atom id
@@ -2012,6 +2073,19 @@ TEST(MuTFF, WriteTrackInputAtom) {
   }
 }
 
+static inline void expect_in_eq(const MuTFFTrackInputAtom *a,
+                                const MuTFFTrackInputAtom *b) {
+  EXPECT_EQ(a->atom_id, b->atom_id);
+  EXPECT_EQ(a->child_count, b->child_count);
+  expect_ty_eq(&a->input_type_atom, &b->input_type_atom);
+  EXPECT_EQ(a->object_id_atom_present, b->object_id_atom_present);
+  const bool object_id_atom_present =
+      a->object_id_atom_present && b->object_id_atom_present;
+  if (object_id_atom_present) {
+    expect_obid_eq(&a->object_id_atom, &b->object_id_atom);
+  }
+}
+
 TEST(MuTFF, ReadTrackInputAtom) {
   MuTFFError ret;
   MuTFFTrackInputAtom atom;
@@ -2021,57 +2095,29 @@ TEST(MuTFF, ReadTrackInputAtom) {
   ret = mutff_read_track_input_atom(fd, &atom);
   ASSERT_EQ(ret, in_test_data_size);
 
-  EXPECT_EQ(atom.atom_id, in_test_struct.atom_id);
-  EXPECT_EQ(atom.child_count, in_test_struct.child_count);
-  EXPECT_EQ(atom.input_type_atom.input_type,
-            in_test_struct.input_type_atom.input_type);
-  ASSERT_EQ(atom.object_id_atom_present, true);
-  EXPECT_EQ(atom.object_id_atom.object_id,
-            in_test_struct.object_id_atom.object_id);
+  expect_in_eq(&atom, &in_test_struct);
   EXPECT_EQ(ftell(fd), in_test_data_size);
 }
 // }}}1
 
+// @TODO: test multiple entries
 // {{{1 track input map atom unit tests
-static const uint32_t imap_test_data_size = 96;
+static const uint32_t imap_test_data_size = 8 + in_test_data_size;
 // clang-format off
-static const unsigned char imap_test_data[imap_test_data_size] = {
-    imap_test_data_size >> 24,  // size
-    imap_test_data_size >> 16,
-    imap_test_data_size >> 8,
-    imap_test_data_size,
-    'i', 'm', 'a', 'p',         // type
-    0x00, 0x00, 0x00, 44,       // size
-    '\0', '\0', 'i', 'n',       // type
-    0x00, 0x01, 0x02, 0x03,     // atom id
-    0x00, 0x00,                 // reserved
-    0x00, 0x02,                 // child count
-    0x00, 0x00, 0x00, 0x00,     // reserved
-    0x00, 0x00, 0x00, 0x0c,     // input type atom.size
-    '\0', '\0', 't', 'y',       // input type atom.type
-    0x00, 0x01, 0x02, 0x03,     // input type atom.input type
-    0x00, 0x00, 0x00, 0x0c,     // object id atom.size
-    'o', 'b', 'i', 'd',         // object id atom.type
-    0x00, 0x01, 0x02, 0x03,     // object id atom.object id
-    0x00, 0x00, 0x00, 44,       // size
-    '\0', '\0', 'i', 'n',       // type
-    0x00, 0x01, 0x02, 0x03,     // atom id
-    0x00, 0x00,                 // reserved
-    0x00, 0x02,                 // child count
-    0x00, 0x00, 0x00, 0x00,     // reserved
-    0x00, 0x00, 0x00, 0x0c,     // input type atom.size
-    '\0', '\0', 't', 'y',       // input type atom.type
-    0x00, 0x01, 0x02, 0x03,     // input type atom.input type
-    0x00, 0x00, 0x00, 0x0c,     // object id atom.size
-    'o', 'b', 'i', 'd',         // object id atom.type
-    0x00, 0x01, 0x02, 0x03,     // object id atom.object id
-};
+#define IMAP_TEST_DATA                     \
+    imap_test_data_size >> 24,  /* size */ \
+    imap_test_data_size >> 16,             \
+    imap_test_data_size >> 8,              \
+    imap_test_data_size,                   \
+    'i', 'm', 'a', 'p',         /* type */ \
+    IN_TEST_DATA
 // clang-format on
+static const unsigned char imap_test_data[imap_test_data_size] =
+    ARR(IMAP_TEST_DATA);
 // clang-format off
 static const MuTFFTrackInputMapAtom imap_test_struct = {
-    2,                       // track input atom count
+    1,                       // track input atom count
     {                        // track input atoms
-      in_test_struct,
       in_test_struct,
     }
 };
@@ -2094,6 +2140,18 @@ TEST(MuTFF, WriteTrackInputMapAtom) {
   }
 }
 
+static inline void expect_imap_eq(const MuTFFTrackInputMapAtom *a,
+                                  const MuTFFTrackInputMapAtom *b) {
+  EXPECT_EQ(a->track_input_atom_count, b->track_input_atom_count);
+  const size_t track_input_atom_count =
+      a->track_input_atom_count > b->track_input_atom_count
+          ? b->track_input_atom_count
+          : a->track_input_atom_count;
+  for (size_t i = 0; i < track_input_atom_count; ++i) {
+    expect_in_eq(&a->track_input_atoms[i], &b->track_input_atoms[i]);
+  }
+}
+
 TEST(MuTFF, ReadTrackInputMapAtom) {
   MuTFFError ret;
   MuTFFTrackInputMapAtom atom;
@@ -2103,22 +2161,7 @@ TEST(MuTFF, ReadTrackInputMapAtom) {
   ret = mutff_read_track_input_map_atom(fd, &atom);
   ASSERT_EQ(ret, imap_test_data_size);
 
-  EXPECT_EQ(atom.track_input_atoms[0].atom_id,
-            imap_test_struct.track_input_atoms[0].atom_id);
-  EXPECT_EQ(atom.track_input_atoms[0].child_count,
-            imap_test_struct.track_input_atoms[0].child_count);
-  EXPECT_EQ(atom.track_input_atoms[0].input_type_atom.input_type,
-            imap_test_struct.track_input_atoms[0].input_type_atom.input_type);
-  EXPECT_EQ(atom.track_input_atoms[0].object_id_atom.object_id,
-            imap_test_struct.track_input_atoms[0].object_id_atom.object_id);
-  EXPECT_EQ(atom.track_input_atoms[1].atom_id,
-            imap_test_struct.track_input_atoms[1].atom_id);
-  EXPECT_EQ(atom.track_input_atoms[1].child_count,
-            imap_test_struct.track_input_atoms[1].child_count);
-  EXPECT_EQ(atom.track_input_atoms[1].input_type_atom.input_type,
-            imap_test_struct.track_input_atoms[1].input_type_atom.input_type);
-  EXPECT_EQ(atom.track_input_atoms[1].object_id_atom.object_id,
-            imap_test_struct.track_input_atoms[1].object_id_atom.object_id);
+  expect_imap_eq(&atom, &imap_test_struct);
   EXPECT_EQ(ftell(fd), imap_test_data_size);
 }
 // }}}1
@@ -2126,22 +2169,23 @@ TEST(MuTFF, ReadTrackInputMapAtom) {
 // {{{1 media header atom unit tests
 static const uint32_t mdhd_test_data_size = 32;
 // clang-format off
-static const unsigned char mdhd_test_data[mdhd_test_data_size] = {
-    mdhd_test_data_size >> 24,  // size
-    mdhd_test_data_size >> 16,
-    mdhd_test_data_size >> 8,
-    mdhd_test_data_size,
-    'm', 'd', 'h', 'd',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x01, 0x02, 0x03,     // creation time
-    0x10, 0x11, 0x12, 0x13,     // modification time
-    0x20, 0x21, 0x22, 0x23,     // time scale
-    0x30, 0x31, 0x32, 0x33,     // duration
-    0x40, 0x41,                 // language
-    0x50, 0x51,                 // quality
-};
+#define MDHD_TEST_DATA                                  \
+    mdhd_test_data_size >> 24,  /* size */              \
+    mdhd_test_data_size >> 16,                          \
+    mdhd_test_data_size >> 8,                           \
+    mdhd_test_data_size,                                \
+    'm', 'd', 'h', 'd',         /* type */              \
+    0x00,                       /* version */           \
+    0x00, 0x01, 0x02,           /* flags */             \
+    0x00, 0x01, 0x02, 0x03,     /* creation time */     \
+    0x10, 0x11, 0x12, 0x13,     /* modification time */ \
+    0x20, 0x21, 0x22, 0x23,     /* time scale */        \
+    0x30, 0x31, 0x32, 0x33,     /* duration */          \
+    0x40, 0x41,                 /* language */          \
+    0x50, 0x51                  /* quality */
 // clang-format on
+static const unsigned char mdhd_test_data[mdhd_test_data_size] =
+    ARR(MDHD_TEST_DATA);
 // clang-format off
 static const MuTFFMediaHeaderAtom mdhd_test_struct = {
     0x00,                    // version
@@ -2171,6 +2215,18 @@ TEST(MuTFF, WriteMediaHeaderAtom) {
   }
 }
 
+static inline void expect_mdhd_eq(const MuTFFMediaHeaderAtom *a,
+                                  const MuTFFMediaHeaderAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->creation_time, b->creation_time);
+  EXPECT_EQ(a->modification_time, b->modification_time);
+  EXPECT_EQ(a->time_scale, b->time_scale);
+  EXPECT_EQ(a->duration, b->duration);
+  EXPECT_EQ(a->language, b->language);
+  EXPECT_EQ(a->quality, b->quality);
+}
+
 TEST(MuTFF, ReadMediaHeaderAtom) {
   MuTFFError ret;
   MuTFFMediaHeaderAtom atom;
@@ -2180,14 +2236,7 @@ TEST(MuTFF, ReadMediaHeaderAtom) {
   ret = mutff_read_media_header_atom(fd, &atom);
   ASSERT_EQ(ret, mdhd_test_data_size);
 
-  EXPECT_EQ(atom.version, mdhd_test_struct.version);
-  EXPECT_EQ(atom.flags, mdhd_test_struct.flags);
-  EXPECT_EQ(atom.creation_time, mdhd_test_struct.creation_time);
-  EXPECT_EQ(atom.modification_time, mdhd_test_struct.modification_time);
-  EXPECT_EQ(atom.time_scale, mdhd_test_struct.time_scale);
-  EXPECT_EQ(atom.duration, mdhd_test_struct.duration);
-  EXPECT_EQ(atom.language, mdhd_test_struct.language);
-  EXPECT_EQ(atom.quality, mdhd_test_struct.quality);
+  expect_mdhd_eq(&atom, &mdhd_test_struct);
   EXPECT_EQ(ftell(fd), mdhd_test_data_size);
 }
 // }}}1
@@ -2195,17 +2244,18 @@ TEST(MuTFF, ReadMediaHeaderAtom) {
 // {{{1 extended language tag atom unit tests
 static const uint32_t elng_test_data_size = 18;
 // clang-format off
-static const unsigned char elng_test_data[elng_test_data_size] = {
-    elng_test_data_size >> 24,      // size
-    elng_test_data_size >> 16,
-    elng_test_data_size >> 8,
-    elng_test_data_size,
-    'e', 'l', 'n', 'g',             // type
-    0x00,                           // version
-    0x00, 0x01, 0x02,               // flags
-    'e', 'n', '-', 'U', 'S', '\0',  // language tag string
-};
+#define ELNG_TEST_DATA                                        \
+    elng_test_data_size >> 24,      /* size */                \
+    elng_test_data_size >> 16,                                \
+    elng_test_data_size >> 8,                                 \
+    elng_test_data_size,                                      \
+    'e', 'l', 'n', 'g',             /* type */                \
+    0x00,                           /* version */             \
+    0x00, 0x01, 0x02,               /* flags */               \
+    'e', 'n', '-', 'U', 'S', '\0'   /* language tag string */
 // clang-format on
+static const unsigned char elng_test_data[elng_test_data_size] =
+    ARR(ELNG_TEST_DATA);
 // clang-format off
 static const MuTFFExtendedLanguageTagAtom elng_test_struct = {
     0x00,                    // version
@@ -2231,6 +2281,13 @@ TEST(MuTFF, WriteExtendedLanguageTagAtom) {
   }
 }
 
+static inline void expect_elng_eq(const MuTFFExtendedLanguageTagAtom *a,
+                                  const MuTFFExtendedLanguageTagAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_STREQ(a->language_tag_string, b->language_tag_string);
+}
+
 TEST(MuTFF, ReadExtendedLanguageTagAtom) {
   MuTFFError ret;
   MuTFFExtendedLanguageTagAtom atom;
@@ -2240,9 +2297,7 @@ TEST(MuTFF, ReadExtendedLanguageTagAtom) {
   ret = mutff_read_extended_language_tag_atom(fd, &atom);
   ASSERT_EQ(ret, elng_test_data_size);
 
-  EXPECT_EQ(atom.version, elng_test_struct.version);
-  EXPECT_EQ(atom.flags, elng_test_struct.flags);
-  EXPECT_STREQ(atom.language_tag_string, elng_test_struct.language_tag_string);
+  expect_elng_eq(&atom, &elng_test_struct);
   EXPECT_EQ(ftell(fd), elng_test_data_size);
 }
 // }}}1
@@ -2250,22 +2305,23 @@ TEST(MuTFF, ReadExtendedLanguageTagAtom) {
 // {{{1 handler reference atom unit tests
 static const uint32_t hdlr_test_data_size = 36;
 // clang-format off
-static const unsigned char hdlr_test_data[hdlr_test_data_size] = {
-    hdlr_test_data_size >> 24,  // size
-    hdlr_test_data_size >> 16,
-    hdlr_test_data_size >> 8,
-    hdlr_test_data_size,
-    'h', 'd', 'l', 'r',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x01, 0x02, 0x03,     // component type
-    0x10, 0x11, 0x12, 0x13,     // component subtype
-    0x20, 0x21, 0x22, 0x23,     // component manufacturer
-    0x30, 0x31, 0x32, 0x33,     // component flags
-    0x40, 0x41, 0x42, 0x43,     // component flags mask
-    'a', 'b', 'c', 'd',         // component name
-};
+#define HDLR_TEST_DATA                                       \
+    hdlr_test_data_size >> 24,  /* size */                   \
+    hdlr_test_data_size >> 16,                               \
+    hdlr_test_data_size >> 8,                                \
+    hdlr_test_data_size,                                     \
+    'h', 'd', 'l', 'r',         /* type */                   \
+    0x00,                       /* version */                \
+    0x00, 0x01, 0x02,           /* flags */                  \
+    0x00, 0x01, 0x02, 0x03,     /* component type */         \
+    0x10, 0x11, 0x12, 0x13,     /* component subtype */      \
+    0x20, 0x21, 0x22, 0x23,     /* component manufacturer */ \
+    0x30, 0x31, 0x32, 0x33,     /* component flags */        \
+    0x40, 0x41, 0x42, 0x43,     /* component flags mask */   \
+    'a', 'b', 'c', 'd'          /* component name */
 // clang-format on
+static const unsigned char hdlr_test_data[hdlr_test_data_size] =
+    ARR(HDLR_TEST_DATA);
 // clang-format off
 static const MuTFFHandlerReferenceAtom hdlr_test_struct = {
     0x00,        // version
@@ -2296,6 +2352,18 @@ TEST(MuTFF, WriteHandlerReferenceAtom) {
   }
 }
 
+static inline void expect_hdlr_eq(const MuTFFHandlerReferenceAtom *a,
+                                  const MuTFFHandlerReferenceAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->component_type, b->component_type);
+  EXPECT_EQ(a->component_subtype, b->component_subtype);
+  EXPECT_EQ(a->component_manufacturer, b->component_manufacturer);
+  EXPECT_EQ(a->component_flags, b->component_flags);
+  EXPECT_EQ(a->component_flags_mask, b->component_flags_mask);
+  EXPECT_STREQ(a->component_name, b->component_name);
+}
+
 TEST(MuTFF, ReadHandlerReferenceAtom) {
   MuTFFError ret;
   MuTFFHandlerReferenceAtom atom;
@@ -2305,15 +2373,7 @@ TEST(MuTFF, ReadHandlerReferenceAtom) {
   ret = mutff_read_handler_reference_atom(fd, &atom);
   ASSERT_EQ(ret, hdlr_test_data_size);
 
-  EXPECT_EQ(atom.version, hdlr_test_struct.version);
-  EXPECT_EQ(atom.flags, hdlr_test_struct.flags);
-  EXPECT_EQ(atom.component_type, hdlr_test_struct.component_type);
-  EXPECT_EQ(atom.component_subtype, hdlr_test_struct.component_subtype);
-  EXPECT_EQ(atom.component_manufacturer,
-            hdlr_test_struct.component_manufacturer);
-  EXPECT_EQ(atom.component_flags, hdlr_test_struct.component_flags);
-  EXPECT_EQ(atom.component_flags_mask, hdlr_test_struct.component_flags_mask);
-  EXPECT_STREQ(atom.component_name, hdlr_test_struct.component_name);
+  expect_hdlr_eq(&atom, &hdlr_test_struct);
   EXPECT_EQ(ftell(fd), hdlr_test_data_size);
 }
 // }}}1
@@ -2321,20 +2381,21 @@ TEST(MuTFF, ReadHandlerReferenceAtom) {
 // {{{1 video media information header atom unit tests
 static const uint32_t vmhd_test_data_size = 20;
 // clang-format off
-static const unsigned char vmhd_test_data[vmhd_test_data_size] = {
-    vmhd_test_data_size >> 24,  // size
-    vmhd_test_data_size >> 16,
-    vmhd_test_data_size >> 8,
-    vmhd_test_data_size,
-    'v', 'm', 'h', 'd',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x01,                 // graphics mode
-    0x10, 0x11,                 // opcolor[0]
-    0x20, 0x21,                 // opcolor[1]
-    0x30, 0x31,                 // opcolor[2]
-};
+#define VMHD_TEST_DATA                              \
+    vmhd_test_data_size >> 24,  /* size */          \
+    vmhd_test_data_size >> 16,                      \
+    vmhd_test_data_size >> 8,                       \
+    vmhd_test_data_size,                            \
+    'v', 'm', 'h', 'd',         /* type */          \
+    0x00,                       /* version */       \
+    0x00, 0x01, 0x02,           /* flags */         \
+    0x00, 0x01,                 /* graphics mode */ \
+    0x10, 0x11,                 /* opcolor[0] */    \
+    0x20, 0x21,                 /* opcolor[1] */    \
+    0x30, 0x31                  /* opcolor[2] */
 // clang-format on
+static const unsigned char vmhd_test_data[vmhd_test_data_size] =
+    ARR(VMHD_TEST_DATA);
 // clang-format off
 static const MuTFFVideoMediaInformationHeaderAtom vmhd_test_struct = {
     0x00,                    // version
@@ -2363,6 +2424,17 @@ TEST(MuTFF, WriteVideoMediaInformationHeaderAtom) {
   }
 }
 
+static inline void expect_vmhd_eq(
+    const MuTFFVideoMediaInformationHeaderAtom *a,
+    const MuTFFVideoMediaInformationHeaderAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->graphics_mode, b->graphics_mode);
+  EXPECT_EQ(a->opcolor[0], b->opcolor[0]);
+  EXPECT_EQ(a->opcolor[1], b->opcolor[1]);
+  EXPECT_EQ(a->opcolor[2], b->opcolor[2]);
+}
+
 TEST(MuTFF, ReadVideoMediaInformationHeaderAtom) {
   MuTFFError ret;
   MuTFFVideoMediaInformationHeaderAtom atom;
@@ -2372,12 +2444,7 @@ TEST(MuTFF, ReadVideoMediaInformationHeaderAtom) {
   ret = mutff_read_video_media_information_header_atom(fd, &atom);
   ASSERT_EQ(ret, vmhd_test_data_size);
 
-  EXPECT_EQ(atom.version, vmhd_test_struct.version);
-  EXPECT_EQ(atom.flags, vmhd_test_struct.flags);
-  EXPECT_EQ(atom.graphics_mode, vmhd_test_struct.graphics_mode);
-  EXPECT_EQ(atom.opcolor[0], vmhd_test_struct.opcolor[0]);
-  EXPECT_EQ(atom.opcolor[1], vmhd_test_struct.opcolor[1]);
-  EXPECT_EQ(atom.opcolor[2], vmhd_test_struct.opcolor[2]);
+  expect_vmhd_eq(&atom, &vmhd_test_struct);
   EXPECT_EQ(ftell(fd), vmhd_test_data_size);
 }
 // }}}1
@@ -2385,17 +2452,18 @@ TEST(MuTFF, ReadVideoMediaInformationHeaderAtom) {
 // {{{1 data reference unit tests
 static const uint32_t data_ref_test_data_size = 16;
 // clang-format off
-static const unsigned char data_ref_test_data[data_ref_test_data_size] = {
-    data_ref_test_data_size >> 24,  // size
-    data_ref_test_data_size >> 16,
-    data_ref_test_data_size >> 8,
-    data_ref_test_data_size,
-    'a', 'b', 'c', 'd',           // type
-    0x00,                         // version
-    0x00, 0x01, 0x02,             // flags
-    0x00, 0x01, 0x02, 0x03,       // data
-};
+#define DATA_REF_TEST_DATA                        \
+    data_ref_test_data_size >> 24,  /* size */    \
+    data_ref_test_data_size >> 16,                \
+    data_ref_test_data_size >> 8,                 \
+    data_ref_test_data_size,                      \
+    'a', 'b', 'c', 'd',             /* type */    \
+    0x00,                           /* version */ \
+    0x00, 0x01, 0x02,               /* flags */   \
+    0x00, 0x01, 0x02, 0x03          /* data */
 // clang-format on
+static const unsigned char data_ref_test_data[data_ref_test_data_size] =
+    ARR(DATA_REF_TEST_DATA);
 // clang-format off
 static const MuTFFDataReference data_ref_test_struct = {
     MuTFF_FOURCC('a', 'b', 'c', 'd'),        // type
@@ -2424,6 +2492,19 @@ TEST(MuTFF, WriteDataReference) {
   }
 }
 
+static inline void expect_data_ref_eq(const MuTFFDataReference *a,
+                                      const MuTFFDataReference *b) {
+  EXPECT_EQ(a->type, b->type);
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->data_size, b->data_size);
+  const size_t data_size =
+      a->data_size > b->data_size ? b->data_size : a->data_size;
+  for (size_t i = 0; i < data_size; ++i) {
+    EXPECT_EQ(a->data[i], b->data[i]);
+  }
+}
+
 TEST(MuTFF, ReadDataReference) {
   MuTFFError ret;
   MuTFFDataReference ref;
@@ -2433,65 +2514,35 @@ TEST(MuTFF, ReadDataReference) {
   ret = mutff_read_data_reference(fd, &ref);
   ASSERT_EQ(ret, data_ref_test_data_size);
 
-  EXPECT_EQ(ref.type, data_ref_test_struct.type);
-  EXPECT_EQ(ref.version, data_ref_test_struct.version);
-  EXPECT_EQ(ref.flags, data_ref_test_struct.flags);
-  EXPECT_EQ(ref.data_size, data_ref_test_struct.data_size);
-  for (size_t i = 0; i < data_ref_test_struct.data_size; ++i) {
-    EXPECT_EQ(ref.data[i], data_ref_test_struct.data[i]);
-  }
+  expect_data_ref_eq(&ref, &data_ref_test_struct);
   EXPECT_EQ(ftell(fd), data_ref_test_data_size);
 }
 // }}}1
 
+// @TODO: test multiple entries
 // {{{1 data reference atom unit tests
-static const uint32_t dref_test_data_size = 48;
+static const uint32_t dref_test_data_size = 16 + data_ref_test_data_size;
 // clang-format off
-static const unsigned char dref_test_data[dref_test_data_size] = {
-    dref_test_data_size >> 24,  // size
-    dref_test_data_size >> 16,
-    dref_test_data_size >> 8,
-    dref_test_data_size,
-    'd', 'r', 'e', 'f',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flag
-    0x00, 0x00, 0x00, 0x02,     // number of entries
-    0x00, 0x00, 0x00, 16,       // data references[0].size
-    'a', 'b', 'c', 'd',         // data references[0] type
-    0x00,                       // data references[0] version
-    0x00, 0x01, 0x02,           // data references[0] flags
-    0x00, 0x01, 0x02, 0x03,     // data references[0] data
-    0x00, 0x00, 0x00, 16,       // data references[1].size
-    'e', 'f', 'g', 'h',         // data references[1] type
-    0x10,                       // data references[1] version
-    0x10, 0x11, 0x12,           // data references[1] flags
-    0x10, 0x11, 0x12, 0x13,     // data references[1] data
-};
+#define DREF_TEST_DATA                                  \
+    dref_test_data_size >> 24,  /* size */              \
+    dref_test_data_size >> 16,                          \
+    dref_test_data_size >> 8,                           \
+    dref_test_data_size,                                \
+    'd', 'r', 'e', 'f',         /* type */              \
+    0x00,                       /* version */           \
+    0x00, 0x01, 0x02,           /* flag */              \
+    0x00, 0x00, 0x00, 0x01,     /* number of entries */ \
+    DATA_REF_TEST_DATA
 // clang-format on
+static const unsigned char dref_test_data[dref_test_data_size] =
+    ARR(DREF_TEST_DATA);
 // clang-format off
 static const MuTFFDataReferenceAtom dref_test_struct = {
     0x00,
     0x000102,
-    2,
+    1,
     {
-      {
-        MuTFF_FOURCC('a', 'b', 'c', 'd'),
-        0x00,
-        0x000102,
-        4,
-        {
-          0x00, 0x01, 0x02, 0x03,
-        },
-      },
-      {
-        MuTFF_FOURCC('e', 'f', 'g', 'h'),
-        0x10,
-        0x101112,
-        4,
-        {
-          0x10, 0x11, 0x12, 0x13,
-        },
-      },
+      data_ref_test_struct,
     }
 };
 // clang-format on
@@ -2512,6 +2563,19 @@ TEST(MuTFF, WriteDataReferenceAtom) {
   }
 }
 
+static inline void expect_dref_eq(const MuTFFDataReferenceAtom *a,
+                                  const MuTFFDataReferenceAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->number_of_entries, b->number_of_entries);
+  const size_t number_of_entries = a->number_of_entries > b->number_of_entries
+                                       ? b->number_of_entries
+                                       : a->number_of_entries;
+  for (size_t i = 0; i < number_of_entries; ++i) {
+    expect_data_ref_eq(&a->data_references[i], &b->data_references[i]);
+  }
+}
+
 TEST(MuTFF, ReadDataReferenceAtom) {
   MuTFFError ret;
   MuTFFDataReferenceAtom atom;
@@ -2521,61 +2585,24 @@ TEST(MuTFF, ReadDataReferenceAtom) {
   ret = mutff_read_data_reference_atom(fd, &atom);
   ASSERT_EQ(ret, dref_test_data_size);
 
-  EXPECT_EQ(atom.number_of_entries, dref_test_struct.number_of_entries);
-  EXPECT_EQ(atom.data_references[0].type,
-            dref_test_struct.data_references[0].type);
-  EXPECT_EQ(atom.data_references[0].version,
-            dref_test_struct.data_references[0].version);
-  EXPECT_EQ(atom.data_references[0].flags,
-            dref_test_struct.data_references[0].flags);
-  EXPECT_EQ(atom.data_references[0].data_size,
-            dref_test_struct.data_references[0].data_size);
-  for (size_t i = 0; i < dref_test_struct.data_references[0].data_size; ++i) {
-    EXPECT_EQ(dref_test_struct.data_references[0].data[i],
-              dref_test_struct.data_references[0].data[i]);
-  }
-  EXPECT_EQ(atom.data_references[1].type,
-            dref_test_struct.data_references[1].type);
-  EXPECT_EQ(atom.data_references[1].version,
-            dref_test_struct.data_references[1].version);
-  EXPECT_EQ(atom.data_references[1].flags,
-            dref_test_struct.data_references[1].flags);
-  EXPECT_EQ(atom.data_references[1].data_size,
-            dref_test_struct.data_references[1].data_size);
-  for (size_t i = 0; i < dref_test_struct.data_references[1].data_size; ++i) {
-    EXPECT_EQ(dref_test_struct.data_references[1].data[i],
-              dref_test_struct.data_references[1].data[i]);
-  }
+  expect_dref_eq(&atom, &dref_test_struct);
   EXPECT_EQ(ftell(fd), dref_test_data_size);
 }
 // }}}1
 
 // {{{1 data information atom unit tests
-static const uint32_t dinf_test_data_size = 56;
+static const uint32_t dinf_test_data_size = 8 + dref_test_data_size;
 // clang-format off
-static const unsigned char dinf_test_data[dinf_test_data_size] = {
-    dinf_test_data_size >> 24,  // size
-    dinf_test_data_size >> 16,
-    dinf_test_data_size >> 8,
-    dinf_test_data_size,
-    'd', 'i', 'n', 'f',         // type
-    0x00, 0x00, 0x00, 48,       // size
-    'd', 'r', 'e', 'f',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flag
-    0x00, 0x00, 0x00, 0x02,     // number of entries
-    0x00, 0x00, 0x00, 16,       // data references[0].size
-    'a', 'b', 'c', 'd',         // data references[0] type
-    0x00,                       // data references[0] version
-    0x00, 0x01, 0x02,           // data references[0] flags
-    0x00, 0x01, 0x02, 0x03,     // data references[0] data
-    0x00, 0x00, 0x00, 16,       // data references[1].size
-    'e', 'f', 'g', 'h',         // data references[1] type
-    0x10,                       // data references[1] version
-    0x10, 0x11, 0x12,           // data references[1] flags
-    0x10, 0x11, 0x12, 0x13,     // data references[1] data
-};
+#define DINF_TEST_DATA                     \
+    dinf_test_data_size >> 24,  /* size */ \
+    dinf_test_data_size >> 16,             \
+    dinf_test_data_size >> 8,              \
+    dinf_test_data_size,                   \
+    'd', 'i', 'n', 'f',         /* type */ \
+    DREF_TEST_DATA
 // clang-format on
+static const unsigned char dinf_test_data[dinf_test_data_size] =
+    ARR(DINF_TEST_DATA);
 // clang-format off
 static const MuTFFDataInformationAtom dinf_test_struct = {
     dref_test_struct,        // data reference
@@ -2599,6 +2626,11 @@ TEST(MuTFF, WriteDataInformationAtom) {
   }
 }
 
+static inline void expect_dinf_eq(const MuTFFDataInformationAtom *a,
+                                  const MuTFFDataInformationAtom *b) {
+  expect_dref_eq(&a->data_reference, &b->data_reference);
+}
+
 TEST(MuTFF, ReadDataInformationAtom) {
   MuTFFError ret;
   MuTFFDataInformationAtom atom;
@@ -2608,75 +2640,35 @@ TEST(MuTFF, ReadDataInformationAtom) {
   ret = mutff_read_data_information_atom(fd, &atom);
   ASSERT_EQ(ret, dinf_test_data_size);
 
-  EXPECT_EQ(atom.data_reference.number_of_entries,
-            dinf_test_struct.data_reference.number_of_entries);
-  for (uint32_t i = 0; i < dinf_test_struct.data_reference.number_of_entries;
-       ++i) {
-    EXPECT_EQ(atom.data_reference.data_references[i].type,
-              dinf_test_struct.data_reference.data_references[i].type);
-    EXPECT_EQ(atom.data_reference.data_references[i].version,
-              dinf_test_struct.data_reference.data_references[i].version);
-    EXPECT_EQ(atom.data_reference.data_references[i].flags,
-              dinf_test_struct.data_reference.data_references[i].flags);
-    EXPECT_EQ(atom.data_reference.data_references[i].data_size,
-              dinf_test_struct.data_reference.data_references[i].data_size);
-    const size_t data_size =
-        dinf_test_struct.data_reference.data_references[i].data_size;
-    for (uint32_t j = 0; j < data_size; ++j) {
-      EXPECT_EQ(atom.data_reference.data_references[i].data[j],
-                dinf_test_struct.data_reference.data_references[i].data[j]);
-    }
-  }
+  expect_dinf_eq(&atom, &dinf_test_struct);
   EXPECT_EQ(ftell(fd), dinf_test_data_size);
 }
 // }}}1
 
+// @TODO: test multiple entries
 // {{{1 sample description atom unit tests
-static const uint32_t stsd_test_data_size = 56;
+static const uint32_t stsd_test_data_size = 16 + sample_desc_test_data_size;
 // clang-format off
-static const unsigned char stsd_test_data[stsd_test_data_size] = {
-    stsd_test_data_size >> 24,           // size
-    stsd_test_data_size >> 16,
-    stsd_test_data_size >> 8,
-    stsd_test_data_size,
-    's', 't', 's', 'd',                  // type
-    0x00,                                // version
-    0x00, 0x01, 0x02,                    // flags
-    0x00, 0x00, 0x00, 0x02,              // number of entries
-    0x00, 0x00, 0x00, 20,                // sample_description table[0].size
-    'a', 'b', 'c', 'd',                  // sample_description table[0].data format
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // sample_description table[0].reserved
-    0x00, 0x01,                          // sample_description table[0].data reference index
-    0x00, 0x01, 0x02, 0x03,              // sample_description table[0].media-specific data
-    0x00, 0x00, 0x00, 20,                // sample_description table[1].size
-    'e', 'f', 'g', 'h',                  // sample_description table[1].data format
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // sample_description table[1].reserved
-    0x10, 0x11,                          // sample_description table[1].data reference index
-    0x10, 0x11, 0x12, 0x13,              // sample_description table[1].media-specific data
-};
+#define STSD_TEST_DATA                                           \
+    stsd_test_data_size >> 24,           /* size */              \
+    stsd_test_data_size >> 16,                                   \
+    stsd_test_data_size >> 8,                                    \
+    stsd_test_data_size,                                         \
+    's', 't', 's', 'd',                  /* type */              \
+    0x00,                                /* version */           \
+    0x00, 0x01, 0x02,                    /* flags */             \
+    0x00, 0x00, 0x00, 0x01,              /* number of entries */ \
+    SAMPLE_DESC_TEST_DATA
 // clang-format on
+static const unsigned char stsd_test_data[stsd_test_data_size] =
+    ARR(STSD_TEST_DATA);
 // clang-format off
 static const MuTFFSampleDescriptionAtom stsd_test_struct = {
     0x00,
     0x000102,
-    2,
+    1,
     {
-      {
-        20,
-        MuTFF_FOURCC('a', 'b', 'c', 'd'),
-        0x0001,
-        {
-          0x00, 0x01, 0x02, 0x03,
-        }
-      },
-      {
-        20,
-        MuTFF_FOURCC('e', 'f', 'g', 'h'),
-        0x1011,
-        {
-          0x10, 0x11, 0x12, 0x13,
-        }
-      },
+      sample_desc_test_struct,
     }
 };
 // clang-format on
@@ -2698,6 +2690,20 @@ TEST(MuTFF, WriteSampleDescriptionAtom) {
   }
 }
 
+static inline void expect_stsd_eq(const MuTFFSampleDescriptionAtom *a,
+                                  const MuTFFSampleDescriptionAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->number_of_entries, b->number_of_entries);
+  const uint32_t number_of_entries = a->number_of_entries > b->number_of_entries
+                                         ? b->number_of_entries
+                                         : a->number_of_entries;
+  for (uint32_t i = 0; i < number_of_entries; ++i) {
+    expect_sample_desc_eq(&a->sample_description_table[i],
+                          &b->sample_description_table[i]);
+  }
+}
+
 TEST(MuTFF, ReadSampleDescriptionAtom) {
   MuTFFError ret;
   MuTFFSampleDescriptionAtom atom;
@@ -2707,25 +2713,7 @@ TEST(MuTFF, ReadSampleDescriptionAtom) {
   ret = mutff_read_sample_description_atom(fd, &atom);
   ASSERT_EQ(ret, stsd_test_data_size);
 
-  EXPECT_EQ(atom.version, stsd_test_struct.version);
-  EXPECT_EQ(atom.flags, stsd_test_struct.flags);
-  EXPECT_EQ(atom.number_of_entries, stsd_test_struct.number_of_entries);
-  for (uint32_t i = 0; i < stsd_test_struct.number_of_entries; ++i) {
-    EXPECT_EQ(atom.sample_description_table[i].size,
-              stsd_test_struct.sample_description_table[i].size);
-    EXPECT_EQ(atom.sample_description_table[i].data_format,
-              stsd_test_struct.sample_description_table[i].data_format);
-    EXPECT_EQ(
-        atom.sample_description_table[i].data_reference_index,
-        stsd_test_struct.sample_description_table[i].data_reference_index);
-    const uint32_t data_size =
-        stsd_test_struct.sample_description_table[i].size - 16;
-    for (uint32_t j = 0; j < data_size; ++j) {
-      EXPECT_EQ(
-          atom.sample_description_table[i].additional_data[j],
-          stsd_test_struct.sample_description_table[i].additional_data[j]);
-    }
-  }
+  expect_stsd_eq(&atom, &stsd_test_struct);
   EXPECT_EQ(ftell(fd), stsd_test_data_size);
 }
 // }}}1
@@ -2733,11 +2721,12 @@ TEST(MuTFF, ReadSampleDescriptionAtom) {
 // {{{1 time to sample table entry unit tests
 static const uint32_t stts_entry_test_data_size = 8;
 // clang-format off
-static const unsigned char stts_entry_test_data[stts_entry_test_data_size] = {
-    0x00, 0x01, 0x02, 0x03,  // sample count
-    0x10, 0x11, 0x12, 0x13,  // sample duration
-};
+#define STTS_ENTRY_TEST_DATA                       \
+    0x00, 0x01, 0x02, 0x03,  /* sample count */    \
+    0x10, 0x11, 0x12, 0x13   /* sample duration */
 // clang-format on
+static const unsigned char stts_entry_test_data[stts_entry_test_data_size] =
+    ARR(STTS_ENTRY_TEST_DATA);
 // clang-format off
 static const MuTFFTimeToSampleTableEntry stts_entry_test_struct = {
     0x00010203,
@@ -2762,6 +2751,12 @@ TEST(MuTFF, WriteTimeToSampleTableEntry) {
   }
 }
 
+static inline void expect_stts_entry_eq(const MuTFFTimeToSampleTableEntry *a,
+                                        const MuTFFTimeToSampleTableEntry *b) {
+  EXPECT_EQ(a->sample_count, b->sample_count);
+  EXPECT_EQ(a->sample_duration, b->sample_duration);
+}
+
 TEST(MuTFF, ReadTimeToSampleTableEntry) {
   MuTFFError ret;
   MuTFFTimeToSampleTableEntry entry;
@@ -2771,44 +2766,35 @@ TEST(MuTFF, ReadTimeToSampleTableEntry) {
   ret = mutff_read_time_to_sample_table_entry(fd, &entry);
   ASSERT_EQ(ret, stts_entry_test_data_size);
 
-  EXPECT_EQ(entry.sample_count, stts_entry_test_struct.sample_count);
-  EXPECT_EQ(entry.sample_duration, stts_entry_test_struct.sample_duration);
+  expect_stts_entry_eq(&entry, &stts_entry_test_struct);
   EXPECT_EQ(ftell(fd), stts_entry_test_data_size);
 }
 // }}}1
 
+// @TODO: test multiple entries
 // {{{1 time-to-sample atom unit tests
-static const uint32_t stts_test_data_size = 32;
+static const uint32_t stts_test_data_size = 16 + stts_entry_test_data_size;
 // clang-format off
-static const unsigned char stts_test_data[stts_test_data_size] = {
-    stts_test_data_size >> 24,  // size
-    stts_test_data_size >> 16,
-    stts_test_data_size >> 8,
-    stts_test_data_size,
-    's', 't', 't', 's',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x00, 0x00, 0x02,     // number of entries
-    0x00, 0x01, 0x02, 0x03,     // table[0].sample count
-    0x10, 0x11, 0x12, 0x13,     // table[0].sample duration
-    0x20, 0x21, 0x22, 0x23,     // table[1].sample count
-    0x30, 0x31, 0x32, 0x33,     // table[1].sample duration
-};
+#define STTS_TEST_DATA                                  \
+    stts_test_data_size >> 24,  /* size */              \
+    stts_test_data_size >> 16,                          \
+    stts_test_data_size >> 8,                           \
+    stts_test_data_size,                                \
+    's', 't', 't', 's',         /* type */              \
+    0x00,                       /* version */           \
+    0x00, 0x01, 0x02,           /* flags */             \
+    0x00, 0x00, 0x00, 0x01,     /* number of entries */ \
+    STTS_ENTRY_TEST_DATA
 // clang-format on
+static const unsigned char stts_test_data[stts_test_data_size] =
+    ARR(STTS_TEST_DATA);
 // clang-format off
 static const MuTFFTimeToSampleAtom stts_test_struct = {
     0x00,                    // version
     0x000102,                // flags
-    2,                       // number of entries
+    1,                       // number of entries
     {
-      {
-        0x00010203,
-        0x10111213,
-      },
-      {
-        0x20212223,
-        0x30313233,
-      }
+      stts_entry_test_struct
     }
 };
 // clang-format on
@@ -2829,6 +2815,20 @@ TEST(MuTFF, WriteTimeToSampleAtom) {
   }
 }
 
+static inline void expect_stts_eq(const MuTFFTimeToSampleAtom *a,
+                                  const MuTFFTimeToSampleAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->number_of_entries, b->number_of_entries);
+  const uint32_t number_of_entries = a->number_of_entries > b->number_of_entries
+                                         ? b->number_of_entries
+                                         : a->number_of_entries;
+  for (uint32_t i = 0; i < number_of_entries; ++i) {
+    expect_stts_entry_eq(&a->time_to_sample_table[i],
+                         &b->time_to_sample_table[i]);
+  }
+}
+
 TEST(MuTFF, ReadTimeToSampleAtom) {
   MuTFFError ret;
   MuTFFTimeToSampleAtom atom;
@@ -2838,17 +2838,7 @@ TEST(MuTFF, ReadTimeToSampleAtom) {
   ret = mutff_read_time_to_sample_atom(fd, &atom);
   ASSERT_EQ(ret, stts_test_data_size);
 
-  EXPECT_EQ(atom.version, stts_test_struct.version);
-  EXPECT_EQ(atom.flags, stts_test_struct.flags);
-  EXPECT_EQ(atom.number_of_entries, stts_test_struct.number_of_entries);
-  EXPECT_EQ(atom.time_to_sample_table[0].sample_count,
-            stts_test_struct.time_to_sample_table[0].sample_count);
-  EXPECT_EQ(atom.time_to_sample_table[0].sample_duration,
-            stts_test_struct.time_to_sample_table[0].sample_duration);
-  EXPECT_EQ(atom.time_to_sample_table[1].sample_count,
-            stts_test_struct.time_to_sample_table[1].sample_count);
-  EXPECT_EQ(atom.time_to_sample_table[1].sample_duration,
-            stts_test_struct.time_to_sample_table[1].sample_duration);
+  expect_stts_eq(&atom, &stts_test_struct);
   EXPECT_EQ(ftell(fd), stts_test_data_size);
 }
 // }}}1
@@ -2856,11 +2846,12 @@ TEST(MuTFF, ReadTimeToSampleAtom) {
 // {{{1 composition offset table entry unit tests
 static const uint32_t ctts_entry_test_data_size = 8;
 // clang-format off
-static const unsigned char ctts_entry_test_data[ctts_entry_test_data_size] = {
-    0x00, 0x01, 0x02, 0x03,  // sample count
-    0x10, 0x11, 0x12, 0x13,  // composition offset
-};
+#define CTTS_ENTRY_TEST_DATA                          \
+    0x00, 0x01, 0x02, 0x03,  /* sample count */       \
+    0x10, 0x11, 0x12, 0x13,  /* composition offset */
 // clang-format on
+static const unsigned char ctts_entry_test_data[ctts_entry_test_data_size] =
+    ARR(CTTS_ENTRY_TEST_DATA);
 // clang-format off
 static const MuTFFCompositionOffsetTableEntry ctts_entry_test_struct = {
     0x00010203,
@@ -2885,6 +2876,13 @@ TEST(MuTFF, WriteCompositionOffsetTableEntry) {
   }
 }
 
+static inline void expect_ctts_entry_eq(
+    const MuTFFCompositionOffsetTableEntry *a,
+    const MuTFFCompositionOffsetTableEntry *b) {
+  EXPECT_EQ(a->sample_count, b->sample_count);
+  EXPECT_EQ(a->composition_offset, b->composition_offset);
+}
+
 TEST(MuTFF, ReadCompositionOffsetTableEntry) {
   MuTFFError ret;
   MuTFFCompositionOffsetTableEntry entry;
@@ -2894,45 +2892,35 @@ TEST(MuTFF, ReadCompositionOffsetTableEntry) {
   ret = mutff_read_composition_offset_table_entry(fd, &entry);
   ASSERT_EQ(ret, ctts_entry_test_data_size);
 
-  EXPECT_EQ(entry.sample_count, ctts_entry_test_struct.sample_count);
-  EXPECT_EQ(entry.composition_offset,
-            ctts_entry_test_struct.composition_offset);
+  expect_ctts_entry_eq(&entry, &ctts_entry_test_struct);
   EXPECT_EQ(ftell(fd), ctts_entry_test_data_size);
 }
 // }}}1
 
+// @TODO: test multiple entries
 // {{{1 composition offset atom unit tests
-static const uint32_t ctts_test_data_size = 32;
+static const uint32_t ctts_test_data_size = 16 + ctts_entry_test_data_size;
 // clang-format off
-static const unsigned char ctts_test_data[ctts_test_data_size] = {
-    ctts_test_data_size >> 24,  // size
-    ctts_test_data_size >> 16,
-    ctts_test_data_size >> 8,
-    ctts_test_data_size,
-    'c', 't', 't', 's',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x00, 0x00, 0x02,     // number of entries
-    0x00, 0x01, 0x02, 0x03,     // table[0].sample count
-    0x10, 0x11, 0x12, 0x13,     // table[0].sample duration
-    0x20, 0x21, 0x22, 0x23,     // table[1].sample count
-    0x30, 0x31, 0x32, 0x33,     // table[1].sample duration
-};
+#define CTTS_TEST_DATA                                  \
+    ctts_test_data_size >> 24,  /* size */              \
+    ctts_test_data_size >> 16,                          \
+    ctts_test_data_size >> 8,                           \
+    ctts_test_data_size,                                \
+    'c', 't', 't', 's',         /* type */              \
+    0x00,                       /* version */           \
+    0x00, 0x01, 0x02,           /* flags */             \
+    0x00, 0x00, 0x00, 0x01,     /* number of entries */ \
+    CTTS_ENTRY_TEST_DATA
 // clang-format on
+static const unsigned char ctts_test_data[ctts_test_data_size] =
+    ARR(CTTS_TEST_DATA);
 // clang-format off
 static const MuTFFCompositionOffsetAtom ctts_test_struct = {
     0x00,                    // version
     0x000102,                // flags
-    2,                       // number of entries
+    1,                       // number of entries
     {
-      {
-        0x00010203,
-        0x10111213,
-      },
-      {
-        0x20212223,
-        0x30313233,
-      }
+      ctts_entry_test_struct,
     }
 };
 // clang-format on
@@ -2954,6 +2942,19 @@ TEST(MuTFF, WriteCompositionOffsetAtom) {
   }
 }
 
+static inline void expect_ctts_eq(const MuTFFCompositionOffsetAtom *a,
+                                  const MuTFFCompositionOffsetAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->entry_count, b->entry_count);
+  const uint32_t entry_count =
+      a->entry_count > b->entry_count ? b->entry_count : a->entry_count;
+  for (uint32_t i = 0; i < entry_count; ++i) {
+    expect_ctts_entry_eq(&a->composition_offset_table[i],
+                         &b->composition_offset_table[i]);
+  }
+}
+
 TEST(MuTFF, ReadCompositionOffsetAtom) {
   MuTFFError ret;
   MuTFFCompositionOffsetAtom atom;
@@ -2963,17 +2964,7 @@ TEST(MuTFF, ReadCompositionOffsetAtom) {
   ret = mutff_read_composition_offset_atom(fd, &atom);
   ASSERT_EQ(ret, ctts_test_data_size);
 
-  EXPECT_EQ(atom.version, ctts_test_struct.version);
-  EXPECT_EQ(atom.flags, ctts_test_struct.flags);
-  EXPECT_EQ(atom.entry_count, ctts_test_struct.entry_count);
-  EXPECT_EQ(atom.composition_offset_table[0].sample_count,
-            ctts_test_struct.composition_offset_table[0].sample_count);
-  EXPECT_EQ(atom.composition_offset_table[0].composition_offset,
-            ctts_test_struct.composition_offset_table[0].composition_offset);
-  EXPECT_EQ(atom.composition_offset_table[1].sample_count,
-            ctts_test_struct.composition_offset_table[1].sample_count);
-  EXPECT_EQ(atom.composition_offset_table[1].composition_offset,
-            ctts_test_struct.composition_offset_table[1].composition_offset);
+  expect_ctts_eq(&atom, &ctts_test_struct);
   EXPECT_EQ(ftell(fd), ctts_test_data_size);
 }
 // }}}1
@@ -2981,21 +2972,22 @@ TEST(MuTFF, ReadCompositionOffsetAtom) {
 // {{{1 composition shift least greatest atom unit tests
 static const uint32_t cslg_test_data_size = 32;
 // clang-format off
-static const unsigned char cslg_test_data[cslg_test_data_size] = {
-    cslg_test_data_size >> 24,  // size
-    cslg_test_data_size >> 16,
-    cslg_test_data_size >> 8,
-    cslg_test_data_size,
-    'c', 's', 'l', 'g',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x01, 0x02, 0x03,     // composition offset to display offset shift
-    0x10, 0x11, 0x12, 0x13,     // least display offset
-    0x20, 0x21, 0x22, 0x23,     // greatest display offset
-    0x30, 0x31, 0x32, 0x33,     // start display time
-    0x40, 0x41, 0x42, 0x43,     // end display time
-};
+#define CSLG_TEST_DATA                                                           \
+    cslg_test_data_size >> 24,  /* size */                                       \
+    cslg_test_data_size >> 16,                                                   \
+    cslg_test_data_size >> 8,                                                    \
+    cslg_test_data_size,                                                         \
+    'c', 's', 'l', 'g',         /* type */                                       \
+    0x00,                       /* version */                                    \
+    0x00, 0x01, 0x02,           /* flags */                                      \
+    0x00, 0x01, 0x02, 0x03,     /* composition offset to display offset shift */ \
+    0x10, 0x11, 0x12, 0x13,     /* least display offset */                       \
+    0x20, 0x21, 0x22, 0x23,     /* greatest display offset */                    \
+    0x30, 0x31, 0x32, 0x33,     /* start display time */                         \
+    0x40, 0x41, 0x42, 0x43      /* end display time */
 // clang-format on
+static const unsigned char cslg_test_data[cslg_test_data_size] =
+    ARR(CSLG_TEST_DATA);
 // clang-format off
 static const MuTFFCompositionShiftLeastGreatestAtom cslg_test_struct = {
     0x00,                  // version
@@ -3025,6 +3017,19 @@ TEST(MuTFF, WriteCompositionShiftLeastGreatestAtom) {
   }
 }
 
+static inline void expect_cslg_eq(
+    const MuTFFCompositionShiftLeastGreatestAtom *a,
+    const MuTFFCompositionShiftLeastGreatestAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->composition_offset_to_display_offset_shift,
+            b->composition_offset_to_display_offset_shift);
+  EXPECT_EQ(a->least_display_offset, b->least_display_offset);
+  EXPECT_EQ(a->greatest_display_offset, b->greatest_display_offset);
+  EXPECT_EQ(a->display_start_time, b->display_start_time);
+  EXPECT_EQ(a->display_end_time, b->display_end_time);
+}
+
 TEST(MuTFF, ReadCompositionShiftLeastGreatestAtom) {
   MuTFFError ret;
   MuTFFCompositionShiftLeastGreatestAtom atom;
@@ -3034,15 +3039,7 @@ TEST(MuTFF, ReadCompositionShiftLeastGreatestAtom) {
   ret = mutff_read_composition_shift_least_greatest_atom(fd, &atom);
   ASSERT_EQ(ret, cslg_test_data_size);
 
-  EXPECT_EQ(atom.version, cslg_test_struct.version);
-  EXPECT_EQ(atom.flags, cslg_test_struct.flags);
-  EXPECT_EQ(atom.composition_offset_to_display_offset_shift,
-            cslg_test_struct.composition_offset_to_display_offset_shift);
-  EXPECT_EQ(atom.least_display_offset, cslg_test_struct.least_display_offset);
-  EXPECT_EQ(atom.greatest_display_offset,
-            cslg_test_struct.greatest_display_offset);
-  EXPECT_EQ(atom.display_start_time, cslg_test_struct.display_start_time);
-  EXPECT_EQ(atom.display_end_time, cslg_test_struct.display_end_time);
+  expect_cslg_eq(&atom, &cslg_test_struct);
   EXPECT_EQ(ftell(fd), cslg_test_data_size);
 }
 // }}}1
@@ -3050,19 +3047,20 @@ TEST(MuTFF, ReadCompositionShiftLeastGreatestAtom) {
 // {{{1 sync sample atom unit tests
 static const uint32_t stss_test_data_size = 24;
 // clang-format off
-static const unsigned char stss_test_data[stss_test_data_size] = {
-    stss_test_data_size >> 24,  // size
-    stss_test_data_size >> 16,
-    stss_test_data_size >> 8,
-    stss_test_data_size,
-    's', 't', 's', 's',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x00, 0x00, 0x02,     // number of entries
-    0x00, 0x01, 0x02, 0x03,     // table[0].sample count
-    0x10, 0x11, 0x12, 0x13,     // table[1].composition offset
-};
+#define STSS_TEST_DATA                                  \
+    stss_test_data_size >> 24,  /* size */              \
+    stss_test_data_size >> 16,                          \
+    stss_test_data_size >> 8,                           \
+    stss_test_data_size,                                \
+    's', 't', 's', 's',         /* type */              \
+    0x00,                       /* version */           \
+    0x00, 0x01, 0x02,           /* flags */             \
+    0x00, 0x00, 0x00, 0x02,     /* number of entries */ \
+    0x00, 0x01, 0x02, 0x03,     /* table[0] */          \
+    0x10, 0x11, 0x12, 0x13      /* table[1] */
 // clang-format on
+static const unsigned char stss_test_data[stss_test_data_size] =
+    ARR(STSS_TEST_DATA);
 // clang-format off
 static const MuTFFSyncSampleAtom stss_test_struct = {
     0x00,                    // version
@@ -3091,6 +3089,19 @@ TEST(MuTFF, WriteSyncSampleAtom) {
   }
 }
 
+static inline void expect_stss_eq(const MuTFFSyncSampleAtom *a,
+                                  const MuTFFSyncSampleAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->number_of_entries, b->number_of_entries);
+  const uint32_t number_of_entries = a->number_of_entries > b->number_of_entries
+                                         ? b->number_of_entries
+                                         : a->number_of_entries;
+  for (uint32_t i = 0; i < number_of_entries; ++i) {
+    EXPECT_EQ(a->sync_sample_table[i], b->sync_sample_table[i]);
+  }
+}
+
 TEST(MuTFF, ReadSyncSampleAtom) {
   MuTFFError ret;
   MuTFFSyncSampleAtom atom;
@@ -3100,11 +3111,7 @@ TEST(MuTFF, ReadSyncSampleAtom) {
   ret = mutff_read_sync_sample_atom(fd, &atom);
   ASSERT_EQ(ret, stss_test_data_size);
 
-  EXPECT_EQ(atom.version, stss_test_struct.version);
-  EXPECT_EQ(atom.flags, stss_test_struct.flags);
-  EXPECT_EQ(atom.number_of_entries, stss_test_struct.number_of_entries);
-  EXPECT_EQ(atom.sync_sample_table[0], stss_test_struct.sync_sample_table[0]);
-  EXPECT_EQ(atom.sync_sample_table[1], stss_test_struct.sync_sample_table[1]);
+  expect_stss_eq(&atom, &stss_test_struct);
   EXPECT_EQ(ftell(fd), stss_test_data_size);
 }
 // }}}1
@@ -3112,19 +3119,20 @@ TEST(MuTFF, ReadSyncSampleAtom) {
 // {{{1 partial sync sample atom unit tests
 static const uint32_t stps_test_data_size = 24;
 // clang-format off
-static const unsigned char stps_test_data[stps_test_data_size] = {
-    stps_test_data_size >> 24,  // size
-    stps_test_data_size >> 16,
-    stps_test_data_size >> 8,
-    stps_test_data_size,
-    's', 't', 'p', 's',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x00, 0x00, 0x02,     // number of entries
-    0x00, 0x01, 0x02, 0x03,     // table[0].sample count
-    0x10, 0x11, 0x12, 0x13,     // table[1].composition offset
-};
+#define STPS_TEST_DATA                                  \
+    stps_test_data_size >> 24,  /* size */              \
+    stps_test_data_size >> 16,                          \
+    stps_test_data_size >> 8,                           \
+    stps_test_data_size,                                \
+    's', 't', 'p', 's',         /* type */              \
+    0x00,                       /* version */           \
+    0x00, 0x01, 0x02,           /* flags */             \
+    0x00, 0x00, 0x00, 0x02,     /* number of entries */ \
+    0x00, 0x01, 0x02, 0x03,     /* table[0] */          \
+    0x10, 0x11, 0x12, 0x13      /* table[1] */
 // clang-format on
+static const unsigned char stps_test_data[stps_test_data_size] =
+    ARR(STPS_TEST_DATA);
 // clang-format off
 static const MuTFFPartialSyncSampleAtom stps_test_struct = {
     0x00,                    // version
@@ -3154,6 +3162,18 @@ TEST(MuTFF, WritePartialSyncSampleAtom) {
   }
 }
 
+static inline void expect_stps_eq(const MuTFFPartialSyncSampleAtom *a,
+                                  const MuTFFPartialSyncSampleAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->entry_count, b->entry_count);
+  const uint32_t entry_count =
+      a->entry_count > b->entry_count ? b->entry_count : a->entry_count;
+  for (uint32_t i = 0; i < entry_count; ++i) {
+    EXPECT_EQ(a->partial_sync_sample_table[i], b->partial_sync_sample_table[i]);
+  }
+}
+
 TEST(MuTFF, ReadPartialSyncSampleAtom) {
   MuTFFError ret;
   MuTFFPartialSyncSampleAtom atom;
@@ -3163,13 +3183,7 @@ TEST(MuTFF, ReadPartialSyncSampleAtom) {
   ret = mutff_read_partial_sync_sample_atom(fd, &atom);
   ASSERT_EQ(ret, stps_test_data_size);
 
-  EXPECT_EQ(atom.version, stps_test_struct.version);
-  EXPECT_EQ(atom.flags, stps_test_struct.flags);
-  EXPECT_EQ(atom.entry_count, stps_test_struct.entry_count);
-  EXPECT_EQ(atom.partial_sync_sample_table[0],
-            stps_test_struct.partial_sync_sample_table[0]);
-  EXPECT_EQ(atom.partial_sync_sample_table[1],
-            stps_test_struct.partial_sync_sample_table[1]);
+  expect_stps_eq(&atom, &stps_test_struct);
   EXPECT_EQ(ftell(fd), stps_test_data_size);
 }
 // }}}1
@@ -3177,12 +3191,13 @@ TEST(MuTFF, ReadPartialSyncSampleAtom) {
 // {{{1 sample-to-chunk table entry unit tests
 static const uint32_t stsc_entry_test_data_size = 12;
 // clang-format off
-static const unsigned char stsc_entry_test_data[stsc_entry_test_data_size] = {
-    0x00, 0x01, 0x02, 0x03,  // first chunk
-    0x10, 0x11, 0x12, 0x13,  // samples per chunk
-    0x20, 0x21, 0x22, 0x23,  // sample description ID
-};
+#define STSC_ENTRY_TEST_DATA \
+    0x00, 0x01, 0x02, 0x03,  /* first chunk */           \
+    0x10, 0x11, 0x12, 0x13,  /* samples per chunk */     \
+    0x20, 0x21, 0x22, 0x23   /* sample description ID */
 // clang-format on
+static const unsigned char stsc_entry_test_data[stsc_entry_test_data_size] =
+    ARR(STSC_ENTRY_TEST_DATA);
 // clang-format off
 static const MuTFFSampleToChunkTableEntry stsc_entry_test_struct = {
     0x00010203,  // first chunk
@@ -3208,6 +3223,13 @@ TEST(MuTFF, WriteSampleToChunkTableEntry) {
   }
 }
 
+static inline void expect_stsc_entry_eq(const MuTFFSampleToChunkTableEntry *a,
+                                        const MuTFFSampleToChunkTableEntry *b) {
+  EXPECT_EQ(a->first_chunk, b->first_chunk);
+  EXPECT_EQ(a->samples_per_chunk, b->samples_per_chunk);
+  EXPECT_EQ(a->sample_description_id, b->sample_description_id);
+}
+
 TEST(MuTFF, ReadSampleToChunkTableEntry) {
   MuTFFError ret;
   MuTFFSampleToChunkTableEntry entry;
@@ -3217,50 +3239,35 @@ TEST(MuTFF, ReadSampleToChunkTableEntry) {
   ret = mutff_read_sample_to_chunk_table_entry(fd, &entry);
   ASSERT_EQ(ret, stsc_entry_test_data_size);
 
-  EXPECT_EQ(entry.first_chunk, stsc_entry_test_struct.first_chunk);
-  EXPECT_EQ(entry.samples_per_chunk, stsc_entry_test_struct.samples_per_chunk);
-  EXPECT_EQ(entry.sample_description_id,
-            stsc_entry_test_struct.sample_description_id);
+  expect_stsc_entry_eq(&entry, &stsc_entry_test_struct);
   EXPECT_EQ(ftell(fd), stsc_entry_test_data_size);
 }
 // }}}1
 
+// @TODO: test multiple entries
 // {{{1 sample-to-chunk atom unit tests
-static const uint32_t stsc_test_data_size = 40;
+static const uint32_t stsc_test_data_size = 16 + stsc_entry_test_data_size;
 // clang-format off
-static const unsigned char stsc_test_data[stsc_test_data_size] = {
-    stsc_test_data_size >> 24,  // size
-    stsc_test_data_size >> 16,
-    stsc_test_data_size >> 8,
-    stsc_test_data_size,
-    's', 't', 's', 'c',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x00, 0x00, 0x02,     // number of entries
-    0x00, 0x01, 0x02, 0x03,     // table[0].first chunk
-    0x10, 0x11, 0x12, 0x13,     // table[0].samples per chunk
-    0x20, 0x21, 0x22, 0x23,     // table[0].sample description ID
-    0x30, 0x31, 0x32, 0x33,     // table[1].first chunk
-    0x40, 0x41, 0x42, 0x43,     // table[1].samples per chunk
-    0x50, 0x51, 0x52, 0x53,     // table[1].sample description ID
-};
+#define STSC_TEST_DATA                                  \
+    stsc_test_data_size >> 24,  /* size */              \
+    stsc_test_data_size >> 16,                          \
+    stsc_test_data_size >> 8,                           \
+    stsc_test_data_size,                                \
+    's', 't', 's', 'c',         /* type */              \
+    0x00,                       /* version */           \
+    0x00, 0x01, 0x02,           /* flags */             \
+    0x00, 0x00, 0x00, 0x01,     /* number of entries */ \
+    STSC_ENTRY_TEST_DATA
 // clang-format on
+static const unsigned char stsc_test_data[stsc_test_data_size] =
+    ARR(STSC_TEST_DATA);
 // clang-format off
 static const MuTFFSampleToChunkAtom stsc_test_struct = {
     0x00,
     0x000102,
-    2,
+    1,
     {
-      {
-        0x00010203,
-        0x10111213,
-        0x20212223,
-      },
-      {
-        0x30313233,
-        0x40414243,
-        0x50515253,
-      }
+      stsc_entry_test_struct,
     }
 };
 // clang-format on
@@ -3282,6 +3289,20 @@ TEST(MuTFF, WriteSampleToChunkAtom) {
   }
 }
 
+static inline void expect_stsc_eq(const MuTFFSampleToChunkAtom *a,
+                                  const MuTFFSampleToChunkAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->number_of_entries, b->number_of_entries);
+  const uint32_t number_of_entries = a->number_of_entries > b->number_of_entries
+                                         ? b->number_of_entries
+                                         : a->number_of_entries;
+  for (uint32_t i = 0; i < number_of_entries; ++i) {
+    expect_stsc_entry_eq(&a->sample_to_chunk_table[i],
+                         &b->sample_to_chunk_table[i]);
+  }
+}
+
 TEST(MuTFF, ReadSampleToChunkAtom) {
   MuTFFError ret;
   MuTFFSampleToChunkAtom atom;
@@ -3291,21 +3312,7 @@ TEST(MuTFF, ReadSampleToChunkAtom) {
   ret = mutff_read_sample_to_chunk_atom(fd, &atom);
   ASSERT_EQ(ret, stsc_test_data_size);
 
-  EXPECT_EQ(atom.version, stsc_test_struct.version);
-  EXPECT_EQ(atom.flags, stsc_test_struct.flags);
-  EXPECT_EQ(atom.number_of_entries, stsc_test_struct.number_of_entries);
-  EXPECT_EQ(atom.sample_to_chunk_table[0].first_chunk,
-            stsc_test_struct.sample_to_chunk_table[0].first_chunk);
-  EXPECT_EQ(atom.sample_to_chunk_table[0].samples_per_chunk,
-            stsc_test_struct.sample_to_chunk_table[0].samples_per_chunk);
-  EXPECT_EQ(atom.sample_to_chunk_table[0].sample_description_id,
-            stsc_test_struct.sample_to_chunk_table[0].sample_description_id);
-  EXPECT_EQ(atom.sample_to_chunk_table[1].first_chunk,
-            stsc_test_struct.sample_to_chunk_table[1].first_chunk);
-  EXPECT_EQ(atom.sample_to_chunk_table[1].samples_per_chunk,
-            stsc_test_struct.sample_to_chunk_table[1].samples_per_chunk);
-  EXPECT_EQ(atom.sample_to_chunk_table[1].sample_description_id,
-            stsc_test_struct.sample_to_chunk_table[1].sample_description_id);
+  expect_stsc_eq(&atom, &stsc_test_struct);
   EXPECT_EQ(ftell(fd), stsc_test_data_size);
 }
 // }}}1
@@ -3313,19 +3320,19 @@ TEST(MuTFF, ReadSampleToChunkAtom) {
 // {{{1 sample size atom unit tests
 static const uint32_t stsz_test_data_size = 24;
 // clang-format off
-static const unsigned char stsz_test_data[stsz_test_data_size] = {
-    stsz_test_data_size >> 24,  // size
-    stsz_test_data_size >> 16,
-    stsz_test_data_size >> 8,
-    stsz_test_data_size,
-    's', 't', 's', 'z',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x00, 0x00, 0x00,     // sample size
-    0x00, 0x00, 0x00, 0x01,     // number of entries
-    0x10, 0x11, 0x12, 0x13,     // sample size table
-};
-// clang-format on
+#define STSZ_TEST_DATA                                  \
+    stsz_test_data_size >> 24,  /* size */              \
+    stsz_test_data_size >> 16,                          \
+    stsz_test_data_size >> 8,                           \
+    stsz_test_data_size,                                \
+    's', 't', 's', 'z',         /* type */              \
+    0x00,                       /* version */           \
+    0x00, 0x01, 0x02,           /* flags */             \
+    0x00, 0x00, 0x00, 0x00,     /* sample size */       \
+    0x00, 0x00, 0x00, 0x01,     /* number of entries */ \
+    0x10, 0x11, 0x12, 0x13      /* sample size table */  // clang-format on
+static const unsigned char stsz_test_data[stsz_test_data_size] =
+    ARR(STSZ_TEST_DATA);
 // clang-format off
 static const MuTFFSampleSizeAtom stsz_test_struct = {
     0x00,
@@ -3354,6 +3361,20 @@ TEST(MuTFF, WriteSampleSizeAtom) {
   }
 }
 
+static inline void expect_stsz_eq(const MuTFFSampleSizeAtom *a,
+                                  const MuTFFSampleSizeAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->sample_size, b->sample_size);
+  EXPECT_EQ(a->number_of_entries, b->number_of_entries);
+  const uint32_t number_of_entries = a->number_of_entries > b->number_of_entries
+                                         ? b->number_of_entries
+                                         : a->number_of_entries;
+  for (uint32_t i = 0; i < number_of_entries; ++i) {
+    EXPECT_EQ(a->sample_size_table[i], b->sample_size_table[i]);
+  }
+}
+
 TEST(MuTFF, ReadSampleSizeAtom) {
   MuTFFError ret;
   MuTFFSampleSizeAtom atom;
@@ -3363,11 +3384,7 @@ TEST(MuTFF, ReadSampleSizeAtom) {
   ret = mutff_read_sample_size_atom(fd, &atom);
   ASSERT_EQ(ret, stsz_test_data_size);
 
-  EXPECT_EQ(atom.version, stsz_test_struct.version);
-  EXPECT_EQ(atom.flags, stsz_test_struct.flags);
-  EXPECT_EQ(atom.sample_size, stsz_test_struct.sample_size);
-  EXPECT_EQ(atom.number_of_entries, stsz_test_struct.number_of_entries);
-  EXPECT_EQ(atom.sample_size_table[0], stsz_test_struct.sample_size_table[0]);
+  expect_stsz_eq(&atom, &stsz_test_struct);
   EXPECT_EQ(ftell(fd), stsz_test_data_size);
 }
 // }}}1
@@ -3375,18 +3392,18 @@ TEST(MuTFF, ReadSampleSizeAtom) {
 // {{{1 chunk offset atom unit tests
 static const uint32_t stco_test_data_size = 20;
 // clang-format off
-static const unsigned char stco_test_data[stco_test_data_size] = {
-    stco_test_data_size >> 24,  // size
-    stco_test_data_size >> 16,
-    stco_test_data_size >> 8,
-    stco_test_data_size,
-    's', 't', 'c', 'o',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x00, 0x00, 0x01,     // number of entries
-    0x10, 0x11, 0x12, 0x13,     // sample size table
-};
-// clang-format on
+#define STCO_TEST_DATA                                  \
+    stco_test_data_size >> 24,  /* size */              \
+    stco_test_data_size >> 16,                          \
+    stco_test_data_size >> 8,                           \
+    stco_test_data_size,                                \
+    's', 't', 'c', 'o',         /* type */              \
+    0x00,                       /* version */           \
+    0x00, 0x01, 0x02,           /* flags */             \
+    0x00, 0x00, 0x00, 0x01,     /* number of entries */ \
+    0x10, 0x11, 0x12, 0x13      /* sample size table */  // clang-format on
+static const unsigned char stco_test_data[stco_test_data_size] =
+    ARR(STCO_TEST_DATA);
 // clang-format off
 static const MuTFFChunkOffsetAtom stco_test_struct = {
     0x00,                  // version
@@ -3414,6 +3431,19 @@ TEST(MuTFF, WriteChunkOffsetAtom) {
   }
 }
 
+static inline void expect_stco_eq(const MuTFFChunkOffsetAtom *a,
+                                  const MuTFFChunkOffsetAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->number_of_entries, b->number_of_entries);
+  const uint32_t number_of_entries = a->number_of_entries > b->number_of_entries
+                                         ? b->number_of_entries
+                                         : a->number_of_entries;
+  for (uint32_t i = 0; i < number_of_entries; ++i) {
+    EXPECT_EQ(a->chunk_offset_table[i], b->chunk_offset_table[i]);
+  }
+}
+
 TEST(MuTFF, ReadChunkOffsetAtom) {
   MuTFFError ret;
   MuTFFChunkOffsetAtom atom;
@@ -3423,10 +3453,7 @@ TEST(MuTFF, ReadChunkOffsetAtom) {
   ret = mutff_read_chunk_offset_atom(fd, &atom);
   ASSERT_EQ(ret, stco_test_data_size);
 
-  EXPECT_EQ(atom.version, stco_test_struct.version);
-  EXPECT_EQ(atom.flags, stco_test_struct.flags);
-  EXPECT_EQ(atom.number_of_entries, stco_test_struct.number_of_entries);
-  EXPECT_EQ(atom.chunk_offset_table[0], stco_test_struct.chunk_offset_table[0]);
+  expect_stco_eq(&atom, &stco_test_struct);
   EXPECT_EQ(ftell(fd), stco_test_data_size);
 }
 // }}}1
@@ -3434,17 +3461,18 @@ TEST(MuTFF, ReadChunkOffsetAtom) {
 // {{{1 sample dependency flags atom unit tests
 static const uint32_t sdtp_test_data_size = 14;
 // clang-format off
-static const unsigned char sdtp_test_data[sdtp_test_data_size] = {
-    sdtp_test_data_size >> 24,  // size
-    sdtp_test_data_size >> 16,
-    sdtp_test_data_size >> 8,
-    sdtp_test_data_size,
-    's', 'd', 't', 'p',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x10, 0x11,                 // sample size table
-};
+#define SDTP_TEST_DATA                                  \
+    sdtp_test_data_size >> 24,  /* size */              \
+    sdtp_test_data_size >> 16,                          \
+    sdtp_test_data_size >> 8,                           \
+    sdtp_test_data_size,                                \
+    's', 'd', 't', 'p',         /* type */              \
+    0x00,                       /* version */           \
+    0x00, 0x01, 0x02,           /* flags */             \
+    0x10, 0x11                  /* sample size table */
 // clang-format on
+static const unsigned char sdtp_test_data[sdtp_test_data_size] =
+    ARR(SDTP_TEST_DATA);
 // clang-format off
 static const MuTFFSampleDependencyFlagsAtom sdtp_test_struct = {
     0x00,                    // version
@@ -3473,6 +3501,19 @@ TEST(MuTFF, WriteSampleDependencyFlagsAtom) {
   }
 }
 
+static inline void expect_sdtp_eq(const MuTFFSampleDependencyFlagsAtom *a,
+                                  const MuTFFSampleDependencyFlagsAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->data_size, b->data_size);
+  const uint32_t data_size =
+      a->data_size > b->data_size ? b->data_size : a->data_size;
+  for (uint32_t i = 0; i < data_size; ++i) {
+    EXPECT_EQ(a->sample_dependency_flags_table[i],
+              b->sample_dependency_flags_table[i]);
+  }
+}
+
 TEST(MuTFF, ReadSampleDependencyFlagsAtom) {
   MuTFFError ret;
   MuTFFSampleDependencyFlagsAtom atom;
@@ -3482,12 +3523,7 @@ TEST(MuTFF, ReadSampleDependencyFlagsAtom) {
   ret = mutff_read_sample_dependency_flags_atom(fd, &atom);
   ASSERT_EQ(ret, sdtp_test_data_size);
 
-  EXPECT_EQ(atom.version, sdtp_test_struct.version);
-  EXPECT_EQ(atom.flags, sdtp_test_struct.flags);
-  EXPECT_EQ(atom.sample_dependency_flags_table[0],
-            sdtp_test_struct.sample_dependency_flags_table[0]);
-  EXPECT_EQ(atom.sample_dependency_flags_table[1],
-            sdtp_test_struct.sample_dependency_flags_table[1]);
+  expect_sdtp_eq(&atom, &sdtp_test_struct);
   EXPECT_EQ(ftell(fd), sdtp_test_data_size);
 }
 // }}}1
@@ -3501,24 +3537,24 @@ TEST(MuTFF, ReadSampleDependencyFlagsAtom) {
 // {{{1 sound media information header atom unit tests
 static const uint32_t smhd_test_data_size = 16;
 // clang-format off
-static const unsigned char smhd_test_data[smhd_test_data_size] = {
-    smhd_test_data_size >> 24,  // size
-    smhd_test_data_size >> 16,
-    smhd_test_data_size >> 8,
-    smhd_test_data_size,
-    's', 'm', 'h', 'd',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0xff, 0xfe,                 // balance
-    0x00, 0x00,                 // reserved
-};
+#define SMHD_TEST_DATA                         \
+    smhd_test_data_size >> 24,  /* size */     \
+    smhd_test_data_size >> 16,                 \
+    smhd_test_data_size >> 8,                  \
+    smhd_test_data_size,                       \
+    's', 'm', 'h', 'd',         /* type */     \
+    0x00,                       /* version */  \
+    0x00, 0x01, 0x02,           /* flags */    \
+    0xff, 0xfe,                 /* balance */  \
+    0x00, 0x00                  /* reserved */
 // clang-format on
+static const unsigned char smhd_test_data[smhd_test_data_size] =
+    ARR(SMHD_TEST_DATA);
 // clang-format off
 static const MuTFFSoundMediaInformationHeaderAtom smhd_test_struct = {
     0x00,                    // version
     0x000102,                // flags
     -2,                      // balance
-
 };
 // clang-format on
 
@@ -3539,6 +3575,14 @@ TEST(MuTFF, WriteSoundMediaInformationHeaderAtom) {
   }
 }
 
+static inline void expect_smhd_eq(
+    const MuTFFSoundMediaInformationHeaderAtom *a,
+    const MuTFFSoundMediaInformationHeaderAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->balance, b->balance);
+}
+
 TEST(MuTFF, ReadSoundMediaInformationHeaderAtom) {
   MuTFFError ret;
   MuTFFSoundMediaInformationHeaderAtom atom;
@@ -3548,9 +3592,7 @@ TEST(MuTFF, ReadSoundMediaInformationHeaderAtom) {
   ret = mutff_read_sound_media_information_header_atom(fd, &atom);
   ASSERT_EQ(ret, smhd_test_data_size);
 
-  EXPECT_EQ(atom.version, smhd_test_struct.version);
-  EXPECT_EQ(atom.flags, smhd_test_struct.flags);
-  EXPECT_EQ(atom.balance, smhd_test_struct.balance);
+  expect_smhd_eq(&atom, &smhd_test_struct);
   EXPECT_EQ(ftell(fd), smhd_test_data_size);
 }
 // }}}1
@@ -3561,22 +3603,23 @@ TEST(MuTFF, ReadSoundMediaInformationHeaderAtom) {
 // {{{1 base media info atom unit tests
 static const uint32_t gmin_test_data_size = 24;
 // clang-format off
-static const unsigned char gmin_test_data[gmin_test_data_size] = {
-    gmin_test_data_size >> 24,  // size
-    gmin_test_data_size >> 16,
-    gmin_test_data_size >> 8,
-    gmin_test_data_size,
-    'g', 'm', 'i', 'n',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x01,                 // graphics mode
-    0x10, 0x11,                 // opcolor[0]
-    0x20, 0x21,                 // opcolor[1]
-    0x30, 0x31,                 // opcolor[2]
-    0x40, 0x41,                 // balance
-    0x00, 0x00,                 // reserved
-};
+#define GMIN_TEST_DATA                              \
+    gmin_test_data_size >> 24,  /* size */          \
+    gmin_test_data_size >> 16,                      \
+    gmin_test_data_size >> 8,                       \
+    gmin_test_data_size,                            \
+    'g', 'm', 'i', 'n',         /* type */          \
+    0x00,                       /* version */       \
+    0x00, 0x01, 0x02,           /* flags */         \
+    0x00, 0x01,                 /* graphics mode */ \
+    0x10, 0x11,                 /* opcolor[0] */    \
+    0x20, 0x21,                 /* opcolor[1] */    \
+    0x30, 0x31,                 /* opcolor[2] */    \
+    0x40, 0x41,                 /* balance */       \
+    0x00, 0x00                  /* reserved */
 // clang-format on
+static const unsigned char gmin_test_data[gmin_test_data_size] =
+    ARR(GMIN_TEST_DATA);
 // clang-format off
 static const MuTFFBaseMediaInfoAtom gmin_test_struct = {
     0x00,                    // version
@@ -3606,6 +3649,17 @@ TEST(MuTFF, WriteBaseMediaInfoAtom) {
   }
 }
 
+static inline void expect_gmin_eq(const MuTFFBaseMediaInfoAtom *a,
+                                  const MuTFFBaseMediaInfoAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->graphics_mode, b->graphics_mode);
+  EXPECT_EQ(a->opcolor[0], b->opcolor[0]);
+  EXPECT_EQ(a->opcolor[1], b->opcolor[1]);
+  EXPECT_EQ(a->opcolor[2], b->opcolor[2]);
+  EXPECT_EQ(a->balance, b->balance);
+}
+
 TEST(MuTFF, ReadBaseMediaInfoAtom) {
   MuTFFError ret;
   MuTFFBaseMediaInfoAtom atom;
@@ -3615,13 +3669,7 @@ TEST(MuTFF, ReadBaseMediaInfoAtom) {
   ret = mutff_read_base_media_info_atom(fd, &atom);
   ASSERT_EQ(ret, gmin_test_data_size);
 
-  EXPECT_EQ(atom.version, gmin_test_struct.version);
-  EXPECT_EQ(atom.flags, gmin_test_struct.flags);
-  EXPECT_EQ(atom.graphics_mode, gmin_test_struct.graphics_mode);
-  EXPECT_EQ(atom.opcolor[0], gmin_test_struct.opcolor[0]);
-  EXPECT_EQ(atom.opcolor[1], gmin_test_struct.opcolor[1]);
-  EXPECT_EQ(atom.opcolor[2], gmin_test_struct.opcolor[2]);
-  EXPECT_EQ(atom.balance, gmin_test_struct.balance);
+  expect_gmin_eq(&atom, &gmin_test_struct);
   EXPECT_EQ(ftell(fd), gmin_test_data_size);
 }
 // }}}1
@@ -3629,23 +3677,24 @@ TEST(MuTFF, ReadBaseMediaInfoAtom) {
 // {{{1 text media information atom unit tests
 static const uint32_t text_test_data_size = 44;
 // clang-format off
-static const unsigned char text_test_data[text_test_data_size] = {
-    text_test_data_size >> 24,  // size
-    text_test_data_size >> 16,
-    text_test_data_size >> 8,
-    text_test_data_size,
-    't', 'e', 'x', 't',         // type
-    0x01, 0x02, 0x03, 0x04,     // matrix[0][0]
-    0x05, 0x06, 0x07, 0x08,     // matrix[0][1]
-    0x09, 0x0a, 0x0b, 0x0c,     // matrix[0][2]
-    0x0d, 0x0e, 0x0f, 0x10,     // matrix[1][0]
-    0x11, 0x12, 0x13, 0x14,     // matrix[1][1]
-    0x15, 0x16, 0x17, 0x18,     // matrix[1][2]
-    0x19, 0x1a, 0x1b, 0x1c,     // matrix[2][0]
-    0x1d, 0x1e, 0x1f, 0x20,     // matrix[2][1]
-    0x21, 0x22, 0x23, 0x24,     // matrix[2][2]
-};
+#define TEXT_TEST_DATA                             \
+    text_test_data_size >> 24,  /* size */         \
+    text_test_data_size >> 16,                     \
+    text_test_data_size >> 8,                      \
+    text_test_data_size,                           \
+    't', 'e', 'x', 't',         /* type */         \
+    0x01, 0x02, 0x03, 0x04,     /* matrix[0][0] */ \
+    0x05, 0x06, 0x07, 0x08,     /* matrix[0][1] */ \
+    0x09, 0x0a, 0x0b, 0x0c,     /* matrix[0][2] */ \
+    0x0d, 0x0e, 0x0f, 0x10,     /* matrix[1][0] */ \
+    0x11, 0x12, 0x13, 0x14,     /* matrix[1][1] */ \
+    0x15, 0x16, 0x17, 0x18,     /* matrix[1][2] */ \
+    0x19, 0x1a, 0x1b, 0x1c,     /* matrix[2][0] */ \
+    0x1d, 0x1e, 0x1f, 0x20,     /* matrix[2][1] */ \
+    0x21, 0x22, 0x23, 0x24      /* matrix[2][2] */
 // clang-format on
+static const unsigned char text_test_data[text_test_data_size] =
+    ARR(TEXT_TEST_DATA);
 // clang-format off
 static const MuTFFTextMediaInformationAtom text_test_struct = {
     {
@@ -3685,6 +3734,15 @@ TEST(MuTFF, WriteTextMediaInformationAtom) {
   }
 }
 
+static inline void expect_text_eq(const MuTFFTextMediaInformationAtom *a,
+                                  const MuTFFTextMediaInformationAtom *b) {
+  for (size_t j = 0; j < 3; ++j) {
+    for (size_t i = 0; i < 3; ++i) {
+      EXPECT_EQ(a->matrix_structure[j][i], b->matrix_structure[j][i]);
+    }
+  }
+}
+
 TEST(MuTFF, ReadTextMediaInformationAtom) {
   MuTFFError ret;
   MuTFFTextMediaInformationAtom atom;
@@ -3694,48 +3752,26 @@ TEST(MuTFF, ReadTextMediaInformationAtom) {
   ret = mutff_read_text_media_information_atom(fd, &atom);
   ASSERT_EQ(ret, text_test_data_size);
 
-  for (size_t j = 0; j < 3; ++j) {
-    for (size_t i = 0; i < 3; ++i) {
-      EXPECT_EQ(atom.matrix_structure[j][i],
-                text_test_struct.matrix_structure[j][i]);
-    }
-  }
+  expect_text_eq(&atom, &text_test_struct);
   EXPECT_EQ(ftell(fd), text_test_data_size);
 }
 // }}}1
 
 // {{{1 base media information header atom unit tests
-static const uint32_t gmhd_test_data_size = 76;
+static const uint32_t gmhd_test_data_size =
+    8 + gmin_test_data_size + text_test_data_size;
 // clang-format off
-static const unsigned char gmhd_test_data[gmhd_test_data_size] = {
-    gmhd_test_data_size >> 24,  // size
-    gmhd_test_data_size >> 16,
-    gmhd_test_data_size >> 8,
-    gmhd_test_data_size,
-    'g', 'm', 'h', 'd',         // type
-    0x00, 0x00, 0x00, 24,       // size
-    'g', 'm', 'i', 'n',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x01,                 // graphics mode
-    0x10, 0x11,                 // opcolor[0]
-    0x20, 0x21,                 // opcolor[1]
-    0x30, 0x31,                 // opcolor[2]
-    0x40, 0x41,                 // balance
-    0x00, 0x00,                 // reserved
-    0x00, 0x00, 0x00, 44,       // size
-    't', 'e', 'x', 't',         // type
-    0x01, 0x02, 0x03, 0x04,     // matrix[0][0]
-    0x05, 0x06, 0x07, 0x08,     // matrix[0][1]
-    0x09, 0x0a, 0x0b, 0x0c,     // matrix[0][2]
-    0x0d, 0x0e, 0x0f, 0x10,     // matrix[1][0]
-    0x11, 0x12, 0x13, 0x14,     // matrix[1][1]
-    0x15, 0x16, 0x17, 0x18,     // matrix[1][2]
-    0x19, 0x1a, 0x1b, 0x1c,     // matrix[2][0]
-    0x1d, 0x1e, 0x1f, 0x20,     // matrix[2][1]
-    0x21, 0x22, 0x23, 0x24,     // matrix[2][2]
-};
+#define GMHD_TEST_DATA                     \
+    gmhd_test_data_size >> 24,  /* size */ \
+    gmhd_test_data_size >> 16,             \
+    gmhd_test_data_size >> 8,              \
+    gmhd_test_data_size,                   \
+    'g', 'm', 'h', 'd',         /* type */ \
+    GMIN_TEST_DATA,                        \
+    TEXT_TEST_DATA
 // clang-format on
+static const unsigned char gmhd_test_data[gmhd_test_data_size] =
+    ARR(GMHD_TEST_DATA);
 // clang-format off
 static const MuTFFBaseMediaInformationHeaderAtom gmhd_test_struct = {
     gmin_test_struct,
@@ -3761,6 +3797,19 @@ TEST(MuTFF, WriteBaseMediaInformationHeaderAtom) {
   }
 }
 
+static inline void expect_gmhd_eq(
+    const MuTFFBaseMediaInformationHeaderAtom *a,
+    const MuTFFBaseMediaInformationHeaderAtom *b) {
+  expect_gmin_eq(&a->base_media_info, &b->base_media_info);
+  EXPECT_EQ(a->text_media_information_present,
+            b->text_media_information_present);
+  const bool text_media_information_present =
+      a->text_media_information_present && b->text_media_information_present;
+  if (text_media_information_present) {
+    expect_text_eq(&a->text_media_information, &b->text_media_information);
+  }
+}
+
 TEST(MuTFF, ReadBaseMediaInformationHeaderAtom) {
   MuTFFError ret;
   MuTFFBaseMediaInformationHeaderAtom atom;
@@ -3770,65 +3819,24 @@ TEST(MuTFF, ReadBaseMediaInformationHeaderAtom) {
   ret = mutff_read_base_media_information_header_atom(fd, &atom);
   ASSERT_EQ(ret, gmhd_test_data_size);
 
-  EXPECT_EQ(atom.base_media_info.version,
-            gmhd_test_struct.base_media_info.version);
-  EXPECT_EQ(atom.base_media_info.flags, gmhd_test_struct.base_media_info.flags);
-  EXPECT_EQ(atom.base_media_info.graphics_mode,
-            gmhd_test_struct.base_media_info.graphics_mode);
-  EXPECT_EQ(atom.base_media_info.opcolor[0],
-            gmhd_test_struct.base_media_info.opcolor[0]);
-  EXPECT_EQ(atom.base_media_info.opcolor[1],
-            gmhd_test_struct.base_media_info.opcolor[1]);
-  EXPECT_EQ(atom.base_media_info.opcolor[2],
-            gmhd_test_struct.base_media_info.opcolor[2]);
-  EXPECT_EQ(atom.base_media_info.balance,
-            gmhd_test_struct.base_media_info.balance);
-
-  ASSERT_EQ(atom.text_media_information_present, true);
-  for (size_t j = 0; j < 3; ++j) {
-    for (size_t i = 0; i < 3; ++i) {
-      EXPECT_EQ(atom.text_media_information.matrix_structure[j][i],
-                gmhd_test_struct.text_media_information.matrix_structure[j][i]);
-    }
-  }
+  expect_gmhd_eq(&atom, &gmhd_test_struct);
   EXPECT_EQ(ftell(fd), gmhd_test_data_size);
 }
 // }}}1
 
 // {{{1 base media information atom unit tests
-static const uint32_t minf_test_data_size = 84;
+static const uint32_t minf_test_data_size = 8 + gmhd_test_data_size;
 // clang-format off
-static const unsigned char minf_test_data[minf_test_data_size] = {
-    minf_test_data_size >> 24,  // size
-    minf_test_data_size >> 16,
-    minf_test_data_size >> 8,
-    minf_test_data_size,
-    'm', 'i', 'n', 'f',         // type
-    0x00, 0x00, 0x00, 76,       // size
-    'g', 'm', 'h', 'd',         // type
-    0x00, 0x00, 0x00, 24,       // size
-    'g', 'm', 'i', 'n',         // type
-    0x00,                       // version
-    0x00, 0x01, 0x02,           // flags
-    0x00, 0x01,                 // graphics mode
-    0x10, 0x11,                 // opcolor[0]
-    0x20, 0x21,                 // opcolor[1]
-    0x30, 0x31,                 // opcolor[2]
-    0x40, 0x41,                 // balance
-    0x00, 0x00,                 // reserved
-    0x00, 0x00, 0x00, 44,       // size
-    't', 'e', 'x', 't',         // type
-    0x01, 0x02, 0x03, 0x04,     // matrix[0][0]
-    0x05, 0x06, 0x07, 0x08,     // matrix[0][1]
-    0x09, 0x0a, 0x0b, 0x0c,     // matrix[0][2]
-    0x0d, 0x0e, 0x0f, 0x10,     // matrix[1][0]
-    0x11, 0x12, 0x13, 0x14,     // matrix[1][1]
-    0x15, 0x16, 0x17, 0x18,     // matrix[1][2]
-    0x19, 0x1a, 0x1b, 0x1c,     // matrix[2][0]
-    0x1d, 0x1e, 0x1f, 0x20,     // matrix[2][1]
-    0x21, 0x22, 0x23, 0x24,     // matrix[2][2]
-};
+#define MINF_TEST_DATA                     \
+    minf_test_data_size >> 24,  /* size */ \
+    minf_test_data_size >> 16,             \
+    minf_test_data_size >> 8,              \
+    minf_test_data_size,                   \
+    'm', 'i', 'n', 'f',         /* type */ \
+    GMHD_TEST_DATA
 // clang-format on
+static const unsigned char minf_test_data[minf_test_data_size] =
+    ARR(MINF_TEST_DATA);
 // clang-format off
 static const MuTFFBaseMediaInformationAtom minf_test_struct = {
     gmhd_test_struct,        // base media information header
@@ -3852,6 +3860,12 @@ TEST(MuTFF, WriteBaseMediaInformationAtom) {
   }
 }
 
+static inline void expect_minf_eq(const MuTFFBaseMediaInformationAtom *a,
+                                  const MuTFFBaseMediaInformationAtom *b) {
+  expect_gmhd_eq(&a->base_media_information_header,
+                 &b->base_media_information_header);
+}
+
 TEST(MuTFF, ReadBaseMediaInformationAtom) {
   MuTFFError ret;
   MuTFFBaseMediaInformationAtom atom;
@@ -3861,35 +3875,7 @@ TEST(MuTFF, ReadBaseMediaInformationAtom) {
   ret = mutff_read_base_media_information_atom(fd, &atom);
   ASSERT_EQ(ret, minf_test_data_size);
 
-  EXPECT_EQ(
-      atom.base_media_information_header.base_media_info.version,
-      minf_test_struct.base_media_information_header.base_media_info.version);
-  EXPECT_EQ(
-      atom.base_media_information_header.base_media_info.flags,
-      minf_test_struct.base_media_information_header.base_media_info.flags);
-  EXPECT_EQ(atom.base_media_information_header.base_media_info.graphics_mode,
-            minf_test_struct.base_media_information_header.base_media_info
-                .graphics_mode);
-  EXPECT_EQ(atom.base_media_information_header.base_media_info.opcolor[0],
-            minf_test_struct.base_media_information_header.base_media_info
-                .opcolor[0]);
-  EXPECT_EQ(atom.base_media_information_header.base_media_info.opcolor[1],
-            minf_test_struct.base_media_information_header.base_media_info
-                .opcolor[1]);
-  EXPECT_EQ(atom.base_media_information_header.base_media_info.opcolor[2],
-            minf_test_struct.base_media_information_header.base_media_info
-                .opcolor[2]);
-  EXPECT_EQ(
-      atom.base_media_information_header.base_media_info.balance,
-      minf_test_struct.base_media_information_header.base_media_info.balance);
-  for (size_t j = 0; j < 3; ++j) {
-    for (size_t i = 0; i < 3; ++i) {
-      EXPECT_EQ(atom.base_media_information_header.text_media_information
-                    .matrix_structure[j][i],
-                minf_test_struct.base_media_information_header
-                    .text_media_information.matrix_structure[j][i]);
-    }
-  }
+  expect_minf_eq(&atom, &minf_test_struct);
   EXPECT_EQ(ftell(fd), minf_test_data_size);
 }
 // }}}1

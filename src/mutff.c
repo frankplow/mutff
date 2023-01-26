@@ -520,13 +520,13 @@ MuTFFError mutff_read_free_atom(FILE *fd, MuTFFFreeAtom *out) {
   if (type != MuTFF_FOURCC('f', 'r', 'e', 'e')) {
     return MuTFFErrorBadFormat;
   }
-  out->data_size = mutff_data_size(size);
+  out->atom_size = size;
   MuTFF_SEEK_CUR(size - ret);
   return ret;
 }
 
 static inline uint64_t mutff_free_atom_size(const MuTFFFreeAtom *atom) {
-  return mutff_atom_size(atom->data_size);
+  return atom->atom_size;
 }
 
 MuTFFError mutff_write_free_atom(FILE *fd, const MuTFFFreeAtom *in) {
@@ -534,7 +534,7 @@ MuTFFError mutff_write_free_atom(FILE *fd, const MuTFFFreeAtom *in) {
   uint64_t ret = 0;
   const uint64_t size = mutff_free_atom_size(in);
   MuTFF_FIELD(mutff_write_header, size, MuTFF_FOURCC('f', 'r', 'e', 'e'));
-  for (uint64_t i = 0; i < in->data_size; ++i) {
+  for (uint64_t i = 0; i < mutff_data_size(in->atom_size); ++i) {
     MuTFF_FIELD(mutff_write_u8, 0);
   }
   return ret;
@@ -549,13 +549,13 @@ MuTFFError mutff_read_skip_atom(FILE *fd, MuTFFSkipAtom *out) {
   if (type != MuTFF_FOURCC('s', 'k', 'i', 'p')) {
     return MuTFFErrorBadFormat;
   }
-  out->data_size = mutff_data_size(size);
+  out->atom_size = size;
   MuTFF_SEEK_CUR(size - ret);
   return ret;
 }
 
 static inline uint64_t mutff_skip_atom_size(const MuTFFSkipAtom *atom) {
-  return mutff_atom_size(atom->data_size);
+  return atom->atom_size;
 }
 
 MuTFFError mutff_write_skip_atom(FILE *fd, const MuTFFSkipAtom *in) {
@@ -563,7 +563,7 @@ MuTFFError mutff_write_skip_atom(FILE *fd, const MuTFFSkipAtom *in) {
   uint64_t ret = 0;
   const uint64_t size = mutff_skip_atom_size(in);
   MuTFF_FIELD(mutff_write_header, size, MuTFF_FOURCC('s', 'k', 'i', 'p'));
-  for (uint64_t i = 0; i < in->data_size; ++i) {
+  for (uint64_t i = 0; i < mutff_data_size(in->atom_size); ++i) {
     MuTFF_FIELD(mutff_write_u8, 0);
   }
   return ret;
@@ -578,13 +578,13 @@ MuTFFError mutff_read_wide_atom(FILE *fd, MuTFFWideAtom *out) {
   if (type != MuTFF_FOURCC('w', 'i', 'd', 'e')) {
     return MuTFFErrorBadFormat;
   }
-  out->data_size = mutff_data_size(size);
+  out->atom_size = size;
   MuTFF_SEEK_CUR(size - ret);
   return ret;
 }
 
 static inline uint64_t mutff_wide_atom_size(const MuTFFWideAtom *atom) {
-  return mutff_atom_size(atom->data_size);
+  return atom->atom_size;
 }
 
 MuTFFError mutff_write_wide_atom(FILE *fd, const MuTFFWideAtom *in) {
@@ -592,7 +592,7 @@ MuTFFError mutff_write_wide_atom(FILE *fd, const MuTFFWideAtom *in) {
   uint64_t ret = 0;
   const uint64_t size = mutff_wide_atom_size(in);
   MuTFF_FIELD(mutff_write_header, size, MuTFF_FOURCC('w', 'i', 'd', 'e'));
-  for (uint64_t i = 0; i < in->data_size; ++i) {
+  for (uint64_t i = 0; i < mutff_data_size(in->atom_size); ++i) {
     MuTFF_FIELD(mutff_write_u8, 0);
   }
   return ret;
@@ -2204,7 +2204,6 @@ MuTFFError mutff_read_time_to_sample_atom(FILE *fd,
   for (size_t i = 0; i < out->number_of_entries; ++i) {
     MuTFF_FIELD(mutff_read_time_to_sample_table_entry,
                 &out->time_to_sample_table[i]);
-    ;
   }
 
   return ret;

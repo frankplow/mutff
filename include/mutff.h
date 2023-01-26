@@ -211,7 +211,7 @@ MuTFFError mutff_write_movie_data_atom(FILE *fd, const MuTFFMovieDataAtom *in);
 /// https://developer.apple.com/library/archive/documentation/QuickTime/MuTFF/MuTFFChap1/mutff1.html#//apple_ref/doc/uid/TP40000939-CH203-55464
 ///
 typedef struct {
-  uint64_t data_size;
+  uint64_t atom_size;
 } MuTFFFreeAtom;
 
 ///
@@ -240,7 +240,7 @@ MuTFFError mutff_write_free_atom(FILE *fd, const MuTFFFreeAtom *in);
 /// https://developer.apple.com/library/archive/documentation/QuickTime/MuTFF/MuTFFChap1/mutff1.html#//apple_ref/doc/uid/TP40000939-CH203-55464
 ///
 typedef struct {
-  uint64_t data_size;
+  uint64_t atom_size;
 } MuTFFSkipAtom;
 
 ///
@@ -269,7 +269,7 @@ MuTFFError mutff_write_skip_atom(FILE *fd, const MuTFFSkipAtom *in);
 /// https://developer.apple.com/library/archive/documentation/QuickTime/MuTFF/MuTFFChap1/mutff1.html#//apple_ref/doc/uid/TP40000939-CH203-55464
 ///
 typedef struct {
-  uint64_t data_size;
+  uint64_t atom_size;
 } MuTFFWideAtom;
 
 ///
