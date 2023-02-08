@@ -15,6 +15,7 @@ option(${project_name_uppercase}_BUILD_DOCS "Build ${PROJECT_NAME} documentation
 
 add_library(${library_name}
     src/mutff.c
+    src/mutff_stdlib.c
 )
 
 target_include_directories(${library_name} PUBLIC
