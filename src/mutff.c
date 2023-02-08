@@ -335,7 +335,7 @@ static MuTFFError mutff_read_q2_30(FILE *fd, size_t *n, mutff_q2_30_t *data) {
 
   uint32_t x;
   MuTFF_FN(mutff_read_u32, &x);
-  data->integral = ((x & 0x40000000U) >> 30) - (x & 0x80000000U ? 2 : 0);
+  data->integral = ((x & 0x40000000U) >> 30U) - ((x & 0x80000000U) >> 30U);
   data->fractional = x & 0x3FFFFFFFU;
 
   return MuTFFErrorNone;
@@ -347,9 +347,10 @@ static MuTFFError mutff_write_q2_30(FILE *fd, size_t *n, mutff_q2_30_t data) {
   *n = 0;
 
   uint32_t x = 0;
-  x +=
-      (data.integral >= 0 ? data.integral & 0x1 : ~abs(data.integral) & 0x1 + 1)
-      << 30;
+  x += (mutff_int_least30_t)(data.integral >= 0
+                                 ? (data.integral & 0x1)
+                                 : (~abs(data.integral) & 0x1 + 1))
+       << 30U;
   x += data.fractional;
   MuTFF_FN(mutff_write_u32, x);
 
