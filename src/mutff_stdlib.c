@@ -1,3 +1,5 @@
+#include "mutff_stdlib.h"
+
 #include <errno.h>
 #include <stdio.h>
 
@@ -47,13 +49,3 @@ MuTFFError mutff_seek_stdlib(mutff_file_t *file, long delta) {
   }
   return MuTFFErrorNone;
 }
-
-MuTFFError (*mutff_read)(mutff_file_t *, void *,
-                         unsigned int) = mutff_read_stdlib;
-
-MuTFFError (*mutff_write)(mutff_file_t *, void *,
-                          unsigned int) = mutff_write_stdlib;
-
-MuTFFError (*mutff_tell)(mutff_file_t *, unsigned int *) = mutff_tell_stdlib;
-
-MuTFFError (*mutff_seek)(mutff_file_t *, long) = mutff_seek_stdlib;

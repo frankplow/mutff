@@ -14,6 +14,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "mutff_stdlib.h"
+
 #define MuTFF_FN(func, ...)              \
   do {                                   \
     err = func(fd, &bytes, __VA_ARGS__); \
@@ -40,6 +42,34 @@
     }                             \
     *(n) += (offset);             \
   } while (0);
+
+static MuTFFError (*mutff_read)(mutff_file_t *, void *,
+                                unsigned int) = mutff_read_stdlib;
+
+void mutff_set_read_fn(MuTFFError (*fn)(mutff_file_t *, void *, unsigned int)) {
+  mutff_read = fn;
+}
+
+static MuTFFError (*mutff_write)(mutff_file_t *, void *,
+                                 unsigned int) = mutff_write_stdlib;
+
+void mutff_set_write_fn(MuTFFError (*fn)(mutff_file_t *, void *,
+                                         unsigned int)) {
+  mutff_write = fn;
+}
+
+static MuTFFError (*mutff_tell)(mutff_file_t *,
+                                unsigned int *) = mutff_tell_stdlib;
+
+void mutff_set_tell_fn(MuTFFError (*fn)(mutff_file_t *, unsigned int *)) {
+  mutff_tell = fn;
+}
+
+static MuTFFError (*mutff_seek)(mutff_file_t *, long) = mutff_seek_stdlib;
+
+void mutff_set_seek_fn(MuTFFError (*fn)(mutff_file_t *, long)) {
+  mutff_seek = fn;
+}
 
 // Convert a number from network (big) endian to host endian.
 // These must be implemented here as newlib does not provide the

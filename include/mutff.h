@@ -89,23 +89,13 @@ typedef enum {
 
 typedef void mutff_file_t;
 
-MuTFFError mutff_read_stdlib(mutff_file_t *file, void *dest,
-                             unsigned int bytes);
+void mutff_set_read_fn(MuTFFError (*fn)(mutff_file_t *, void *, unsigned int));
 
-MuTFFError mutff_write_stdlib(mutff_file_t *file, void *src,
-                              unsigned int bytes);
+void mutff_set_write_fn(MuTFFError (*fn)(mutff_file_t *, void *, unsigned int));
 
-MuTFFError mutff_tell_stdlib(mutff_file_t *file, unsigned int *location);
+void mutff_set_tell_fn(MuTFFError (*fn)(mutff_file_t *, unsigned int *));
 
-MuTFFError mutff_seek_stdlib(mutff_file_t *file, long delta);
-
-extern MuTFFError (*mutff_read)(mutff_file_t *, void *, unsigned int);
-
-extern MuTFFError (*mutff_write)(mutff_file_t *, void *, unsigned int);
-
-extern MuTFFError (*mutff_tell)(mutff_file_t *, unsigned int *);
-
-extern MuTFFError (*mutff_seek)(mutff_file_t *, long);
+void mutff_set_seek_fn(MuTFFError (*fn)(mutff_file_t *, long));
 
 ///
 /// @brief A QuickDraw rectangle
