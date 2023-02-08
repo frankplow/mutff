@@ -530,15 +530,15 @@ static const uint32_t mvhd_test_data_size = 108;
     0x01, 0x02,                    /* preferred_volume */   \
     0x00, 0x00, 0x00, 0x00, 0x00,                           \
     0x00, 0x00, 0x00, 0x00, 0x00,  /* reserved */           \
-    0x01, 0x02, 0x03, 0x04,        /* matrix_structure */   \
-    0x05, 0x06, 0x07, 0x08,                                 \
-    0x09, 0x0a, 0x0b, 0x0c,                                 \
-    0x0d, 0x0e, 0x0f, 0x10,                                 \
-    0x11, 0x12, 0x13, 0x14,                                 \
-    0x15, 0x16, 0x17, 0x18,                                 \
-    0x19, 0x1a, 0x1b, 0x1c,                                 \
-    0x1d, 0x1e, 0x1f, 0x20,                                 \
-    0x21, 0x22, 0x23, 0x24,                                 \
+    0x00, 0x01, 0x00, 0x02,        /* matrix_structure */   \
+    0x00, 0x03, 0x00, 0x04,                                 \
+    0x00, 0x00, 0x00, 0x00,                                 \
+    0x00, 0x07, 0x00, 0x08,                                 \
+    0x00, 0x09, 0x00, 0x0a,                                 \
+    0x00, 0x00, 0x00, 0x00,                                 \
+    0x00, 0x0d, 0x00, 0x0e,                                 \
+    0x00, 0x0f, 0x00, 0x10,                                 \
+    0x00, 0x00, 0x00, 0x00,                                 \
     0x01, 0x02, 0x03, 0x04,        /* preview_time */       \
     0x01, 0x02, 0x03, 0x04,        /* preview_duration */   \
     0x01, 0x02, 0x03, 0x04,        /* poster_time */        \
@@ -559,15 +559,17 @@ static const MuTFFMovieHeaderAtom mvhd_test_struct = {
     0x01020304,                    // duration
     {0x0102, 0x0304},              // preferred rate
     {0x01, 0x02},                  // preferred volume
-    0x01020304,                    // matrix structure
-    0x05060708,                    //
-    0x090a0b0c,                    //
-    0x0d0e0f10,                    //
-    0x11121314,                    //
-    0x15161718,                    //
-    0x191a1b1c,                    //
-    0x1d1e1f20,                    //
-    0x21222324,                    //
+    {
+      {1, 2},                      // matrix structure
+      {3, 4},                      //
+      {0, 0},                      //
+      {7, 8},                      //
+      {9, 10},                     //
+      {0, 0},                    //
+      {13, 14},                    //
+      {15, 16},                    //
+      {0, 0},                    //
+    },
     0x01020304,                    // preview time
     0x01020304,                    // preview duration
     0x01020304,                    // poster time
@@ -596,6 +598,28 @@ TEST(MuTFF, WriteMovieHeaderAtom) {
   }
 }
 
+static inline void expect_matrix_eq(const MuTFFMatrix *a,
+                                    const MuTFFMatrix *b) {
+  EXPECT_EQ(a->a.integral, b->a.integral);
+  EXPECT_EQ(a->a.fractional, b->a.fractional);
+  EXPECT_EQ(a->b.integral, b->b.integral);
+  EXPECT_EQ(a->b.fractional, b->b.fractional);
+  EXPECT_EQ(a->u.integral, b->u.integral);
+  EXPECT_EQ(a->u.fractional, b->u.fractional);
+  EXPECT_EQ(a->c.integral, b->c.integral);
+  EXPECT_EQ(a->c.fractional, b->c.fractional);
+  EXPECT_EQ(a->d.integral, b->d.integral);
+  EXPECT_EQ(a->d.fractional, b->d.fractional);
+  EXPECT_EQ(a->v.integral, b->v.integral);
+  EXPECT_EQ(a->v.fractional, b->v.fractional);
+  EXPECT_EQ(a->tx.integral, b->tx.integral);
+  EXPECT_EQ(a->tx.fractional, b->tx.fractional);
+  EXPECT_EQ(a->ty.integral, b->ty.integral);
+  EXPECT_EQ(a->ty.fractional, b->ty.fractional);
+  EXPECT_EQ(a->w.integral, b->w.integral);
+  EXPECT_EQ(a->w.fractional, b->w.fractional);
+}
+
 static inline void expect_mvhd_eq(const MuTFFMovieHeaderAtom *a,
                                   const MuTFFMovieHeaderAtom *b) {
   EXPECT_EQ(a->version, b->version);
@@ -608,11 +632,7 @@ static inline void expect_mvhd_eq(const MuTFFMovieHeaderAtom *a,
   EXPECT_EQ(a->preferred_rate.fractional, b->preferred_rate.fractional);
   EXPECT_EQ(a->preferred_volume.integral, b->preferred_volume.integral);
   EXPECT_EQ(a->preferred_volume.fractional, b->preferred_volume.fractional);
-  for (size_t j = 0; j < 3; ++j) {
-    for (size_t i = 0; i < 3; ++i) {
-      EXPECT_EQ(a->matrix_structure[j][i], b->matrix_structure[j][i]);
-    }
-  }
+  expect_matrix_eq(&a->matrix_structure, &b->matrix_structure);
   EXPECT_EQ(a->preview_time, b->preview_time);
   EXPECT_EQ(a->preview_duration, b->preview_duration);
   EXPECT_EQ(a->poster_time, b->poster_time);
@@ -991,15 +1011,15 @@ static const uint32_t tkhd_test_data_size = 92;
     0x00, 0x01,                 /* alternate group */   \
     0x00, 0x01,                 /* volume */            \
     0x00, 0x00,                 /* reserved */          \
-    0x01, 0x02, 0x03, 0x04,     /* matrix[0][0] */      \
-    0x05, 0x06, 0x07, 0x08,     /* matrix[0][1] */      \
-    0x09, 0x0a, 0x0b, 0x0c,     /* matrix[0][2] */      \
-    0x0d, 0x0e, 0x0f, 0x10,     /* matrix[1][0] */      \
-    0x11, 0x12, 0x13, 0x14,     /* matrix[1][1] */      \
-    0x15, 0x16, 0x17, 0x18,     /* matrix[1][2] */      \
-    0x19, 0x1a, 0x1b, 0x1c,     /* matrix[2][0] */      \
-    0x1d, 0x1e, 0x1f, 0x20,     /* matrix[2][1] */      \
-    0x21, 0x22, 0x23, 0x24,     /* matrix[2][2] */      \
+    0x00, 0x01, 0x00, 0x02,     /* matrix_structure */  \
+    0x00, 0x03, 0x00, 0x04,                             \
+    0x00, 0x00, 0x00, 0x00,                             \
+    0x00, 0x07, 0x00, 0x08,                             \
+    0x00, 0x09, 0x00, 0x0a,                             \
+    0x00, 0x00, 0x00, 0x00,                             \
+    0x00, 0x0d, 0x00, 0x0e,                             \
+    0x00, 0x0f, 0x00, 0x10,                             \
+    0x00, 0x00, 0x00, 0x00,                             \
     0x00, 0x01, 0x02, 0x03,     /* track width */       \
     0x00, 0x01, 0x02, 0x03      /* track height */
 // clang-format on
@@ -1017,21 +1037,15 @@ static const MuTFFTrackHeaderAtom tkhd_test_struct = {
     0x0001,            // alternate group
     {0x00, 0x01},      // volume
     {
-      {
-        0x01020304,    // matrix[0][0]
-        0x05060708,    // matrix[0][1]
-        0x090a0b0c,    // matrix[0][2]
-      },
-      {
-        0x0d0e0f10,    // matrix[1][0]
-        0x11121314,    // matrix[1][1]
-        0x15161718,    // matrix[1][2]
-      },
-      {
-        0x191a1b1c,    // matrix[2][0]
-        0x1d1e1f20,    // matrix[2][1]
-        0x21222324,    // matrix[2][2]
-      }
+      {1, 2},          // matrix structure
+      {3, 4},          //
+      {0, 0},          //
+      {7, 8},          //
+      {9, 10},         //
+      {0, 0},          //
+      {13, 14},        //
+      {15, 16},        //
+      {0, 0},          //
     },
     {0x0001, 0x0203},  // track width
     {0x0001, 0x0203},  // track height
@@ -1068,11 +1082,7 @@ static inline void expect_tkhd_eq(const MuTFFTrackHeaderAtom *a,
   EXPECT_EQ(a->alternate_group, b->alternate_group);
   EXPECT_EQ(a->volume.integral, b->volume.integral);
   EXPECT_EQ(a->volume.fractional, b->volume.fractional);
-  for (size_t j = 0; j < 3; ++j) {
-    for (size_t i = 0; i < 3; ++i) {
-      EXPECT_EQ(a->matrix_structure[j][i], b->matrix_structure[j][i]);
-    }
-  }
+  expect_matrix_eq(&a->matrix_structure, &b->matrix_structure);
   EXPECT_EQ(a->track_width.integral, b->track_width.integral);
   EXPECT_EQ(a->track_width.fractional, b->track_width.fractional);
   EXPECT_EQ(a->track_height.integral, b->track_height.integral);
@@ -4216,43 +4226,36 @@ TEST(MuTFF, ReadBaseMediaInfoAtom) {
 // {{{1 text media information atom unit tests
 static const uint32_t text_test_data_size = 44;
 // clang-format off
-#define TEXT_TEST_DATA                             \
-    text_test_data_size >> 24,  /* size */         \
-    text_test_data_size >> 16,                     \
-    text_test_data_size >> 8,                      \
-    text_test_data_size,                           \
-    't', 'e', 'x', 't',         /* type */         \
-    0x01, 0x02, 0x03, 0x04,     /* matrix[0][0] */ \
-    0x05, 0x06, 0x07, 0x08,     /* matrix[0][1] */ \
-    0x09, 0x0a, 0x0b, 0x0c,     /* matrix[0][2] */ \
-    0x0d, 0x0e, 0x0f, 0x10,     /* matrix[1][0] */ \
-    0x11, 0x12, 0x13, 0x14,     /* matrix[1][1] */ \
-    0x15, 0x16, 0x17, 0x18,     /* matrix[1][2] */ \
-    0x19, 0x1a, 0x1b, 0x1c,     /* matrix[2][0] */ \
-    0x1d, 0x1e, 0x1f, 0x20,     /* matrix[2][1] */ \
-    0x21, 0x22, 0x23, 0x24      /* matrix[2][2] */
-// clang-format on
+#define TEXT_TEST_DATA                                 \
+    text_test_data_size >> 24,  /* size */             \
+    text_test_data_size >> 16,                         \
+    text_test_data_size >> 8,                          \
+    text_test_data_size,                               \
+    't', 'e', 'x', 't',         /* type */             \
+    0x00, 0x01, 0x00, 0x02,     /* matrix_structure */ \
+    0x00, 0x03, 0x00, 0x04,                            \
+    0x00, 0x00, 0x00, 0x00,                            \
+    0x00, 0x07, 0x00, 0x08,                            \
+    0x00, 0x09, 0x00, 0x0a,                            \
+    0x00, 0x00, 0x00, 0x00,                            \
+    0x00, 0x0d, 0x00, 0x0e,                            \
+    0x00, 0x0f, 0x00, 0x10,                            \
+    0x00, 0x00, 0x00, 0x00,  // clang-format on
 static const unsigned char text_test_data[text_test_data_size] =
     ARR(TEXT_TEST_DATA);
 // clang-format off
 static const MuTFFTextMediaInformationAtom text_test_struct = {
     {
-      {
-        0x01020304,
-        0x05060708,
-        0x090a0b0c,
-      },
-      {
-        0x0d0e0f10,
-        0x11121314,
-        0x15161718,
-      },
-      {
-        0x191a1b1c,
-        0x1d1e1f20,
-        0x21222324,
-      },
-    }
+      {1, 2},                      // matrix structure
+      {3, 4},                      //
+      {0, 0},                      //
+      {7, 8},                      //
+      {9, 10},                     //
+      {0, 0},                      //
+      {13, 14},                    //
+      {15, 16},                    //
+      {0, 0},                      //
+    },
 };
 // clang-format on
 
@@ -4277,11 +4280,7 @@ TEST(MuTFF, WriteTextMediaInformationAtom) {
 
 static inline void expect_text_eq(const MuTFFTextMediaInformationAtom *a,
                                   const MuTFFTextMediaInformationAtom *b) {
-  for (size_t j = 0; j < 3; ++j) {
-    for (size_t i = 0; i < 3; ++i) {
-      EXPECT_EQ(a->matrix_structure[j][i], b->matrix_structure[j][i]);
-    }
-  }
+  expect_matrix_eq(&a->matrix_structure, &b->matrix_structure);
 }
 
 TEST(MuTFF, ReadTextMediaInformationAtom) {
@@ -5123,15 +5122,24 @@ TEST_F(TestMov, TrackHeaderAtom) {
   EXPECT_EQ(atom.alternate_group, 0);
   EXPECT_EQ(atom.volume.integral, 0);
   EXPECT_EQ(atom.volume.fractional, 0);
-  EXPECT_EQ(atom.matrix_structure[0][0], 0x00010000);
-  EXPECT_EQ(atom.matrix_structure[0][1], 0);
-  EXPECT_EQ(atom.matrix_structure[0][2], 0);
-  EXPECT_EQ(atom.matrix_structure[1][0], 0);
-  EXPECT_EQ(atom.matrix_structure[1][1], 0x00010000);
-  EXPECT_EQ(atom.matrix_structure[1][2], 0);
-  EXPECT_EQ(atom.matrix_structure[2][0], 0);
-  EXPECT_EQ(atom.matrix_structure[2][1], 0);
-  EXPECT_EQ(atom.matrix_structure[2][2], 0x40000000);
+  EXPECT_EQ(atom.matrix_structure.a.integral, 1);
+  EXPECT_EQ(atom.matrix_structure.a.fractional, 0);
+  EXPECT_EQ(atom.matrix_structure.b.integral, 0);
+  EXPECT_EQ(atom.matrix_structure.b.fractional, 0);
+  EXPECT_EQ(atom.matrix_structure.u.integral, 0);
+  EXPECT_EQ(atom.matrix_structure.u.fractional, 0);
+  EXPECT_EQ(atom.matrix_structure.c.integral, 0);
+  EXPECT_EQ(atom.matrix_structure.c.fractional, 0);
+  EXPECT_EQ(atom.matrix_structure.d.integral, 1);
+  EXPECT_EQ(atom.matrix_structure.d.fractional, 0);
+  EXPECT_EQ(atom.matrix_structure.v.integral, 0);
+  EXPECT_EQ(atom.matrix_structure.v.fractional, 0);
+  EXPECT_EQ(atom.matrix_structure.tx.integral, 0);
+  EXPECT_EQ(atom.matrix_structure.tx.fractional, 0);
+  EXPECT_EQ(atom.matrix_structure.ty.integral, 0);
+  EXPECT_EQ(atom.matrix_structure.ty.fractional, 0);
+  EXPECT_EQ(atom.matrix_structure.w.integral, 1);
+  EXPECT_EQ(atom.matrix_structure.w.fractional, 0);
   EXPECT_EQ(atom.track_width.integral, 640);
   EXPECT_EQ(atom.track_width.fractional, 0);
   EXPECT_EQ(atom.track_height.integral, 480);

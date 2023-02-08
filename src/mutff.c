@@ -328,6 +328,66 @@ static MuTFFError mutff_write_q16_16(FILE *fd, size_t *n, mutff_q16_16_t data) {
   return MuTFFErrorNone;
 }
 
+static MuTFFError mutff_read_q2_30(FILE *fd, size_t *n, mutff_q2_30_t *data) {
+  MuTFFError err;
+  size_t bytes;
+  *n = 0;
+
+  uint32_t x;
+  MuTFF_FN(mutff_read_u32, &x);
+  data->integral = ((x & 0x40000000U) >> 30) - (x & 0x80000000U ? 2 : 0);
+  data->fractional = x & 0x3FFFFFFFU;
+
+  return MuTFFErrorNone;
+}
+
+static MuTFFError mutff_write_q2_30(FILE *fd, size_t *n, mutff_q2_30_t data) {
+  MuTFFError err;
+  size_t bytes;
+  *n = 0;
+
+  uint32_t x = 0;
+  x +=
+      (data.integral >= 0 ? data.integral & 0x1 : ~abs(data.integral) & 0x1 + 1)
+      << 30;
+  x += data.fractional;
+  MuTFF_FN(mutff_write_u32, x);
+
+  return MuTFFErrorNone;
+}
+
+static MuTFFError mutff_read_matrix(FILE *fd, size_t *n, MuTFFMatrix *matrix) {
+  MuTFFError err;
+  size_t bytes;
+  *n = 0;
+  MuTFF_FN(mutff_read_q16_16, &matrix->a);
+  MuTFF_FN(mutff_read_q16_16, &matrix->b);
+  MuTFF_FN(mutff_read_q2_30, &matrix->u);
+  MuTFF_FN(mutff_read_q16_16, &matrix->c);
+  MuTFF_FN(mutff_read_q16_16, &matrix->d);
+  MuTFF_FN(mutff_read_q2_30, &matrix->v);
+  MuTFF_FN(mutff_read_q16_16, &matrix->tx);
+  MuTFF_FN(mutff_read_q16_16, &matrix->ty);
+  MuTFF_FN(mutff_read_q2_30, &matrix->w);
+  return MuTFFErrorNone;
+}
+
+static MuTFFError mutff_write_matrix(FILE *fd, size_t *n, MuTFFMatrix matrix) {
+  MuTFFError err;
+  size_t bytes;
+  *n = 0;
+  MuTFF_FN(mutff_write_q16_16, matrix.a);
+  MuTFF_FN(mutff_write_q16_16, matrix.b);
+  MuTFF_FN(mutff_write_q2_30, matrix.u);
+  MuTFF_FN(mutff_write_q16_16, matrix.c);
+  MuTFF_FN(mutff_write_q16_16, matrix.d);
+  MuTFF_FN(mutff_write_q2_30, matrix.v);
+  MuTFF_FN(mutff_write_q16_16, matrix.tx);
+  MuTFF_FN(mutff_write_q16_16, matrix.ty);
+  MuTFF_FN(mutff_write_q2_30, matrix.w);
+  return MuTFFErrorNone;
+}
+
 // return the size of an atom including its header, given the size of the data
 // in it
 static inline uint64_t mutff_atom_size(uint64_t data_size) {
@@ -715,11 +775,7 @@ MuTFFError mutff_read_movie_header_atom(FILE *fd, size_t *n,
   MuTFF_FN(mutff_read_q16_16, &out->preferred_rate);
   MuTFF_FN(mutff_read_q8_8, &out->preferred_volume);
   MuTFF_SEEK_CUR(10U);
-  for (size_t j = 0; j < 3U; ++j) {
-    for (size_t i = 0; i < 3U; ++i) {
-      MuTFF_FN(mutff_read_u32, &out->matrix_structure[j][i]);
-    }
-  }
+  MuTFF_FN(mutff_read_matrix, &out->matrix_structure);
   MuTFF_FN(mutff_read_u32, &out->preview_time);
   MuTFF_FN(mutff_read_u32, &out->preview_duration);
   MuTFF_FN(mutff_read_u32, &out->poster_time);
@@ -759,11 +815,7 @@ MuTFFError mutff_write_movie_header_atom(FILE *fd, size_t *n,
   for (size_t i = 0; i < 10U; ++i) {
     MuTFF_FN(mutff_write_u8, 0);
   }
-  for (size_t j = 0; j < 3U; ++j) {
-    for (size_t i = 0; i < 3U; ++i) {
-      MuTFF_FN(mutff_write_u32, in->matrix_structure[j][i]);
-    }
-  }
+  MuTFF_FN(mutff_write_matrix, in->matrix_structure);
   MuTFF_FN(mutff_write_u32, in->preview_time);
   MuTFF_FN(mutff_write_u32, in->preview_duration);
   MuTFF_FN(mutff_write_u32, in->poster_time);
@@ -1075,11 +1127,7 @@ MuTFFError mutff_read_track_header_atom(FILE *fd, size_t *n,
   MuTFF_FN(mutff_read_u16, &out->alternate_group);
   MuTFF_FN(mutff_read_q8_8, &out->volume);
   MuTFF_SEEK_CUR(2U);
-  for (size_t j = 0; j < 3U; ++j) {
-    for (size_t i = 0; i < 3U; ++i) {
-      MuTFF_FN(mutff_read_u32, &out->matrix_structure[j][i]);
-    }
-  }
+  MuTFF_FN(mutff_read_matrix, &out->matrix_structure);
   MuTFF_FN(mutff_read_q16_16, &out->track_width);
   MuTFF_FN(mutff_read_q16_16, &out->track_height);
   MuTFF_SEEK_CUR(size - *n);
@@ -1121,11 +1169,7 @@ MuTFFError mutff_write_track_header_atom(FILE *fd, size_t *n,
   for (size_t i = 0; i < 2U; ++i) {
     MuTFF_FN(mutff_write_u8, 0);
   }
-  for (size_t j = 0; j < 3U; ++j) {
-    for (size_t i = 0; i < 3U; ++i) {
-      MuTFF_FN(mutff_write_u32, in->matrix_structure[j][i]);
-    }
-  }
+  MuTFF_FN(mutff_write_matrix, in->matrix_structure);
   MuTFF_FN(mutff_write_q16_16, in->track_width);
   MuTFF_FN(mutff_write_q16_16, in->track_height);
   return MuTFFErrorNone;
@@ -3718,11 +3762,7 @@ MuTFFError mutff_read_text_media_information_atom(
   if (type != MuTFF_FOURCC('t', 'e', 'x', 't')) {
     return MuTFFErrorBadFormat;
   }
-  for (size_t j = 0; j < 3U; ++j) {
-    for (size_t i = 0; i < 3U; ++i) {
-      MuTFF_FN(mutff_read_u32, &out->matrix_structure[j][i]);
-    }
-  }
+  MuTFF_FN(mutff_read_matrix, &out->matrix_structure);
   return MuTFFErrorNone;
 }
 
@@ -3743,11 +3783,7 @@ MuTFFError mutff_write_text_media_information_atom(
     return err;
   }
   MuTFF_FN(mutff_write_header, size, MuTFF_FOURCC('t', 'e', 'x', 't'));
-  for (size_t j = 0; j < 3U; ++j) {
-    for (size_t i = 0; i < 3U; ++i) {
-      MuTFF_FN(mutff_write_u32, in->matrix_structure[j][i]);
-    }
-  }
+  MuTFF_FN(mutff_write_matrix, in->matrix_structure);
   return MuTFFErrorNone;
 }
 

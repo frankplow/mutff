@@ -28,6 +28,16 @@
 typedef uint32_t mutff_uint24_t;
 
 ///
+/// @brief A signed integer with at least 2 bits
+///
+typedef int8_t mutff_int_least2_t;
+
+///
+/// @brief An unsigned integer with at least 30 bits
+///
+typedef uint32_t mutff_int_least30_t;
+
+///
 /// @brief A fixed-point number with 8 integral bits and 8 fractional bits
 ///
 typedef struct {
@@ -42,6 +52,29 @@ typedef struct {
   int16_t integral;
   uint16_t fractional;
 } mutff_q16_16_t;
+
+///
+/// @brief A fixed-point number with 2 integral bits and 30 fractional bits
+///
+typedef struct {
+  mutff_int_least2_t integral;
+  mutff_int_least30_t fractional;
+} mutff_q2_30_t;
+
+///
+/// @brief A QuickTime matrix structure
+///
+typedef struct {
+  mutff_q16_16_t a;
+  mutff_q16_16_t b;
+  mutff_q2_30_t u;
+  mutff_q16_16_t c;
+  mutff_q16_16_t d;
+  mutff_q2_30_t v;
+  mutff_q16_16_t tx;
+  mutff_q16_16_t ty;
+  mutff_q2_30_t w;
+} MuTFFMatrix;
 
 ///
 /// @brief A generic error in the MuTFF library
@@ -351,7 +384,7 @@ typedef struct {
   uint32_t duration;
   mutff_q16_16_t preferred_rate;
   mutff_q8_8_t preferred_volume;
-  uint32_t matrix_structure[3][3];
+  MuTFFMatrix matrix_structure;
   uint32_t preview_time;
   uint32_t preview_duration;
   uint32_t poster_time;
@@ -575,7 +608,7 @@ typedef struct {
   uint16_t layer;
   uint16_t alternate_group;
   mutff_q8_8_t volume;
-  uint32_t matrix_structure[3][3];
+  MuTFFMatrix matrix_structure;
   mutff_q16_16_t track_width;
   mutff_q16_16_t track_height;
 } MuTFFTrackHeaderAtom;
@@ -2193,7 +2226,7 @@ MuTFFError mutff_write_base_media_info_atom(FILE *fd, size_t *n,
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html#//apple_ref/doc/uid/TP40000939-CH205-SW90
 ///
 typedef struct {
-  uint32_t matrix_structure[3][3];
+  MuTFFMatrix matrix_structure;
 } MuTFFTextMediaInformationAtom;
 
 ///
