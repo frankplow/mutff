@@ -807,9 +807,9 @@ MuTFFError mutff_write_track_aperture_mode_dimensions_atom(
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-61112
 ///
 typedef struct {
-  uint32_t size;
   uint32_t data_format;
   uint16_t data_reference_index;
+  uint32_t additional_data_size;
   char additional_data[MuTFF_MAX_SAMPLE_DESCRIPTION_DATA_LEN];
 } MuTFFSampleDescription;
 

@@ -1404,9 +1404,9 @@ static const unsigned char sample_desc_test_data[sample_desc_test_data_size] =
     ARR(SAMPLE_DESC_TEST_DATA);
 // clang-format off
 static const MuTFFSampleDescription sample_desc_test_struct = {
-    sample_desc_test_data_size,     // size
     MuTFF_FOURCC('a', 'b', 'c', 'd'),           // data format
     0x0001,
+    4,  // additional data size
     {
       0x00, 0x01, 0x02, 0x03,
     },
@@ -1434,10 +1434,14 @@ TEST(MuTFF, WriteSampleDescription) {
 
 static inline void expect_sample_desc_eq(const MuTFFSampleDescription *a,
                                          const MuTFFSampleDescription *b) {
-  EXPECT_EQ(a->size, b->size);
   EXPECT_EQ(a->data_format, b->data_format);
   EXPECT_EQ(a->data_reference_index, b->data_reference_index);
-  for (size_t i = 0; i < a->size - 16; ++i) {
+  EXPECT_EQ(a->additional_data_size, b->additional_data_size);
+  const uint32_t additional_data_size =
+      a->additional_data_size > b->additional_data_size
+          ? b->additional_data_size
+          : a->additional_data_size;
+  for (size_t i = 0; i < additional_data_size; ++i) {
     EXPECT_EQ(a->additional_data[i], b->additional_data[i]);
   }
 }
