@@ -798,7 +798,7 @@ MuTFFError mutff_write_track_aperture_mode_dimensions_atom(
 ///        description
 /// @see MuTFFSampleDescription
 ///
-#define MuTFF_MAX_SAMPLE_DESCRIPTION_DATA_LEN 16U
+#define MuTFF_MAX_SAMPLE_DESCRIPTION_DATA_LEN 256U
 
 ///
 /// @brief A sample description
