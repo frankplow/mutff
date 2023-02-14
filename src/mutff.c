@@ -618,9 +618,9 @@ MuTFFError mutff_write_movie_data_atom(mutff_file_t *fd, size_t *n,
     return err;
   }
   MuTFF_FN(mutff_write_header, size, MuTFF_FOURCC('m', 'd', 'a', 't'));
-  for (uint64_t i = 0; i < in->data_size; ++i) {
-    MuTFF_FN(mutff_write_u8, 0);
-  }
+  /* for (uint64_t i = 0; i < in->data_size; ++i) { */
+  /*   MuTFF_FN(mutff_write_u8, 0); */
+  /* } */
   return MuTFFErrorNone;
 }
 
