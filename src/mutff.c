@@ -3113,7 +3113,8 @@ MuTFFError mutff_read_sample_size_atom(mutff_file_t *fd, size_t *n,
 
 static inline MuTFFError mutff_sample_size_atom_size(
     uint64_t *out, const MuTFFSampleSizeAtom *atom) {
-  *out = mutff_atom_size(12U + atom->number_of_entries * 4U);
+  *out = mutff_atom_size(
+      12U + (atom->sample_size == 0U ? atom->number_of_entries * 4U : 0U));
   return MuTFFErrorNone;
 }
 
@@ -3132,13 +3133,10 @@ MuTFFError mutff_write_sample_size_atom(mutff_file_t *fd, size_t *n,
   MuTFF_FN(mutff_write_u24, in->flags);
   MuTFF_FN(mutff_write_u32, in->sample_size);
   MuTFF_FN(mutff_write_u32, in->number_of_entries);
-  // @TODO: does this need a branch for in->sample_size != 0?
-  //        i.e. what to do if sample_size != 0 but number_of_entries != 0
-  if (in->number_of_entries * 4U != mutff_data_size(size) - 12U) {
-    return MuTFFErrorBadFormat;
-  }
-  for (uint32_t i = 0; i < in->number_of_entries; ++i) {
-    MuTFF_FN(mutff_write_u32, in->sample_size_table[i]);
+  if (in->sample_size == 0U) {
+    for (uint32_t i = 0; i < in->number_of_entries; ++i) {
+      MuTFF_FN(mutff_write_u32, in->sample_size_table[i]);
+    }
   }
   return MuTFFErrorNone;
 }
