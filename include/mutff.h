@@ -97,6 +97,12 @@ void mutff_set_tell_fn(MuTFFError (*fn)(mutff_file_t *, unsigned int *));
 
 void mutff_set_seek_fn(MuTFFError (*fn)(mutff_file_t *, long));
 
+typedef MuTFFError (*MuTFFReadFn)(mutff_file_t *, size_t *, void *);
+
+typedef MuTFFError (*MuTFFWriteFn)(mutff_file_t *, size_t *, const void *);
+
+typedef MuTFFError (*MuTFFSizeFn)(uint64_t *, const void *);
+
 ///
 /// @brief A QuickDraw rectangle
 /// @see
@@ -794,11 +800,59 @@ MuTFFError mutff_write_track_aperture_mode_dimensions_atom(
     const MuTFFTrackApertureModeDimensionsAtom *in);
 
 ///
-/// @brief The maximum length of the format-specific data in a sample
-///        description
-/// @see MuTFFSampleDescription
+/// @brief Media types
+/// @see
+/// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html#//apple_ref/doc/uid/TP40000939-CH205-SW1
 ///
-#define MuTFF_MAX_SAMPLE_DESCRIPTION_DATA_LEN 256U
+typedef enum {
+  MuTFFMediaTypeUnknown = 0,
+  MuTFFMediaTypeVideo,
+  MuTFFMediaTypeSound,
+  MuTFFMediaTypeTimedMetadata,
+  MuTFFMediaTypeTextMedia,
+  MuTFFMediaTypeClosedCaptioningMedia,
+  MuTFFMediaTypeSubtitleMedia,
+  MuTFFMediaTypeMusicMedia,
+  MuTFFMediaTypeMPEG1Media,
+  MuTFFMediaTypeSpriteMedia,
+  MuTFFMediaTypeTweenMedia,
+  MuTFFMediaType3DMedia,
+  MuTFFMediaTypeStreamingMedia,
+  MuTFFMediaTypeHintMedia,
+  MuTFFMediaTypeVRMedia,
+  MuTFFMediaTypePanoramaMedia,
+  MuTFFMediaTypeObjectMedia,
+} MuTFFMediaType;
+
+MuTFFMediaType mutff_media_type(uint32_t type);
+
+MuTFFWriteFn mutff_media_type_write_fn(MuTFFMediaType type);
+
+MuTFFReadFn mutff_media_type_read_fn(MuTFFMediaType type);
+
+MuTFFSizeFn mutff_media_type_size_fn(MuTFFMediaType type);
+
+///
+/// @brief Video sample description data
+///
+typedef struct {
+  uint16_t version;
+  uint32_t vendor;
+  uint32_t temporal_quality;
+  uint32_t spatial_quality;
+  uint16_t width;
+  uint16_t height;
+  mutff_q16_16_t horizontal_resolution;
+  mutff_q16_16_t vertical_resolution;
+  uint16_t frame_count;
+  uint32_t compressor_name;
+  uint16_t depth;
+  uint16_t color_table_id;
+} MuTFFVideoSampleDescription;
+
+typedef union {
+  MuTFFVideoSampleDescription video;
+} MuTFFSampleDescriptionData;
 
 ///
 /// @brief A sample description
@@ -809,8 +863,7 @@ MuTFFError mutff_write_track_aperture_mode_dimensions_atom(
 typedef struct {
   uint32_t data_format;
   uint16_t data_reference_index;
-  uint32_t additional_data_size;
-  char additional_data[MuTFF_MAX_SAMPLE_DESCRIPTION_DATA_LEN];
+  MuTFFSampleDescriptionData data;
 } MuTFFSampleDescription;
 
 ///
@@ -834,6 +887,31 @@ MuTFFError mutff_read_sample_description(mutff_file_t *fd, size_t *n,
 ///
 MuTFFError mutff_write_sample_description(mutff_file_t *fd, size_t *n,
                                           const MuTFFSampleDescription *in);
+
+///
+/// @brief Read video sample description data
+///
+/// @param [in] fd   The file descriptor
+/// @param [out] n   The number of bytes read to read from
+/// @param [out] out The parsed description
+/// @return          The MuTFFError code
+///
+MuTFFError mutff_read_video_sample_description(
+    mutff_file_t *fd, size_t *n, MuTFFVideoSampleDescription *out);
+
+MuTFFError mutff_video_sample_description_size(
+    uint64_t *out, const MuTFFVideoSampleDescription *desc);
+
+///
+/// @brief Write video sample description data
+///
+/// @param [in] fd   The file descriptor
+/// @param [out] n   The number of bytes written
+/// @param [in] in   The atom
+/// @return          The MuTFFError code
+///
+MuTFFError mutff_write_video_sample_description(
+    mutff_file_t *fd, size_t *n, const MuTFFVideoSampleDescription *in);
 
 ///
 /// @brief The maximum length of the data in a compressed matte atom
@@ -2345,30 +2423,6 @@ MuTFFError mutff_write_base_media_information_atom(
     mutff_file_t *fd, size_t *n, const MuTFFBaseMediaInformationAtom *in);
 
 ///
-/// @brief Media types
-/// @see
-/// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html#//apple_ref/doc/uid/TP40000939-CH205-SW1
-///
-typedef enum {
-  MuTFFMediaTypeVideo = MuTFF_FOURCC('v', 'i', 'd', 'e'),
-  MuTFFMediaTypeSound = MuTFF_FOURCC('s', 'o', 'u', 'n'),
-  MuTFFMediaTypeTimedMetadata = MuTFF_FOURCC('m', 'e', 't', 'a'),
-  MuTFFMediaTypeTextMedia = MuTFF_FOURCC('t', 'e', 'x', 't'),
-  MuTFFMediaTypeClosedCaptioningMedia = MuTFF_FOURCC('c', 'l', 'c', 'p'),
-  MuTFFMediaTypeSubtitleMedia = MuTFF_FOURCC('s', 'b', 't', 'l'),
-  MuTFFMediaTypeMusicMedia = MuTFF_FOURCC('m', 'u', 's', 'i'),
-  MuTFFMediaTypeMPEG1Media = MuTFF_FOURCC('M', 'P', 'E', 'G'),
-  MuTFFMediaTypeSpriteMedia = MuTFF_FOURCC('s', 'p', 'r', 't'),
-  MuTFFMediaTypeTweenMedia = MuTFF_FOURCC('t', 'w', 'e', 'n'),
-  MuTFFMediaType3DMedia = MuTFF_FOURCC('q', 'd', '3', 'd'),
-  MuTFFMediaTypeStreamingMedia = MuTFF_FOURCC('s', 't', 'r', 'm'),
-  MuTFFMediaTypeHintMedia = MuTFF_FOURCC('h', 'i', 'n', 't'),
-  MuTFFMediaTypeVRMedia = MuTFF_FOURCC('q', 't', 'v', 'r'),
-  MuTFFMediaTypePanoramaMedia = MuTFF_FOURCC('p', 'a', 'n', 'o'),
-  MuTFFMediaTypeObjectMedia = MuTFF_FOURCC('o', 'b', 'j', 'e'),
-} MuTFFMediaType;
-
-///
 /// @brief Media information types
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-BBCHEIJG
@@ -2416,7 +2470,8 @@ typedef struct {
 /// @param [in] atom  The atom to determine the type of
 /// @return           The MuTFFError code
 ///
-MuTFFError mutff_media_type(MuTFFMediaType *out, const MuTFFMediaAtom *atom);
+MuTFFError mutff_media_atom_type(MuTFFMediaType *out,
+                                 const MuTFFMediaAtom *atom);
 
 /// @brief Read a media atom
 ///

@@ -1433,16 +1433,20 @@ MuTFFError mutff_read_sample_description(mutff_file_t *fd, size_t *n,
   MuTFF_FN(mutff_read_u32, &out->data_format);
   MuTFF_SEEK_CUR(6U);
   MuTFF_FN(mutff_read_u16, &out->data_reference_index);
-  out->additional_data_size = size - 16U;
-  for (uint32_t i = 0; i < out->additional_data_size; ++i) {
-    MuTFF_FN(mutff_read_u8, (uint8_t *)&out->additional_data[i]);
-  }
+  MuTFF_FN(mutff_media_type_read_fn(mutff_media_type(out->data_format)),
+           &out->data);
   return MuTFFErrorNone;
 }
 
 static inline MuTFFError mutff_sample_description_size(
     uint32_t *out, const MuTFFSampleDescription *desc) {
-  *out = 16U + desc->additional_data_size;
+  uint64_t data_size;
+  const MuTFFError err = mutff_media_type_size_fn(
+      mutff_media_type(desc->data_format))(&data_size, &desc->data);
+  if (err != MuTFFErrorNone) {
+    return err;
+  }
+  *out = 16U + data_size;
   return MuTFFErrorNone;
 }
 
@@ -1462,9 +1466,58 @@ MuTFFError mutff_write_sample_description(mutff_file_t *fd, size_t *n,
     MuTFF_FN(mutff_write_u8, 0);
   }
   MuTFF_FN(mutff_write_u16, in->data_reference_index);
-  for (size_t i = 0; i < in->additional_data_size; ++i) {
-    MuTFF_FN(mutff_write_u8, in->additional_data[i]);
-  }
+  MuTFF_FN(mutff_media_type_write_fn(mutff_media_type(in->data_format)),
+           &in->data);
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_read_video_sample_description(
+    mutff_file_t *fd, size_t *n, MuTFFVideoSampleDescription *out) {
+  MuTFFError err;
+  size_t bytes;
+  *n = 0;
+  MuTFF_FN(mutff_read_u16, &out->version);
+  MuTFF_SEEK_CUR(2U);
+  MuTFF_FN(mutff_read_u32, &out->vendor);
+  MuTFF_FN(mutff_read_u32, &out->temporal_quality);
+  MuTFF_FN(mutff_read_u32, &out->spatial_quality);
+  MuTFF_FN(mutff_read_u16, &out->width);
+  MuTFF_FN(mutff_read_u16, &out->height);
+  MuTFF_FN(mutff_read_q16_16, &out->horizontal_resolution);
+  MuTFF_FN(mutff_read_q16_16, &out->vertical_resolution);
+  MuTFF_SEEK_CUR(4U);
+  MuTFF_FN(mutff_read_u16, &out->frame_count);
+  MuTFF_FN(mutff_read_u32, &out->compressor_name);
+  MuTFF_FN(mutff_read_u16, &out->depth);
+  MuTFF_FN(mutff_read_u16, &out->color_table_id);
+  return MuTFFErrorNone;
+}
+
+inline MuTFFError mutff_video_sample_description_size(
+    uint64_t *out, const MuTFFVideoSampleDescription *desc) {
+  *out = 42;
+  return MuTFFErrorNone;
+}
+
+MuTFFError mutff_write_video_sample_description(
+    mutff_file_t *fd, size_t *n, const MuTFFVideoSampleDescription *in) {
+  MuTFFError err;
+  size_t bytes;
+  *n = 0;
+  MuTFF_FN(mutff_write_u16, in->version);
+  MuTFF_FN(mutff_write_u16, 0);
+  MuTFF_FN(mutff_write_u32, in->vendor);
+  MuTFF_FN(mutff_write_u32, in->temporal_quality);
+  MuTFF_FN(mutff_write_u32, in->spatial_quality);
+  MuTFF_FN(mutff_write_u16, in->width);
+  MuTFF_FN(mutff_write_u16, in->height);
+  MuTFF_FN(mutff_write_q16_16, in->horizontal_resolution);
+  MuTFF_FN(mutff_write_q16_16, in->vertical_resolution);
+  MuTFF_FN(mutff_write_u32, 0);
+  MuTFF_FN(mutff_write_u16, in->frame_count);
+  MuTFF_FN(mutff_write_u32, in->compressor_name);
+  MuTFF_FN(mutff_write_u16, in->depth);
+  MuTFF_FN(mutff_write_u16, in->color_table_id);
   return MuTFFErrorNone;
 }
 
@@ -1493,7 +1546,7 @@ MuTFFError mutff_read_compressed_matte_atom(mutff_file_t *fd, size_t *n,
   if (err != MuTFFErrorNone) {
     return err;
   }
-  out->matte_data_len = mutff_data_size(size) - 4U - sample_desc_size;
+  out->matte_data_len = size - *n;
   for (uint32_t i = 0; i < out->matte_data_len; ++i) {
     MuTFF_FN(mutff_read_u8, (uint8_t *)&out->matte_data[i]);
   }
@@ -3986,6 +4039,94 @@ MuTFFError mutff_write_base_media_information_atom(
   return MuTFFErrorNone;
 }
 
+MuTFFMediaType mutff_media_type(uint32_t type) {
+  switch (type) {
+    case MuTFF_FOURCC('v', 'i', 'd', 'e'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('c', 'v', 'i', 'd'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('j', 'p', 'e', 'g'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('s', 'm', 'c', ' '):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('r', 'l', 'e', ' '):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('r', 'p', 'z', 'a'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('k', 'p', 'c', 'd'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('p', 'n', 'g', ' '):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('m', 'j', 'p', 'a'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('m', 'j', 'p', 'b'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('S', 'V', 'Q', '1'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('S', 'V', 'Q', '3'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('m', 'p', '4', 'v'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('a', 'v', 'c', '1'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('d', 'v', 'c', ' '):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('d', 'v', 'c', 'p'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('g', 'i', 'f', ' '):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('h', '2', '6', '3'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('t', 'i', 'f', 'f'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('r', 'a', 'w', ' '):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('2', 'v', 'u', 'Y'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('y', 'u', 'v', '2'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('v', '3', '0', '8'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('v', '4', '0', '8'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('v', '2', '1', '6'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('v', '4', '1', '0'):
+      return MuTFFMediaTypeVideo;
+    case MuTFF_FOURCC('v', '2', '1', '0'):
+      return MuTFFMediaTypeVideo;
+    default:
+      return MuTFFMediaTypeUnknown;
+  }
+}
+
+inline MuTFFWriteFn mutff_media_type_write_fn(MuTFFMediaType type) {
+  switch (type) {
+    case MuTFFMediaTypeVideo:
+      return (MuTFFWriteFn)mutff_write_video_sample_description;
+    default:
+      return NULL;
+  }
+}
+
+inline MuTFFReadFn mutff_media_type_read_fn(MuTFFMediaType type) {
+  switch (type) {
+    case MuTFFMediaTypeVideo:
+      return (MuTFFReadFn)mutff_read_video_sample_description;
+    default:
+      return NULL;
+  }
+}
+
+inline MuTFFSizeFn mutff_media_type_size_fn(MuTFFMediaType type) {
+  switch (type) {
+    case MuTFFMediaTypeVideo:
+      return (MuTFFSizeFn)mutff_video_sample_description_size;
+    default:
+      return NULL;
+  }
+}
+
 inline MuTFFMediaInformationType mutff_media_information_type(
     MuTFFMediaType media_type) {
   switch (media_type) {
@@ -3998,53 +4139,12 @@ inline MuTFFMediaInformationType mutff_media_information_type(
   }
 }
 
-static inline bool mutff_is_known_media_type(uint32_t type) {
-  switch (type) {
-    case MuTFFMediaTypeVideo:
-      return true;
-    case MuTFFMediaTypeSound:
-      return true;
-    case MuTFFMediaTypeTimedMetadata:
-      return true;
-    case MuTFFMediaTypeTextMedia:
-      return true;
-    case MuTFFMediaTypeClosedCaptioningMedia:
-      return true;
-    case MuTFFMediaTypeSubtitleMedia:
-      return true;
-    case MuTFFMediaTypeMusicMedia:
-      return true;
-    case MuTFFMediaTypeMPEG1Media:
-      return true;
-    case MuTFFMediaTypeSpriteMedia:
-      return true;
-    case MuTFFMediaTypeTweenMedia:
-      return true;
-    case MuTFFMediaType3DMedia:
-      return true;
-    case MuTFFMediaTypeStreamingMedia:
-      return true;
-    case MuTFFMediaTypeHintMedia:
-      return true;
-    case MuTFFMediaTypeVRMedia:
-      return true;
-    case MuTFFMediaTypePanoramaMedia:
-      return true;
-    case MuTFFMediaTypeObjectMedia:
-      return true;
-    default:
-      return false;
-  }
-}
-
-MuTFFError mutff_media_type(MuTFFMediaType *out, const MuTFFMediaAtom *atom) {
+MuTFFError mutff_media_atom_type(MuTFFMediaType *out,
+                                 const MuTFFMediaAtom *atom) {
   if (!atom->handler_reference_present) {
     return MuTFFErrorBadFormat;
   }
-  if (!mutff_is_known_media_type(atom->handler_reference.component_subtype)) {
-    return MuTFFErrorBadFormat;
-  }
-  *out = (MuTFFMediaType)atom->handler_reference.component_subtype;
+  *out = mutff_media_type(atom->handler_reference.component_subtype);
   return MuTFFErrorNone;
 }
 
@@ -4128,7 +4228,7 @@ MuTFFError mutff_read_media_atom(mutff_file_t *fd, size_t *n,
 
   if (out->media_information_present) {
     MuTFFMediaType media_type;
-    err = mutff_media_type(&media_type, out);
+    err = mutff_media_atom_type(&media_type, out);
     if (err != MuTFFErrorNone) {
       return err;
     }
@@ -4193,7 +4293,7 @@ static MuTFFError mutff_media_atom_size(uint64_t *out,
   }
   if (atom->media_information_present) {
     MuTFFMediaType type;
-    err = mutff_media_type(&type, atom);
+    err = mutff_media_atom_type(&type, atom);
     if (err != MuTFFErrorNone) {
       return err;
     }
@@ -4262,7 +4362,7 @@ MuTFFError mutff_write_media_atom(mutff_file_t *fd, size_t *n,
   if (in->media_information_present) {
     MuTFFMediaType type;
     MuTFFError err;
-    err = mutff_media_type(&type, in);
+    err = mutff_media_atom_type(&type, in);
     if (err != MuTFFErrorNone) {
       return err;
     }
