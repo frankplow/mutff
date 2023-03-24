@@ -1487,7 +1487,10 @@ MuTFFError mutff_read_video_sample_description(
   MuTFF_FN(mutff_read_q16_16, &out->vertical_resolution);
   MuTFF_SEEK_CUR(4U);
   MuTFF_FN(mutff_read_u16, &out->frame_count);
-  MuTFF_FN(mutff_read_u32, &out->compressor_name);
+  for (size_t i = 0; i < 32U; ++i) {
+    // @TODO: does this need a non-specific mutff_read_8 function?
+    MuTFF_FN(mutff_read_u8, &out->compressor_name[i]);
+  }
   MuTFF_FN(mutff_read_u16, &out->depth);
   MuTFF_FN(mutff_read_u16, &out->color_table_id);
   return MuTFFErrorNone;
@@ -1495,7 +1498,7 @@ MuTFFError mutff_read_video_sample_description(
 
 inline MuTFFError mutff_video_sample_description_size(
     uint64_t *out, const MuTFFVideoSampleDescription *desc) {
-  *out = 42;
+  *out = 70;
   return MuTFFErrorNone;
 }
 
@@ -1515,7 +1518,9 @@ MuTFFError mutff_write_video_sample_description(
   MuTFF_FN(mutff_write_q16_16, in->vertical_resolution);
   MuTFF_FN(mutff_write_u32, 0);
   MuTFF_FN(mutff_write_u16, in->frame_count);
-  MuTFF_FN(mutff_write_u32, in->compressor_name);
+  for (size_t i = 0; i < 32U; ++i) {
+    MuTFF_FN(mutff_write_u8, in->compressor_name[i]);
+  }
   MuTFF_FN(mutff_write_u16, in->depth);
   MuTFF_FN(mutff_write_u16, in->color_table_id);
   return MuTFFErrorNone;

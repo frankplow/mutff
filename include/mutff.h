@@ -845,7 +845,7 @@ typedef struct {
   mutff_q16_16_t horizontal_resolution;
   mutff_q16_16_t vertical_resolution;
   uint16_t frame_count;
-  uint32_t compressor_name;
+  char compressor_name[32];
   uint16_t depth;
   uint16_t color_table_id;
 } MuTFFVideoSampleDescription;

@@ -1388,7 +1388,7 @@ TEST(MuTFF, ReadTrackApertureModeDimensionsAtom) {
 // }}}1
 
 // {{{1 video sample description unit tests
-static const uint32_t video_sample_desc_test_data_size = 42;
+static const uint32_t video_sample_desc_test_data_size = 70;
 // clang-format off
 #define VIDEO_SAMPLE_DESC_TEST_DATA                      \
     0x00, 0x00,              /* version */               \
@@ -1403,6 +1403,13 @@ static const uint32_t video_sample_desc_test_data_size = 42;
     0x00, 0x00, 0x00, 0x00,  /* data size */             \
     0x60, 0x61,              /* frame count */           \
     'e', 'f', 'g', 'h',      /* compressor name */       \
+    0x00, 0x00, 0x00, 0x00,                              \
+    0x00, 0x00, 0x00, 0x00,                              \
+    0x00, 0x00, 0x00, 0x00,                              \
+    0x00, 0x00, 0x00, 0x00,                              \
+    0x00, 0x00, 0x00, 0x00,                              \
+    0x00, 0x00, 0x00, 0x00,                              \
+    0x00, 0x00, 0x00, 0x00,                              \
     0x70, 0x71,              /* depth */                 \
     0x80, 0x81               /* color table id */
 // clang-format on
@@ -1420,7 +1427,9 @@ static const MuTFFVideoSampleDescription video_sample_desc_test_struct = {
   {0x4041, 0x4243},                  // horizontal resolution
   {0x5051, 0x5253},                  // vertical resolution
   0x6061,                            // frame count
-  MuTFF_FOURCC('e', 'f', 'g', 'h'),  // compressor name
+  {
+    'e', 'f', 'g', 'h',              // compressor name
+  },
   0x7071,                            // depth
   0x8081,                            // color table id
 };
@@ -1462,7 +1471,9 @@ static inline void expect_video_sample_desc_eq(
   EXPECT_EQ(a->vertical_resolution.fractional,
             b->vertical_resolution.fractional);
   EXPECT_EQ(a->frame_count, b->frame_count);
-  EXPECT_EQ(a->compressor_name, b->compressor_name);
+  for (size_t i = 0; i < 32; ++i) {
+    EXPECT_EQ(a->compressor_name[i], b->compressor_name[i]);
+  }
   EXPECT_EQ(a->depth, b->depth);
   EXPECT_EQ(a->color_table_id, b->color_table_id);
 }
