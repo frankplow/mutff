@@ -847,7 +847,7 @@ typedef struct {
   uint16_t frame_count;
   char compressor_name[32];
   uint16_t depth;
-  uint16_t color_table_id;
+  int16_t color_table_id;
 } MuTFFVideoSampleDescription;
 
 typedef union {

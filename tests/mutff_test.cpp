@@ -1411,7 +1411,7 @@ static const uint32_t video_sample_desc_test_data_size = 70;
     0x00, 0x00, 0x00, 0x00,                              \
     0x00, 0x00, 0x00, 0x00,                              \
     0x70, 0x71,              /* depth */                 \
-    0x80, 0x81               /* color table id */
+    0xFF, 0xFE               /* color table id */
 // clang-format on
 static unsigned char
     video_sample_desc_test_data[video_sample_desc_test_data_size] =
@@ -1431,7 +1431,7 @@ static const MuTFFVideoSampleDescription video_sample_desc_test_struct = {
     'e', 'f', 'g', 'h',              // compressor name
   },
   0x7071,                            // depth
-  0x8081,                            // color table id
+  -2,                                // color table id
 };
 // clang-format on
 

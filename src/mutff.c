@@ -1492,7 +1492,7 @@ MuTFFError mutff_read_video_sample_description(
     MuTFF_FN(mutff_read_u8, &out->compressor_name[i]);
   }
   MuTFF_FN(mutff_read_u16, &out->depth);
-  MuTFF_FN(mutff_read_u16, &out->color_table_id);
+  MuTFF_FN(mutff_read_i16, &out->color_table_id);
   return MuTFFErrorNone;
 }
 
@@ -1522,7 +1522,7 @@ MuTFFError mutff_write_video_sample_description(
     MuTFF_FN(mutff_write_u8, in->compressor_name[i]);
   }
   MuTFF_FN(mutff_write_u16, in->depth);
-  MuTFF_FN(mutff_write_u16, in->color_table_id);
+  MuTFF_FN(mutff_write_i16, in->color_table_id);
   return MuTFFErrorNone;
 }
 
