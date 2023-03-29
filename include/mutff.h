@@ -89,19 +89,27 @@ typedef enum {
 
 typedef void mutff_file_t;
 
-void mutff_set_read_fn(MuTFFError (*fn)(mutff_file_t *, void *, unsigned int));
+typedef MuTFFError (*MuTFFReadFn)(mutff_file_t *, void *, unsigned int);
 
-void mutff_set_write_fn(MuTFFError (*fn)(mutff_file_t *, void *, unsigned int));
+typedef MuTFFError (*MuTFFWriteFn)(mutff_file_t *, const void *, unsigned int);
 
-void mutff_set_tell_fn(MuTFFError (*fn)(mutff_file_t *, unsigned int *));
+typedef MuTFFError (*MuTFFTellFn)(mutff_file_t *, unsigned int *);
 
-void mutff_set_seek_fn(MuTFFError (*fn)(mutff_file_t *, long));
+typedef MuTFFError (*MuTFFSeekFn)(mutff_file_t *, long);
 
-typedef MuTFFError (*MuTFFReadFn)(mutff_file_t *, size_t *, void *);
+void mutff_set_read_fn(MuTFFReadFn fn);
 
-typedef MuTFFError (*MuTFFWriteFn)(mutff_file_t *, size_t *, const void *);
+void mutff_set_write_fn(MuTFFWriteFn fn);
 
-typedef MuTFFError (*MuTFFSizeFn)(uint64_t *, const void *);
+void mutff_set_tell_fn(MuTFFTellFn fn);
+
+void mutff_set_seek_fn(MuTFFSeekFn fn);
+
+typedef MuTFFError (*MuTFFAtomReadFn)(mutff_file_t *, size_t *, void *);
+
+typedef MuTFFError (*MuTFFAtomWriteFn)(mutff_file_t *, size_t *, const void *);
+
+typedef MuTFFError (*MuTFFAtomSizeFn)(uint64_t *, const void *);
 
 ///
 /// @brief A QuickDraw rectangle
@@ -826,11 +834,11 @@ typedef enum {
 
 MuTFFMediaType mutff_media_type(uint32_t type);
 
-MuTFFWriteFn mutff_media_type_write_fn(MuTFFMediaType type);
+MuTFFAtomWriteFn mutff_media_type_write_fn(MuTFFMediaType type);
 
-MuTFFReadFn mutff_media_type_read_fn(MuTFFMediaType type);
+MuTFFAtomReadFn mutff_media_type_read_fn(MuTFFMediaType type);
 
-MuTFFSizeFn mutff_media_type_size_fn(MuTFFMediaType type);
+MuTFFAtomSizeFn mutff_media_type_size_fn(MuTFFMediaType type);
 
 ///
 /// @brief Video sample description data

@@ -43,33 +43,21 @@
     *(n) += (offset);             \
   } while (0);
 
-static MuTFFError (*mutff_read)(mutff_file_t *, void *,
-                                unsigned int) = mutff_read_stdlib;
+static MuTFFReadFn mutff_read = (MuTFFReadFn)mutff_read_stdlib;
 
-void mutff_set_read_fn(MuTFFError (*fn)(mutff_file_t *, void *, unsigned int)) {
-  mutff_read = fn;
-}
+void mutff_set_read_fn(MuTFFReadFn fn) { mutff_read = fn; }
 
-static MuTFFError (*mutff_write)(mutff_file_t *, void *,
-                                 unsigned int) = mutff_write_stdlib;
+static MuTFFWriteFn mutff_write = (MuTFFWriteFn)mutff_write_stdlib;
 
-void mutff_set_write_fn(MuTFFError (*fn)(mutff_file_t *, void *,
-                                         unsigned int)) {
-  mutff_write = fn;
-}
+void mutff_set_write_fn(MuTFFWriteFn fn) { mutff_write = fn; }
 
-static MuTFFError (*mutff_tell)(mutff_file_t *,
-                                unsigned int *) = mutff_tell_stdlib;
+static MuTFFTellFn mutff_tell = (MuTFFTellFn)mutff_tell_stdlib;
 
-void mutff_set_tell_fn(MuTFFError (*fn)(mutff_file_t *, unsigned int *)) {
-  mutff_tell = fn;
-}
+void mutff_set_tell_fn(MuTFFTellFn fn) { mutff_tell = fn; }
 
-static MuTFFError (*mutff_seek)(mutff_file_t *, long) = mutff_seek_stdlib;
+static MuTFFSeekFn mutff_seek = (MuTFFSeekFn)mutff_seek_stdlib;
 
-void mutff_set_seek_fn(MuTFFError (*fn)(mutff_file_t *, long)) {
-  mutff_seek = fn;
-}
+void mutff_set_seek_fn(MuTFFSeekFn fn) { mutff_seek = fn; }
 
 // Convert a number from network (big) endian to host endian.
 // These must be implemented here as newlib does not provide the
@@ -1488,8 +1476,7 @@ MuTFFError mutff_read_video_sample_description(
   MuTFF_SEEK_CUR(4U);
   MuTFF_FN(mutff_read_u16, &out->frame_count);
   for (size_t i = 0; i < 32U; ++i) {
-    // @TODO: does this need a non-specific mutff_read_8 function?
-    MuTFF_FN(mutff_read_u8, &out->compressor_name[i]);
+    MuTFF_FN(mutff_read_u8, (uint8_t *)&out->compressor_name[i]);
   }
   MuTFF_FN(mutff_read_u16, &out->depth);
   MuTFF_FN(mutff_read_i16, &out->color_table_id);
@@ -4105,28 +4092,28 @@ MuTFFMediaType mutff_media_type(uint32_t type) {
   }
 }
 
-inline MuTFFWriteFn mutff_media_type_write_fn(MuTFFMediaType type) {
+inline MuTFFAtomWriteFn mutff_media_type_write_fn(MuTFFMediaType type) {
   switch (type) {
     case MuTFFMediaTypeVideo:
-      return (MuTFFWriteFn)mutff_write_video_sample_description;
+      return (MuTFFAtomWriteFn)mutff_write_video_sample_description;
     default:
       return NULL;
   }
 }
 
-inline MuTFFReadFn mutff_media_type_read_fn(MuTFFMediaType type) {
+inline MuTFFAtomReadFn mutff_media_type_read_fn(MuTFFMediaType type) {
   switch (type) {
     case MuTFFMediaTypeVideo:
-      return (MuTFFReadFn)mutff_read_video_sample_description;
+      return (MuTFFAtomReadFn)mutff_read_video_sample_description;
     default:
       return NULL;
   }
 }
 
-inline MuTFFSizeFn mutff_media_type_size_fn(MuTFFMediaType type) {
+inline MuTFFAtomSizeFn mutff_media_type_size_fn(MuTFFMediaType type) {
   switch (type) {
     case MuTFFMediaTypeVideo:
-      return (MuTFFSizeFn)mutff_video_sample_description_size;
+      return (MuTFFAtomSizeFn)mutff_video_sample_description_size;
     default:
       return NULL;
   }

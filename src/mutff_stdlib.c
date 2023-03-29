@@ -5,8 +5,7 @@
 
 #include "mutff.h"
 
-MuTFFError mutff_read_stdlib(mutff_file_t *file, void *dest,
-                             unsigned int bytes) {
+MuTFFError mutff_read_stdlib(FILE *file, void *dest, unsigned int bytes) {
   const size_t read = fread(dest, bytes, 1, file);
   if (read != 1U) {
     if (feof(file) != 0) {
@@ -17,8 +16,7 @@ MuTFFError mutff_read_stdlib(mutff_file_t *file, void *dest,
   return MuTFFErrorNone;
 }
 
-MuTFFError mutff_write_stdlib(mutff_file_t *file, void *src,
-                              unsigned int bytes) {
+MuTFFError mutff_write_stdlib(FILE *file, void *src, unsigned int bytes) {
   const size_t written = fwrite(src, bytes, 1, file);
   if (written != 1U) {
     if (feof(file) != 0) {
@@ -29,7 +27,7 @@ MuTFFError mutff_write_stdlib(mutff_file_t *file, void *src,
   return MuTFFErrorNone;
 }
 
-MuTFFError mutff_tell_stdlib(mutff_file_t *file, unsigned int *location) {
+MuTFFError mutff_tell_stdlib(FILE *file, unsigned int *location) {
   errno = 0;
   const long ret = ftell(file);
   if (errno != 0) {
@@ -42,7 +40,7 @@ MuTFFError mutff_tell_stdlib(mutff_file_t *file, unsigned int *location) {
   return MuTFFErrorNone;
 }
 
-MuTFFError mutff_seek_stdlib(mutff_file_t *file, long delta) {
+MuTFFError mutff_seek_stdlib(FILE *file, long delta) {
   const int err = fseek(file, delta, SEEK_CUR);
   if (err != 0) {
     return MuTFFErrorIOError;
