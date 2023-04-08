@@ -1,20 +1,21 @@
 ///
-/// @file      mutff.c
+/// @file      mutff_default.c
 /// @author    Frank Plowman <post@frankplowman.com>
-/// @brief     MuTFF QuickTime file format library main source file
+/// @brief     MuTFF MP4/QTFF library default driver source file
 /// @copyright 2022 Frank Plowman
 /// @license   This project is released under the GNU Public License Version 3.
 ///            For the terms of this license, see [LICENSE.md](LICENSE.md)
 ///
 
-#include "mutff.h"
+#include "mutff_default.h"
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "mutff_stdlib.h"
+#include "mutff.h"
 
 #define MuTFF_FN(func, ...)              \
   do {                                   \
@@ -42,22 +43,6 @@
     }                             \
     *(n) += (offset);             \
   } while (0);
-
-static MuTFFReadFn mutff_read = (MuTFFReadFn)mutff_read_stdlib;
-
-void mutff_set_read_fn(MuTFFReadFn fn) { mutff_read = fn; }
-
-static MuTFFWriteFn mutff_write = (MuTFFWriteFn)mutff_write_stdlib;
-
-void mutff_set_write_fn(MuTFFWriteFn fn) { mutff_write = fn; }
-
-static MuTFFTellFn mutff_tell = (MuTFFTellFn)mutff_tell_stdlib;
-
-void mutff_set_tell_fn(MuTFFTellFn fn) { mutff_tell = fn; }
-
-static MuTFFSeekFn mutff_seek = (MuTFFSeekFn)mutff_seek_stdlib;
-
-void mutff_set_seek_fn(MuTFFSeekFn fn) { mutff_seek = fn; }
 
 // Convert a number from network (big) endian to host endian.
 // These must be implemented here as newlib does not provide the
@@ -4868,3 +4853,5 @@ MuTFFError mutff_write_movie_file(mutff_file_t *fd, size_t *n,
 
   return MuTFFErrorNone;
 }
+
+// vi:sw=2:ts=2:et:fdm=marker

@@ -14,7 +14,8 @@ option(${project_name_uppercase}_BUILD_COVERAGE "Build ${PROJECT_NAME} coverage 
 option(${project_name_uppercase}_BUILD_DOCS "Build ${PROJECT_NAME} documentation" OFF)
 
 add_library(${library_name}
-    src/mutff.c
+    src/mutff_default.c
+    src/mutff_io.c
     src/mutff_stdlib.c
 )
 
@@ -24,7 +25,7 @@ target_include_directories(${library_name} PUBLIC
 )
 
 set_target_properties(${library_name} PROPERTIES
-    PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/include/mutff.h)
+    PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/include/mutff.h;${CMAKE_CURRENT_SOURCE_DIR}/include/mutff_default.h;${CMAKE_CURRENT_SOURCE_DIR}/include/mutff_stdlib.h)
 
 if(CMAKE_C_COMPILER_ID STREQUAL GNU)
     target_compile_options(${library_name} PRIVATE

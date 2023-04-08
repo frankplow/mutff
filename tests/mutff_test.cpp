@@ -6,12 +6,32 @@
 
 extern "C" {
 #include "mutff.h"
+#include "mutff_default.h"
+#include "mutff_stdlib.h"
 }
 
+// {{{1 unit tests
 #define ARR(...) \
   { __VA_ARGS__ }
 
-// {{{1 quickdraw rect unit tests
+class UnitTest : public ::testing::Test {
+ protected:
+  FILE *fd;
+  size_t bytes;
+
+  // @TODO: check test.mov opened correctly
+  void SetUp() override {
+    fd = fopen("temp.mov", "w+b");
+    mutff_set_read_fn(mutff_read_stdlib);
+    mutff_set_write_fn(mutff_write_stdlib);
+    mutff_set_tell_fn(mutff_tell_stdlib);
+    mutff_set_seek_fn(mutff_seek_stdlib);
+  }
+
+  void TearDown() override { fclose(fd); }
+};
+
+// {{{2 quickdraw rect unit tests
 static const uint32_t quickdraw_rect_test_data_size = 8;
 // clang-format off
 #define QUICKDRAW_RECT_TEST_DATA \
@@ -32,10 +52,8 @@ static const MuTFFQuickDrawRect quickdraw_rect_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteQuickDrawRect) {
+TEST_F(UnitTest, WriteQuickDrawRect) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_quickdraw_rect(fd, &bytes, &quickdraw_rect_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -59,11 +77,9 @@ static inline void expect_quickdraw_rect_eq(const MuTFFQuickDrawRect *a,
   EXPECT_EQ(a->right, b->right);
 }
 
-TEST(MuTFF, ReadQuickDrawRect) {
+TEST_F(UnitTest, ReadQuickDrawRect) {
   MuTFFError err;
-  size_t bytes;
   MuTFFQuickDrawRect rect;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(quickdraw_rect_test_data, quickdraw_rect_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_quickdraw_rect(fd, &bytes, &rect);
@@ -73,9 +89,9 @@ TEST(MuTFF, ReadQuickDrawRect) {
   expect_quickdraw_rect_eq(&rect, &quickdraw_rect_test_struct);
   EXPECT_EQ(ftell(fd), quickdraw_rect_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 quickdraw region unit tests
+// {{{2 quickdraw region unit tests
 static const uint32_t quickdraw_region_test_data_size =
     quickdraw_rect_test_data_size + 6;
 // clang-format off
@@ -95,10 +111,8 @@ static const MuTFFQuickDrawRegion quickdraw_region_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteQuickDrawRegion) {
+TEST_F(UnitTest, WriteQuickDrawRegion) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_quickdraw_region(fd, &bytes, &quickdraw_region_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -123,11 +137,9 @@ static inline void expect_quickdraw_region_eq(const MuTFFQuickDrawRegion *a,
   }
 }
 
-TEST(MuTFF, ReadQuickDrawRegion) {
+TEST_F(UnitTest, ReadQuickDrawRegion) {
   MuTFFError err;
-  size_t bytes;
   MuTFFQuickDrawRegion region;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(quickdraw_region_test_data, quickdraw_region_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_quickdraw_region(fd, &bytes, &region);
@@ -137,9 +149,9 @@ TEST(MuTFF, ReadQuickDrawRegion) {
   expect_quickdraw_region_eq(&region, &quickdraw_region_test_struct);
   EXPECT_EQ(ftell(fd), quickdraw_region_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 file type compatibility atom unit tests
+// {{{2 file type compatibility atom unit tests
 static const uint32_t ftyp_test_data_size = 20;
 // clang-format off
 #define FTYP_TEST_DATA         \
@@ -163,9 +175,7 @@ static const MuTFFFileTypeAtom ftyp_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteFileTypeAtom) {
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
+TEST_F(UnitTest, WriteFileTypeAtom) {
   const MuTFFError err =
       mutff_write_file_type_atom(fd, &bytes, &ftyp_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -197,11 +207,9 @@ static inline void expect_filetype_eq(const MuTFFFileTypeAtom *a,
   }
 }
 
-TEST(MuTFF, ReadFileTypeAtom) {
+TEST_F(UnitTest, ReadFileTypeAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFFileTypeAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(ftyp_test_data, ftyp_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_file_type_atom(fd, &bytes, &atom);
@@ -211,9 +219,9 @@ TEST(MuTFF, ReadFileTypeAtom) {
   expect_filetype_eq(&atom, &ftyp_test_struct);
   EXPECT_EQ(ftell(fd), ftyp_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 movie data atom unit tests
+// {{{2 movie data atom unit tests
 static const uint32_t mdat_test_data_size = 8;
 // clang-format off
 #define MDAT_TEST_DATA         \
@@ -231,9 +239,7 @@ static const MuTFFMovieDataAtom mdat_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteMovieDataAtom) {
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
+TEST_F(UnitTest, WriteMovieDataAtom) {
   const MuTFFError err =
       mutff_write_movie_data_atom(fd, &bytes, &mdat_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -254,11 +260,9 @@ static inline void expect_mdat_eq(const MuTFFMovieDataAtom *a,
   EXPECT_EQ(a->data_size, b->data_size);
 }
 
-TEST(MuTFF, ReadMovieDataAtom) {
+TEST_F(UnitTest, ReadMovieDataAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFMovieDataAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(mdat_test_data, mdat_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_movie_data_atom(fd, &bytes, &atom);
@@ -268,9 +272,9 @@ TEST(MuTFF, ReadMovieDataAtom) {
   expect_mdat_eq(&atom, &mdat_test_struct);
   EXPECT_EQ(ftell(fd), mdat_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 free atom unit tests
+// {{{2 free atom unit tests
 static const uint32_t free_test_data_size = 16;
 // clang-format off
 #define FREE_TEST_DATA         \
@@ -290,9 +294,7 @@ static const MuTFFFreeAtom free_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteFreeAtom) {
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
+TEST_F(UnitTest, WriteFreeAtom) {
   const MuTFFError err = mutff_write_free_atom(fd, &bytes, &free_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, free_test_data_size);
@@ -312,11 +314,9 @@ static inline void expect_free_eq(const MuTFFFreeAtom *a,
   EXPECT_EQ(a->atom_size, b->atom_size);
 }
 
-TEST(MuTFF, ReadFreeAtom) {
+TEST_F(UnitTest, ReadFreeAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFFreeAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(free_test_data, free_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_free_atom(fd, &bytes, &atom);
@@ -326,9 +326,9 @@ TEST(MuTFF, ReadFreeAtom) {
   expect_free_eq(&atom, &free_test_struct);
   EXPECT_EQ(ftell(fd), free_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 skip atom unit tests
+// {{{2 skip atom unit tests
 static const uint32_t skip_test_data_size = 16;
 // clang-format off
 #define SKIP_TEST_DATA         \
@@ -348,9 +348,7 @@ static const MuTFFSkipAtom skip_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteSkipAtom) {
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
+TEST_F(UnitTest, WriteSkipAtom) {
   const MuTFFError err = mutff_write_skip_atom(fd, &bytes, &skip_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, skip_test_data_size);
@@ -370,11 +368,9 @@ static inline void expect_skip_eq(const MuTFFSkipAtom *a,
   EXPECT_EQ(a->atom_size, b->atom_size);
 }
 
-TEST(MuTFF, ReadSkipAtom) {
+TEST_F(UnitTest, ReadSkipAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFSkipAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(skip_test_data, skip_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_skip_atom(fd, &bytes, &atom);
@@ -384,9 +380,9 @@ TEST(MuTFF, ReadSkipAtom) {
   expect_skip_eq(&atom, &skip_test_struct);
   EXPECT_EQ(ftell(fd), skip_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 wide atom unit tests
+// {{{2 wide atom unit tests
 static const uint32_t wide_test_data_size = 16;
 // clang-format off
 #define WIDE_TEST_DATA         \
@@ -406,9 +402,7 @@ static const MuTFFWideAtom wide_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteWideAtom) {
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
+TEST_F(UnitTest, WriteWideAtom) {
   const MuTFFError err = mutff_write_wide_atom(fd, &bytes, &wide_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, wide_test_data_size);
@@ -428,11 +422,9 @@ static inline void expect_wide_eq(const MuTFFWideAtom *a,
   EXPECT_EQ(a->atom_size, b->atom_size);
 }
 
-TEST(MuTFF, ReadWideAtom) {
+TEST_F(UnitTest, ReadWideAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFWideAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(wide_test_data, wide_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_wide_atom(fd, &bytes, &atom);
@@ -442,9 +434,9 @@ TEST(MuTFF, ReadWideAtom) {
   expect_wide_eq(&atom, &wide_test_struct);
   EXPECT_EQ(ftell(fd), wide_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 preview atom unit tests
+// {{{2 preview atom unit tests
 static const uint32_t pnot_test_data_size = 20;
 // clang-format off
 #define PNOT_TEST_DATA         \
@@ -469,9 +461,7 @@ static const MuTFFPreviewAtom pnot_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WritePreviewAtom) {
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
+TEST_F(UnitTest, WritePreviewAtom) {
   const MuTFFError err =
       mutff_write_preview_atom(fd, &bytes, &pnot_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -495,11 +485,9 @@ static inline void expect_pnot_eq(const MuTFFPreviewAtom *a,
   EXPECT_EQ(a->atom_index, b->atom_index);
 }
 
-TEST(MuTFF, ReadPreviewAtom) {
+TEST_F(UnitTest, ReadPreviewAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFPreviewAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(pnot_test_data, pnot_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_preview_atom(fd, &bytes, &atom);
@@ -509,9 +497,9 @@ TEST(MuTFF, ReadPreviewAtom) {
   expect_pnot_eq(&atom, &pnot_test_struct);
   EXPECT_EQ(ftell(fd), pnot_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 movie header atom unit tests
+// {{{2 movie header atom unit tests
 static const uint32_t mvhd_test_data_size = 108;
 // clang-format off
 #define MVHD_TEST_DATA                                      \
@@ -580,9 +568,7 @@ static const MuTFFMovieHeaderAtom mvhd_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteMovieHeaderAtom) {
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
+TEST_F(UnitTest, WriteMovieHeaderAtom) {
   const MuTFFError err =
       mutff_write_movie_header_atom(fd, &bytes, &mvhd_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -642,11 +628,9 @@ static inline void expect_mvhd_eq(const MuTFFMovieHeaderAtom *a,
   EXPECT_EQ(a->next_track_id, b->next_track_id);
 }
 
-TEST(MuTFF, ReadMovieHeaderAtom) {
+TEST_F(UnitTest, ReadMovieHeaderAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFMovieHeaderAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(mvhd_test_data, mvhd_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_movie_header_atom(fd, &bytes, &atom);
@@ -656,9 +640,9 @@ TEST(MuTFF, ReadMovieHeaderAtom) {
   expect_mvhd_eq(&atom, &mvhd_test_struct);
   EXPECT_EQ(ftell(fd), mvhd_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 clipping region atom unit tests
+// {{{2 clipping region atom unit tests
 static const uint32_t crgn_test_data_size = 8 + quickdraw_region_test_data_size;
 // clang-format off
 #define CRGN_TEST_DATA                      \
@@ -677,9 +661,7 @@ static const MuTFFClippingRegionAtom crgn_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteClippingRegionAtom) {
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
+TEST_F(UnitTest, WriteClippingRegionAtom) {
   const MuTFFError err =
       mutff_write_clipping_region_atom(fd, &bytes, &crgn_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -700,11 +682,9 @@ static inline void expect_crgn_eq(const MuTFFClippingRegionAtom *a,
   expect_quickdraw_region_eq(&a->region, &b->region);
 }
 
-TEST(MuTFF, ReadClippingRegionAtom) {
+TEST_F(UnitTest, ReadClippingRegionAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFClippingRegionAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(crgn_test_data, crgn_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_clipping_region_atom(fd, &bytes, &atom);
@@ -714,9 +694,9 @@ TEST(MuTFF, ReadClippingRegionAtom) {
   expect_crgn_eq(&atom, &crgn_test_struct);
   EXPECT_EQ(ftell(fd), crgn_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 clipping atom unit tests
+// {{{2 clipping atom unit tests
 static const uint32_t clip_test_data_size = 8 + crgn_test_data_size;
 // clang-format off
 #define CLIP_TEST_DATA                     \
@@ -735,9 +715,7 @@ static const MuTFFClippingAtom clip_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteClippingAtom) {
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
+TEST_F(UnitTest, WriteClippingAtom) {
   const MuTFFError err =
       mutff_write_clipping_atom(fd, &bytes, &clip_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -758,11 +736,9 @@ static inline void expect_clip_eq(const MuTFFClippingAtom *a,
   expect_crgn_eq(&a->clipping_region, &b->clipping_region);
 }
 
-TEST(MuTFF, ReadClippingAtom) {
+TEST_F(UnitTest, ReadClippingAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFClippingAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(clip_test_data, clip_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_clipping_atom(fd, &bytes, &atom);
@@ -772,9 +748,9 @@ TEST(MuTFF, ReadClippingAtom) {
   expect_clip_eq(&atom, &clip_test_struct);
   EXPECT_EQ(ftell(fd), clip_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 color table atom unit tests
+// {{{2 color table atom unit tests
 static const uint32_t ctab_test_data_size = 32;
 // clang-format off
 #define CTAB_TEST_DATA                                                      \
@@ -807,9 +783,7 @@ static const MuTFFColorTableAtom ctab_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteColorTableAtom) {
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
+TEST_F(UnitTest, WriteColorTableAtom) {
   const MuTFFError err =
       mutff_write_color_table_atom(fd, &bytes, &ctab_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -838,11 +812,9 @@ static inline void expect_ctab_eq(const MuTFFColorTableAtom *a,
   }
 }
 
-TEST(MuTFF, ReadColorTableAtom) {
+TEST_F(UnitTest, ReadColorTableAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFColorTableAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(ctab_test_data, ctab_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_color_table_atom(fd, &bytes, &atom);
@@ -852,9 +824,9 @@ TEST(MuTFF, ReadColorTableAtom) {
   expect_ctab_eq(&atom, &ctab_test_struct);
   EXPECT_EQ(ftell(fd), ctab_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 user data list entry unit tests
+// {{{2 user data list entry unit tests
 static const uint32_t udta_entry_test_data_size = 16;
 // clang-format off
 #define UDTA_ENTRY_TEST_DATA                           \
@@ -879,10 +851,8 @@ static const MuTFFUserDataListEntry udta_entry_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteUserDataListEntry) {
+TEST_F(UnitTest, WriteUserDataListEntry) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_user_data_list_entry(fd, &bytes, &udta_entry_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -906,11 +876,9 @@ static inline void expect_udta_entry_eq(const MuTFFUserDataListEntry *a,
   }
 }
 
-TEST(MuTFF, ReadUserDataListEntry) {
+TEST_F(UnitTest, ReadUserDataListEntry) {
   MuTFFError err;
-  size_t bytes;
   MuTFFUserDataListEntry atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(udta_entry_test_data, udta_entry_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_user_data_list_entry(fd, &bytes, &atom);
@@ -920,10 +888,10 @@ TEST(MuTFF, ReadUserDataListEntry) {
   expect_udta_entry_eq(&atom, &udta_entry_test_struct);
   EXPECT_EQ(ftell(fd), udta_entry_test_data_size);
 }
-// }}}1
+// }}}2
 
 // @TODO: test multiple entries
-// {{{1 user data atom unit tests
+// {{{2 user data atom unit tests
 static const uint32_t udta_test_data_size = 8 + udta_entry_test_data_size;
 // clang-format off
 #define UDTA_TEST_DATA                                  \
@@ -945,9 +913,7 @@ static const MuTFFUserDataAtom udta_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteUserDataAtom) {
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
+TEST_F(UnitTest, WriteUserDataAtom) {
   const MuTFFError err =
       mutff_write_user_data_atom(fd, &bytes, &udta_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -973,11 +939,9 @@ static inline void expect_udta_eq(const MuTFFUserDataAtom *a,
   }
 }
 
-TEST(MuTFF, ReadUserDataAtom) {
+TEST_F(UnitTest, ReadUserDataAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFUserDataAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(udta_test_data, udta_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_user_data_atom(fd, &bytes, &atom);
@@ -987,9 +951,9 @@ TEST(MuTFF, ReadUserDataAtom) {
   expect_udta_eq(&atom, &udta_test_struct);
   EXPECT_EQ(ftell(fd), udta_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 track header atom unit tests
+// {{{2 track header atom unit tests
 static const uint32_t tkhd_test_data_size = 92;
 // clang-format off
 #define TKHD_TEST_DATA                                  \
@@ -1052,10 +1016,8 @@ static const MuTFFTrackHeaderAtom tkhd_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteTrackHeaderAtom) {
+TEST_F(UnitTest, WriteTrackHeaderAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_track_header_atom(fd, &bytes, &tkhd_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -1089,11 +1051,9 @@ static inline void expect_tkhd_eq(const MuTFFTrackHeaderAtom *a,
   EXPECT_EQ(a->track_height.fractional, b->track_height.fractional);
 }
 
-TEST(MuTFF, ReadTrackHeaderAtom) {
+TEST_F(UnitTest, ReadTrackHeaderAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFTrackHeaderAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(tkhd_test_data, tkhd_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_track_header_atom(fd, &bytes, &atom);
@@ -1103,9 +1063,9 @@ TEST(MuTFF, ReadTrackHeaderAtom) {
   expect_tkhd_eq(&atom, &tkhd_test_struct);
   EXPECT_EQ(ftell(fd), tkhd_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 track clean aperture dimensions atom unit tests
+// {{{2 track clean aperture dimensions atom unit tests
 static const uint32_t clef_test_data_size = 20;
 // clang-format off
 #define CLEF_TEST_DATA                        \
@@ -1130,10 +1090,8 @@ static const MuTFFTrackCleanApertureDimensionsAtom clef_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteTrackCleanApertureDimensionsAtom) {
+TEST_F(UnitTest, WriteTrackCleanApertureDimensionsAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_track_clean_aperture_dimensions_atom(
       fd, &bytes, &clef_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -1160,11 +1118,9 @@ static inline void expect_clef_eq(
   EXPECT_EQ(a->height.fractional, b->height.fractional);
 }
 
-TEST(MuTFF, ReadTrackCleanApertureDimensionsAtom) {
+TEST_F(UnitTest, ReadTrackCleanApertureDimensionsAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFTrackCleanApertureDimensionsAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(clef_test_data, clef_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_track_clean_aperture_dimensions_atom(fd, &bytes, &atom);
@@ -1174,9 +1130,9 @@ TEST(MuTFF, ReadTrackCleanApertureDimensionsAtom) {
   expect_clef_eq(&atom, &clef_test_struct);
   EXPECT_EQ(ftell(fd), clef_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 track production aperture dimensions atom unit tests
+// {{{2 track production aperture dimensions atom unit tests
 static const uint32_t prof_test_data_size = 20;
 // clang-format off
 #define PROF_TEST_DATA                        \
@@ -1201,10 +1157,8 @@ static const MuTFFTrackProductionApertureDimensionsAtom prof_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteTrackProductionApertureDimensionsAtom) {
+TEST_F(UnitTest, WriteTrackProductionApertureDimensionsAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_track_production_aperture_dimensions_atom(
       fd, &bytes, &prof_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -1231,11 +1185,9 @@ static inline void expect_prof_eq(
   EXPECT_EQ(a->height.fractional, b->height.fractional);
 }
 
-TEST(MuTFF, ReadTrackProductionApertureDimensionsAtom) {
+TEST_F(UnitTest, ReadTrackProductionApertureDimensionsAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFTrackProductionApertureDimensionsAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(prof_test_data, prof_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_track_production_aperture_dimensions_atom(fd, &bytes, &atom);
@@ -1245,9 +1197,9 @@ TEST(MuTFF, ReadTrackProductionApertureDimensionsAtom) {
   expect_prof_eq(&atom, &prof_test_struct);
   EXPECT_EQ(ftell(fd), prof_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 track encoded pixels dimensions atom unit tests
+// {{{2 track encoded pixels dimensions atom unit tests
 static const uint32_t enof_test_data_size = 20;
 // clang-format off
 #define ENOF_TEST_DATA                        \
@@ -1272,10 +1224,8 @@ static const MuTFFTrackEncodedPixelsDimensionsAtom enof_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteTrackEncodedPixelsDimensionsAtom) {
+TEST_F(UnitTest, WriteTrackEncodedPixelsDimensionsAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_track_encoded_pixels_dimensions_atom(
       fd, &bytes, &enof_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -1302,11 +1252,9 @@ static inline void expect_enof_eq(
   EXPECT_EQ(a->height.fractional, b->height.fractional);
 }
 
-TEST(MuTFF, ReadTrackEncodedPixelsDimensionsAtom) {
+TEST_F(UnitTest, ReadTrackEncodedPixelsDimensionsAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFTrackEncodedPixelsDimensionsAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(enof_test_data, enof_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_track_encoded_pixels_dimensions_atom(fd, &bytes, &atom);
@@ -1316,9 +1264,9 @@ TEST(MuTFF, ReadTrackEncodedPixelsDimensionsAtom) {
   expect_enof_eq(&atom, &enof_test_struct);
   EXPECT_EQ(ftell(fd), enof_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 track aperture mode dimensions atom unit tests
+// {{{2 track aperture mode dimensions atom unit tests
 static const uint32_t tapt_test_data_size = 68;
 // clang-format off
 #define TAPT_TEST_DATA                     \
@@ -1341,10 +1289,8 @@ static const MuTFFTrackApertureModeDimensionsAtom tapt_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteTrackApertureModeDimensionsAtom) {
+TEST_F(UnitTest, WriteTrackApertureModeDimensionsAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_track_aperture_mode_dimensions_atom(
       fd, &bytes, &tapt_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -1371,11 +1317,9 @@ static inline void expect_tapt_eq(
                  &b->track_encoded_pixels_dimensions);
 }
 
-TEST(MuTFF, ReadTrackApertureModeDimensionsAtom) {
+TEST_F(UnitTest, ReadTrackApertureModeDimensionsAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFTrackApertureModeDimensionsAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(tapt_test_data, tapt_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_track_aperture_mode_dimensions_atom(fd, &bytes, &atom);
@@ -1385,9 +1329,9 @@ TEST(MuTFF, ReadTrackApertureModeDimensionsAtom) {
   expect_tapt_eq(&atom, &tapt_test_struct);
   EXPECT_EQ(ftell(fd), tapt_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 video sample description unit tests
+// {{{2 video sample description unit tests
 static const uint32_t video_sample_desc_test_data_size = 70;
 // clang-format off
 #define VIDEO_SAMPLE_DESC_TEST_DATA                      \
@@ -1435,10 +1379,8 @@ static const MuTFFVideoSampleDescription video_sample_desc_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteVideoSampleDescription) {
+TEST_F(UnitTest, WriteVideoSampleDescription) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_video_sample_description(
       fd, &bytes, &video_sample_desc_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -1478,11 +1420,9 @@ static inline void expect_video_sample_desc_eq(
   EXPECT_EQ(a->color_table_id, b->color_table_id);
 }
 
-TEST(MuTFF, ReadVideoSampleDescription) {
+TEST_F(UnitTest, ReadVideoSampleDescription) {
   MuTFFError err;
-  size_t bytes;
   MuTFFVideoSampleDescription atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(video_sample_desc_test_data, video_sample_desc_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_video_sample_description(fd, &bytes, &atom);
@@ -1492,9 +1432,9 @@ TEST(MuTFF, ReadVideoSampleDescription) {
   expect_video_sample_desc_eq(&atom, &video_sample_desc_test_struct);
   EXPECT_EQ(ftell(fd), video_sample_desc_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 sample description unit tests
+// {{{2 sample description unit tests
 static const uint32_t sample_desc_test_data_size =
     16 + video_sample_desc_test_data_size;
 // clang-format off
@@ -1518,10 +1458,8 @@ static const MuTFFSampleDescription sample_desc_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteSampleDescription) {
+TEST_F(UnitTest, WriteSampleDescription) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_sample_description(fd, &bytes, &sample_desc_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -1544,11 +1482,9 @@ static inline void expect_sample_desc_eq(const MuTFFSampleDescription *a,
   // @TODO: assert media-specific data is equal
 }
 
-TEST(MuTFF, ReadSampleDescription) {
+TEST_F(UnitTest, ReadSampleDescription) {
   MuTFFError err;
-  size_t bytes;
   MuTFFSampleDescription atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(sample_desc_test_data, sample_desc_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_sample_description(fd, &bytes, &atom);
@@ -1558,9 +1494,9 @@ TEST(MuTFF, ReadSampleDescription) {
   expect_sample_desc_eq(&atom, &sample_desc_test_struct);
   EXPECT_EQ(ftell(fd), sample_desc_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 compressed matte atom unit tests
+// {{{2 compressed matte atom unit tests
 static const uint32_t kmat_test_data_size = 12 + sample_desc_test_data_size + 4;
 // clang-format off
 #define KMAT_TEST_DATA                                    \
@@ -1588,10 +1524,8 @@ static const MuTFFCompressedMatteAtom kmat_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteCompressedMatteAtom) {
+TEST_F(UnitTest, WriteCompressedMatteAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_compressed_matte_atom(fd, &bytes, &kmat_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -1622,11 +1556,9 @@ static inline void expect_kmat_eq(const MuTFFCompressedMatteAtom *a,
   }
 }
 
-TEST(MuTFF, ReadCompressedMatteAtom) {
+TEST_F(UnitTest, ReadCompressedMatteAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFCompressedMatteAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(kmat_test_data, kmat_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_compressed_matte_atom(fd, &bytes, &atom);
@@ -1636,9 +1568,9 @@ TEST(MuTFF, ReadCompressedMatteAtom) {
   /* expect_kmat_eq(&atom, &kmat_test_struct); */
   /* EXPECT_EQ(ftell(fd), kmat_test_data_size); */
 }
-// }}}1
+// }}}2
 
-// {{{1 track matte atom unit tests
+// {{{2 track matte atom unit tests
 static const uint32_t matt_test_data_size = 8 + kmat_test_data_size;
 // clang-format off
 #define MATT_TEST_DATA                     \
@@ -1657,10 +1589,8 @@ static const MuTFFTrackMatteAtom matt_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteTrackMatteAtom) {
+TEST_F(UnitTest, WriteTrackMatteAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_track_matte_atom(fd, &bytes, &matt_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -1681,11 +1611,9 @@ static inline void expect_matt_eq(const MuTFFTrackMatteAtom *a,
   expect_kmat_eq(&a->compressed_matte_atom, &b->compressed_matte_atom);
 }
 
-TEST(MuTFF, ReadTrackMatteAtom) {
+TEST_F(UnitTest, ReadTrackMatteAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFTrackMatteAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(matt_test_data, matt_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_track_matte_atom(fd, &bytes, &atom);
@@ -1695,9 +1623,9 @@ TEST(MuTFF, ReadTrackMatteAtom) {
   expect_matt_eq(&atom, &matt_test_struct);
   EXPECT_EQ(ftell(fd), matt_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 edit list entry unit tests
+// {{{2 edit list entry unit tests
 static const uint32_t edit_list_entry_test_data_size = 12;
 // clang-format off
 #define EDIT_LIST_ENTRY_TEST_DATA                 \
@@ -1716,10 +1644,8 @@ static const MuTFFEditListEntry edit_list_entry_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteEditListEntry) {
+TEST_F(UnitTest, WriteEditListEntry) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_edit_list_entry(fd, &bytes, &edit_list_entry_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -1743,11 +1669,9 @@ static inline void expect_edit_list_entry_eq(const MuTFFEditListEntry *a,
   EXPECT_EQ(a->media_rate.fractional, b->media_rate.fractional);
 }
 
-TEST(MuTFF, ReadEditListEntry) {
+TEST_F(UnitTest, ReadEditListEntry) {
   MuTFFError err;
-  size_t bytes;
   MuTFFEditListEntry atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(edit_list_entry_test_data, edit_list_entry_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_edit_list_entry(fd, &bytes, &atom);
@@ -1757,10 +1681,10 @@ TEST(MuTFF, ReadEditListEntry) {
   expect_edit_list_entry_eq(&atom, &edit_list_entry_test_struct);
   EXPECT_EQ(ftell(fd), edit_list_entry_test_data_size);
 }
-// }}}1
+// }}}2
 
 // @TODO: test multiple entries
-// {{{1 edit list atom unit tests
+// {{{2 edit list atom unit tests
 static const uint32_t elst_test_data_size = 16 + edit_list_entry_test_data_size;
 // clang-format off
 #define ELST_TEST_DATA                                  \
@@ -1787,10 +1711,8 @@ static const MuTFFEditListAtom elst_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteEditListAtom) {
+TEST_F(UnitTest, WriteEditListAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_edit_list_atom(fd, &bytes, &elst_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -1819,11 +1741,9 @@ static inline void expect_elst_eq(const MuTFFEditListAtom *a,
   }
 }
 
-TEST(MuTFF, ReadEditListAtom) {
+TEST_F(UnitTest, ReadEditListAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFEditListAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(elst_test_data, elst_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_edit_list_atom(fd, &bytes, &atom);
@@ -1832,9 +1752,9 @@ TEST(MuTFF, ReadEditListAtom) {
 
   EXPECT_EQ(ftell(fd), elst_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 edit atom unit tests
+// {{{2 edit atom unit tests
 static const uint32_t edts_test_data_size = 8 + elst_test_data_size;
 // clang-format off
 #define EDTS_TEST_DATA                     \
@@ -1853,10 +1773,8 @@ static const MuTFFEditAtom edts_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteEditAtom) {
+TEST_F(UnitTest, WriteEditAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_edit_atom(fd, &bytes, &edts_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, edts_test_data_size);
@@ -1876,11 +1794,9 @@ static inline void expect_edts_eq(const MuTFFEditAtom *a,
   expect_elst_eq(&a->edit_list_atom, &b->edit_list_atom);
 }
 
-TEST(MuTFF, ReadEditAtom) {
+TEST_F(UnitTest, ReadEditAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFEditAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(edts_test_data, edts_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_edit_atom(fd, &bytes, &atom);
@@ -1890,9 +1806,9 @@ TEST(MuTFF, ReadEditAtom) {
   expect_edts_eq(&atom, &edts_test_struct);
   EXPECT_EQ(ftell(fd), edts_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 track reference type atom unit tests
+// {{{2 track reference type atom unit tests
 static const uint32_t track_ref_atom_test_data_size = 16;
 // clang-format off
 #define TRACK_REF_TEST_DATA                                  \
@@ -1916,10 +1832,8 @@ static const MuTFFTrackReferenceTypeAtom track_ref_atom_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteTrackReferenceTypeAtom) {
+TEST_F(UnitTest, WriteTrackReferenceTypeAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_track_reference_type_atom(
       fd, &bytes, &track_ref_atom_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -1947,11 +1861,9 @@ static inline void expect_track_ref_eq(const MuTFFTrackReferenceTypeAtom *a,
   }
 }
 
-TEST(MuTFF, ReadTrackReferenceTypeAtom) {
+TEST_F(UnitTest, ReadTrackReferenceTypeAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFTrackReferenceTypeAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(track_ref_atom_test_data, track_ref_atom_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_track_reference_type_atom(fd, &bytes, &atom);
@@ -1961,10 +1873,10 @@ TEST(MuTFF, ReadTrackReferenceTypeAtom) {
   expect_track_ref_eq(&atom, &track_ref_atom_test_struct);
   EXPECT_EQ(ftell(fd), track_ref_atom_test_data_size);
 }
-// }}}1
+// }}}2
 
 // @TODO: test multiple entries
-// {{{1 track reference atom unit tests
+// {{{2 track reference atom unit tests
 static const uint32_t tref_test_data_size = 8 + track_ref_atom_test_data_size;
 // clang-format off
 #define TREF_TEST_DATA                     \
@@ -1986,10 +1898,8 @@ static const MuTFFTrackReferenceAtom tref_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteTrackReferenceAtom) {
+TEST_F(UnitTest, WriteTrackReferenceAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_track_reference_atom(fd, &bytes, &tref_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -2018,11 +1928,9 @@ static inline void expect_tref_eq(const MuTFFTrackReferenceAtom *a,
   }
 }
 
-TEST(MuTFF, ReadTrackReferenceAtom) {
+TEST_F(UnitTest, ReadTrackReferenceAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFTrackReferenceAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(tref_test_data, tref_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_track_reference_atom(fd, &bytes, &atom);
@@ -2032,9 +1940,9 @@ TEST(MuTFF, ReadTrackReferenceAtom) {
   expect_tref_eq(&atom, &tref_test_struct);
   EXPECT_EQ(ftell(fd), tref_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 track exclude from autoselection atom unit tests
+// {{{2 track exclude from autoselection atom unit tests
 static const uint32_t txas_test_data_size = 8;
 // clang-format off
 #define TXAS_TEST_DATA                     \
@@ -2051,10 +1959,8 @@ static const MuTFFTrackExcludeFromAutoselectionAtom txas_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteTrackExcludeFromAutoselectionAtom) {
+TEST_F(UnitTest, WriteTrackExcludeFromAutoselectionAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_track_exclude_from_autoselection_atom(
       fd, &bytes, &txas_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -2074,11 +1980,9 @@ static inline void expect_txas_eq(
     const MuTFFTrackExcludeFromAutoselectionAtom *a,
     const MuTFFTrackExcludeFromAutoselectionAtom *b) {}
 
-TEST(MuTFF, ReadTrackExcludeFromAutoselectionAtom) {
+TEST_F(UnitTest, ReadTrackExcludeFromAutoselectionAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFTrackExcludeFromAutoselectionAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(txas_test_data, txas_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_track_exclude_from_autoselection_atom(fd, &bytes, &atom);
@@ -2088,9 +1992,9 @@ TEST(MuTFF, ReadTrackExcludeFromAutoselectionAtom) {
   expect_txas_eq(&atom, &txas_test_struct);
   EXPECT_EQ(ftell(fd), txas_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 track load settings atom unit tests
+// {{{2 track load settings atom unit tests
 static const uint32_t load_test_data_size = 24;
 // clang-format off
 #define LOAD_TEST_DATA                                   \
@@ -2115,10 +2019,8 @@ static const MuTFFTrackLoadSettingsAtom load_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteTrackLoadSettingsAtom) {
+TEST_F(UnitTest, WriteTrackLoadSettingsAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_track_load_settings_atom(fd, &bytes, &load_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -2142,11 +2044,9 @@ static inline void expect_load_eq(const MuTFFTrackLoadSettingsAtom *a,
   EXPECT_EQ(a->default_hints, b->default_hints);
 }
 
-TEST(MuTFF, ReadTrackLoadSettingsAtom) {
+TEST_F(UnitTest, ReadTrackLoadSettingsAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFTrackLoadSettingsAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(load_test_data, load_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_track_load_settings_atom(fd, &bytes, &atom);
@@ -2156,9 +2056,9 @@ TEST(MuTFF, ReadTrackLoadSettingsAtom) {
   expect_load_eq(&atom, &load_test_struct);
   EXPECT_EQ(ftell(fd), load_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 object id atom unit tests
+// {{{2 object id atom unit tests
 static const uint32_t obid_test_data_size = 12;
 // clang-format off
 #define OBID_TEST_DATA                          \
@@ -2177,10 +2077,8 @@ static const MuTFFObjectIDAtom obid_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteObjectIDAtom) {
+TEST_F(UnitTest, WriteObjectIDAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_object_id_atom(fd, &bytes, &obid_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -2201,11 +2099,9 @@ static inline void expect_obid_eq(const MuTFFObjectIDAtom *a,
   EXPECT_EQ(a->object_id, b->object_id);
 }
 
-TEST(MuTFF, ReadObjectIDAtom) {
+TEST_F(UnitTest, ReadObjectIDAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFObjectIDAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(obid_test_data, obid_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_object_id_atom(fd, &bytes, &atom);
@@ -2215,9 +2111,9 @@ TEST(MuTFF, ReadObjectIDAtom) {
   expect_obid_eq(&atom, &obid_test_struct);
   EXPECT_EQ(ftell(fd), obid_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 input type atom unit tests
+// {{{2 input type atom unit tests
 static const uint32_t ty_test_data_size = 12;
 // clang-format off
 #define TY_TEST_DATA                           \
@@ -2235,10 +2131,8 @@ static const MuTFFInputTypeAtom ty_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteInputTypeAtom) {
+TEST_F(UnitTest, WriteInputTypeAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_input_type_atom(fd, &bytes, &ty_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -2259,11 +2153,9 @@ static inline void expect_ty_eq(const MuTFFInputTypeAtom *a,
   EXPECT_EQ(a->input_type, b->input_type);
 }
 
-TEST(MuTFF, ReadInputTypeAtom) {
+TEST_F(UnitTest, ReadInputTypeAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFInputTypeAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(ty_test_data, ty_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_input_type_atom(fd, &bytes, &atom);
@@ -2273,9 +2165,9 @@ TEST(MuTFF, ReadInputTypeAtom) {
   expect_ty_eq(&atom, &ty_test_struct);
   EXPECT_EQ(ftell(fd), ty_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 track input atom unit tests
+// {{{2 track input atom unit tests
 static const uint32_t in_test_data_size =
     20 + ty_test_data_size + obid_test_data_size;
 // clang-format off
@@ -2303,10 +2195,8 @@ static const MuTFFTrackInputAtom in_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteTrackInputAtom) {
+TEST_F(UnitTest, WriteTrackInputAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_track_input_atom(fd, &bytes, &in_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -2335,11 +2225,9 @@ static inline void expect_in_eq(const MuTFFTrackInputAtom *a,
   }
 }
 
-TEST(MuTFF, ReadTrackInputAtom) {
+TEST_F(UnitTest, ReadTrackInputAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFTrackInputAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(in_test_data, in_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_track_input_atom(fd, &bytes, &atom);
@@ -2349,10 +2237,10 @@ TEST(MuTFF, ReadTrackInputAtom) {
   expect_in_eq(&atom, &in_test_struct);
   EXPECT_EQ(ftell(fd), in_test_data_size);
 }
-// }}}1
+// }}}2
 
 // @TODO: test multiple entries
-// {{{1 track input map atom unit tests
+// {{{2 track input map atom unit tests
 static const uint32_t imap_test_data_size = 8 + in_test_data_size;
 // clang-format off
 #define IMAP_TEST_DATA                     \
@@ -2374,10 +2262,8 @@ static const MuTFFTrackInputMapAtom imap_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteTrackInputMapAtom) {
+TEST_F(UnitTest, WriteTrackInputMapAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_track_input_map_atom(fd, &bytes, &imap_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -2405,11 +2291,9 @@ static inline void expect_imap_eq(const MuTFFTrackInputMapAtom *a,
   }
 }
 
-TEST(MuTFF, ReadTrackInputMapAtom) {
+TEST_F(UnitTest, ReadTrackInputMapAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFTrackInputMapAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(imap_test_data, imap_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_track_input_map_atom(fd, &bytes, &atom);
@@ -2419,9 +2303,9 @@ TEST(MuTFF, ReadTrackInputMapAtom) {
   expect_imap_eq(&atom, &imap_test_struct);
   EXPECT_EQ(ftell(fd), imap_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 media header atom unit tests
+// {{{2 media header atom unit tests
 static const uint32_t mdhd_test_data_size = 32;
 // clang-format off
 #define MDHD_TEST_DATA                                  \
@@ -2454,10 +2338,8 @@ static const MuTFFMediaHeaderAtom mdhd_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteMediaHeaderAtom) {
+TEST_F(UnitTest, WriteMediaHeaderAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_media_header_atom(fd, &bytes, &mdhd_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -2485,11 +2367,9 @@ static inline void expect_mdhd_eq(const MuTFFMediaHeaderAtom *a,
   EXPECT_EQ(a->quality, b->quality);
 }
 
-TEST(MuTFF, ReadMediaHeaderAtom) {
+TEST_F(UnitTest, ReadMediaHeaderAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFMediaHeaderAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(mdhd_test_data, mdhd_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_media_header_atom(fd, &bytes, &atom);
@@ -2499,9 +2379,9 @@ TEST(MuTFF, ReadMediaHeaderAtom) {
   expect_mdhd_eq(&atom, &mdhd_test_struct);
   EXPECT_EQ(ftell(fd), mdhd_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 extended language tag atom unit tests
+// {{{2 extended language tag atom unit tests
 static const uint32_t elng_test_data_size = 18;
 // clang-format off
 #define ELNG_TEST_DATA                                        \
@@ -2524,10 +2404,8 @@ static const MuTFFExtendedLanguageTagAtom elng_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteExtendedLanguageTagAtom) {
+TEST_F(UnitTest, WriteExtendedLanguageTagAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_extended_language_tag_atom(fd, &bytes, &elng_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -2550,11 +2428,9 @@ static inline void expect_elng_eq(const MuTFFExtendedLanguageTagAtom *a,
   EXPECT_STREQ(a->language_tag_string, b->language_tag_string);
 }
 
-TEST(MuTFF, ReadExtendedLanguageTagAtom) {
+TEST_F(UnitTest, ReadExtendedLanguageTagAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFExtendedLanguageTagAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(elng_test_data, elng_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_extended_language_tag_atom(fd, &bytes, &atom);
@@ -2564,9 +2440,9 @@ TEST(MuTFF, ReadExtendedLanguageTagAtom) {
   expect_elng_eq(&atom, &elng_test_struct);
   EXPECT_EQ(ftell(fd), elng_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 handler reference atom unit tests
+// {{{2 handler reference atom unit tests
 static const uint32_t hdlr_test_data_size = 36;
 // clang-format off
 #define HDLR_TEST_DATA                                       \
@@ -2599,10 +2475,8 @@ static const MuTFFHandlerReferenceAtom hdlr_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteHandlerReferenceAtom) {
+TEST_F(UnitTest, WriteHandlerReferenceAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_handler_reference_atom(fd, &bytes, &hdlr_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -2630,11 +2504,9 @@ static inline void expect_hdlr_eq(const MuTFFHandlerReferenceAtom *a,
   EXPECT_STREQ(a->component_name, b->component_name);
 }
 
-TEST(MuTFF, ReadHandlerReferenceAtom) {
+TEST_F(UnitTest, ReadHandlerReferenceAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFHandlerReferenceAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(hdlr_test_data, hdlr_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_handler_reference_atom(fd, &bytes, &atom);
@@ -2644,9 +2516,9 @@ TEST(MuTFF, ReadHandlerReferenceAtom) {
   expect_hdlr_eq(&atom, &hdlr_test_struct);
   EXPECT_EQ(ftell(fd), hdlr_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 data reference unit tests
+// {{{2 data reference unit tests
 static const uint32_t data_ref_test_data_size = 16;
 // clang-format off
 #define DATA_REF_TEST_DATA                        \
@@ -2673,10 +2545,8 @@ static const MuTFFDataReference data_ref_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteDataReference) {
+TEST_F(UnitTest, WriteDataReference) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_data_reference(fd, &bytes, &data_ref_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -2705,11 +2575,9 @@ static inline void expect_data_ref_eq(const MuTFFDataReference *a,
   }
 }
 
-TEST(MuTFF, ReadDataReference) {
+TEST_F(UnitTest, ReadDataReference) {
   MuTFFError err;
-  size_t bytes;
   MuTFFDataReference ref;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(data_ref_test_data, data_ref_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_data_reference(fd, &bytes, &ref);
@@ -2719,10 +2587,10 @@ TEST(MuTFF, ReadDataReference) {
   expect_data_ref_eq(&ref, &data_ref_test_struct);
   EXPECT_EQ(ftell(fd), data_ref_test_data_size);
 }
-// }}}1
+// }}}2
 
 // @TODO: test multiple entries
-// {{{1 data reference atom unit tests
+// {{{2 data reference atom unit tests
 static const uint32_t dref_test_data_size = 16 + data_ref_test_data_size;
 // clang-format off
 #define DREF_TEST_DATA                                  \
@@ -2749,10 +2617,8 @@ static const MuTFFDataReferenceAtom dref_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteDataReferenceAtom) {
+TEST_F(UnitTest, WriteDataReferenceAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_data_reference_atom(fd, &bytes, &dref_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -2781,11 +2647,9 @@ static inline void expect_dref_eq(const MuTFFDataReferenceAtom *a,
   }
 }
 
-TEST(MuTFF, ReadDataReferenceAtom) {
+TEST_F(UnitTest, ReadDataReferenceAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFDataReferenceAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(dref_test_data, dref_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_data_reference_atom(fd, &bytes, &atom);
@@ -2795,9 +2659,9 @@ TEST(MuTFF, ReadDataReferenceAtom) {
   expect_dref_eq(&atom, &dref_test_struct);
   EXPECT_EQ(ftell(fd), dref_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 data information atom unit tests
+// {{{2 data information atom unit tests
 static const uint32_t dinf_test_data_size = 8 + dref_test_data_size;
 // clang-format off
 #define DINF_TEST_DATA                     \
@@ -2816,10 +2680,8 @@ static const MuTFFDataInformationAtom dinf_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteDataInformationAtom) {
+TEST_F(UnitTest, WriteDataInformationAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_data_information_atom(fd, &bytes, &dinf_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -2840,11 +2702,9 @@ static inline void expect_dinf_eq(const MuTFFDataInformationAtom *a,
   expect_dref_eq(&a->data_reference, &b->data_reference);
 }
 
-TEST(MuTFF, ReadDataInformationAtom) {
+TEST_F(UnitTest, ReadDataInformationAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFDataInformationAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(dinf_test_data, dinf_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_data_information_atom(fd, &bytes, &atom);
@@ -2854,10 +2714,10 @@ TEST(MuTFF, ReadDataInformationAtom) {
   expect_dinf_eq(&atom, &dinf_test_struct);
   EXPECT_EQ(ftell(fd), dinf_test_data_size);
 }
-// }}}1
+// }}}2
 
 // @TODO: test multiple entries
-// {{{1 sample description atom unit tests
+// {{{2 sample description atom unit tests
 static const uint32_t stsd_test_data_size = 16 + sample_desc_test_data_size;
 // clang-format off
 #define STSD_TEST_DATA                                           \
@@ -2884,10 +2744,8 @@ static const MuTFFSampleDescriptionAtom stsd_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteSampleDescriptionAtom) {
+TEST_F(UnitTest, WriteSampleDescriptionAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_sample_description_atom(fd, &bytes, &stsd_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -2917,11 +2775,9 @@ static inline void expect_stsd_eq(const MuTFFSampleDescriptionAtom *a,
   }
 }
 
-TEST(MuTFF, ReadSampleDescriptionAtom) {
+TEST_F(UnitTest, ReadSampleDescriptionAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFSampleDescriptionAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(stsd_test_data, stsd_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_sample_description_atom(fd, &bytes, &atom);
@@ -2931,9 +2787,9 @@ TEST(MuTFF, ReadSampleDescriptionAtom) {
   expect_stsd_eq(&atom, &stsd_test_struct);
   EXPECT_EQ(ftell(fd), stsd_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 time to sample table entry unit tests
+// {{{2 time to sample table entry unit tests
 static const uint32_t stts_entry_test_data_size = 8;
 // clang-format off
 #define STTS_ENTRY_TEST_DATA                       \
@@ -2949,10 +2805,8 @@ static const MuTFFTimeToSampleTableEntry stts_entry_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteTimeToSampleTableEntry) {
+TEST_F(UnitTest, WriteTimeToSampleTableEntry) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_time_to_sample_table_entry(
       fd, &bytes, &stts_entry_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -2974,11 +2828,9 @@ static inline void expect_stts_entry_eq(const MuTFFTimeToSampleTableEntry *a,
   EXPECT_EQ(a->sample_duration, b->sample_duration);
 }
 
-TEST(MuTFF, ReadTimeToSampleTableEntry) {
+TEST_F(UnitTest, ReadTimeToSampleTableEntry) {
   MuTFFError err;
-  size_t bytes;
   MuTFFTimeToSampleTableEntry entry;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(stts_entry_test_data, stts_entry_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_time_to_sample_table_entry(fd, &bytes, &entry);
@@ -2988,10 +2840,10 @@ TEST(MuTFF, ReadTimeToSampleTableEntry) {
   expect_stts_entry_eq(&entry, &stts_entry_test_struct);
   EXPECT_EQ(ftell(fd), stts_entry_test_data_size);
 }
-// }}}1
+// }}}2
 
 // @TODO: test multiple entries
-// {{{1 time-to-sample atom unit tests
+// {{{2 time-to-sample atom unit tests
 static const uint32_t stts_test_data_size = 16 + stts_entry_test_data_size;
 // clang-format off
 #define STTS_TEST_DATA                                  \
@@ -3018,10 +2870,8 @@ static const MuTFFTimeToSampleAtom stts_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteTimeToSampleAtom) {
+TEST_F(UnitTest, WriteTimeToSampleAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_time_to_sample_atom(fd, &bytes, &stts_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -3051,11 +2901,9 @@ static inline void expect_stts_eq(const MuTFFTimeToSampleAtom *a,
   }
 }
 
-TEST(MuTFF, ReadTimeToSampleAtom) {
+TEST_F(UnitTest, ReadTimeToSampleAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFTimeToSampleAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(stts_test_data, stts_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_time_to_sample_atom(fd, &bytes, &atom);
@@ -3065,9 +2913,9 @@ TEST(MuTFF, ReadTimeToSampleAtom) {
   expect_stts_eq(&atom, &stts_test_struct);
   EXPECT_EQ(ftell(fd), stts_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 composition offset table entry unit tests
+// {{{2 composition offset table entry unit tests
 static const uint32_t ctts_entry_test_data_size = 8;
 // clang-format off
 #define CTTS_ENTRY_TEST_DATA                          \
@@ -3083,10 +2931,8 @@ static const MuTFFCompositionOffsetTableEntry ctts_entry_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteCompositionOffsetTableEntry) {
+TEST_F(UnitTest, WriteCompositionOffsetTableEntry) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_composition_offset_table_entry(
       fd, &bytes, &ctts_entry_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -3109,11 +2955,9 @@ static inline void expect_ctts_entry_eq(
   EXPECT_EQ(a->composition_offset, b->composition_offset);
 }
 
-TEST(MuTFF, ReadCompositionOffsetTableEntry) {
+TEST_F(UnitTest, ReadCompositionOffsetTableEntry) {
   MuTFFError err;
-  size_t bytes;
   MuTFFCompositionOffsetTableEntry entry;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(ctts_entry_test_data, ctts_entry_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_composition_offset_table_entry(fd, &bytes, &entry);
@@ -3123,10 +2967,10 @@ TEST(MuTFF, ReadCompositionOffsetTableEntry) {
   expect_ctts_entry_eq(&entry, &ctts_entry_test_struct);
   EXPECT_EQ(ftell(fd), ctts_entry_test_data_size);
 }
-// }}}1
+// }}}2
 
 // @TODO: test multiple entries
-// {{{1 composition offset atom unit tests
+// {{{2 composition offset atom unit tests
 static const uint32_t ctts_test_data_size = 16 + ctts_entry_test_data_size;
 // clang-format off
 #define CTTS_TEST_DATA                                  \
@@ -3153,10 +2997,8 @@ static const MuTFFCompositionOffsetAtom ctts_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteCompositionOffsetAtom) {
+TEST_F(UnitTest, WriteCompositionOffsetAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_composition_offset_atom(fd, &bytes, &ctts_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -3185,11 +3027,9 @@ static inline void expect_ctts_eq(const MuTFFCompositionOffsetAtom *a,
   }
 }
 
-TEST(MuTFF, ReadCompositionOffsetAtom) {
+TEST_F(UnitTest, ReadCompositionOffsetAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFCompositionOffsetAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(ctts_test_data, ctts_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_composition_offset_atom(fd, &bytes, &atom);
@@ -3199,9 +3039,9 @@ TEST(MuTFF, ReadCompositionOffsetAtom) {
   expect_ctts_eq(&atom, &ctts_test_struct);
   EXPECT_EQ(ftell(fd), ctts_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 composition shift least greatest atom unit tests
+// {{{2 composition shift least greatest atom unit tests
 static const uint32_t cslg_test_data_size = 32;
 // clang-format off
 #define CSLG_TEST_DATA                                                           \
@@ -3232,10 +3072,8 @@ static const MuTFFCompositionShiftLeastGreatestAtom cslg_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteCompositionShiftLeastGreatestAtom) {
+TEST_F(UnitTest, WriteCompositionShiftLeastGreatestAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_composition_shift_least_greatest_atom(
       fd, &bytes, &cslg_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -3264,11 +3102,9 @@ static inline void expect_cslg_eq(
   EXPECT_EQ(a->display_end_time, b->display_end_time);
 }
 
-TEST(MuTFF, ReadCompositionShiftLeastGreatestAtom) {
+TEST_F(UnitTest, ReadCompositionShiftLeastGreatestAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFCompositionShiftLeastGreatestAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(cslg_test_data, cslg_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_composition_shift_least_greatest_atom(fd, &bytes, &atom);
@@ -3278,9 +3114,9 @@ TEST(MuTFF, ReadCompositionShiftLeastGreatestAtom) {
   expect_cslg_eq(&atom, &cslg_test_struct);
   EXPECT_EQ(ftell(fd), cslg_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 sync sample atom unit tests
+// {{{2 sync sample atom unit tests
 static const uint32_t stss_test_data_size = 24;
 // clang-format off
 #define STSS_TEST_DATA                                  \
@@ -3309,10 +3145,8 @@ static const MuTFFSyncSampleAtom stss_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteSyncSampleAtom) {
+TEST_F(UnitTest, WriteSyncSampleAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_sync_sample_atom(fd, &bytes, &stss_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -3341,11 +3175,9 @@ static inline void expect_stss_eq(const MuTFFSyncSampleAtom *a,
   }
 }
 
-TEST(MuTFF, ReadSyncSampleAtom) {
+TEST_F(UnitTest, ReadSyncSampleAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFSyncSampleAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(stss_test_data, stss_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_sync_sample_atom(fd, &bytes, &atom);
@@ -3355,9 +3187,9 @@ TEST(MuTFF, ReadSyncSampleAtom) {
   expect_stss_eq(&atom, &stss_test_struct);
   EXPECT_EQ(ftell(fd), stss_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 partial sync sample atom unit tests
+// {{{2 partial sync sample atom unit tests
 static const uint32_t stps_test_data_size = 24;
 // clang-format off
 #define STPS_TEST_DATA                                  \
@@ -3386,10 +3218,8 @@ static const MuTFFPartialSyncSampleAtom stps_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WritePartialSyncSampleAtom) {
+TEST_F(UnitTest, WritePartialSyncSampleAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_partial_sync_sample_atom(fd, &bytes, &stps_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -3417,11 +3247,9 @@ static inline void expect_stps_eq(const MuTFFPartialSyncSampleAtom *a,
   }
 }
 
-TEST(MuTFF, ReadPartialSyncSampleAtom) {
+TEST_F(UnitTest, ReadPartialSyncSampleAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFPartialSyncSampleAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(stps_test_data, stps_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_partial_sync_sample_atom(fd, &bytes, &atom);
@@ -3431,9 +3259,9 @@ TEST(MuTFF, ReadPartialSyncSampleAtom) {
   expect_stps_eq(&atom, &stps_test_struct);
   EXPECT_EQ(ftell(fd), stps_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 sample-to-chunk table entry unit tests
+// {{{2 sample-to-chunk table entry unit tests
 static const uint32_t stsc_entry_test_data_size = 12;
 // clang-format off
 #define STSC_ENTRY_TEST_DATA \
@@ -3451,10 +3279,8 @@ static const MuTFFSampleToChunkTableEntry stsc_entry_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteSampleToChunkTableEntry) {
+TEST_F(UnitTest, WriteSampleToChunkTableEntry) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_sample_to_chunk_table_entry(
       fd, &bytes, &stsc_entry_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -3477,11 +3303,9 @@ static inline void expect_stsc_entry_eq(const MuTFFSampleToChunkTableEntry *a,
   EXPECT_EQ(a->sample_description_id, b->sample_description_id);
 }
 
-TEST(MuTFF, ReadSampleToChunkTableEntry) {
+TEST_F(UnitTest, ReadSampleToChunkTableEntry) {
   MuTFFError err;
-  size_t bytes;
   MuTFFSampleToChunkTableEntry entry;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(stsc_entry_test_data, stsc_entry_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_sample_to_chunk_table_entry(fd, &bytes, &entry);
@@ -3491,10 +3315,10 @@ TEST(MuTFF, ReadSampleToChunkTableEntry) {
   expect_stsc_entry_eq(&entry, &stsc_entry_test_struct);
   EXPECT_EQ(ftell(fd), stsc_entry_test_data_size);
 }
-// }}}1
+// }}}2
 
 // @TODO: test multiple entries
-// {{{1 sample-to-chunk atom unit tests
+// {{{2 sample-to-chunk atom unit tests
 static const uint32_t stsc_test_data_size = 16 + stsc_entry_test_data_size;
 // clang-format off
 #define STSC_TEST_DATA                                  \
@@ -3521,10 +3345,8 @@ static const MuTFFSampleToChunkAtom stsc_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteSampleToChunkAtom) {
+TEST_F(UnitTest, WriteSampleToChunkAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_sample_to_chunk_atom(fd, &bytes, &stsc_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -3554,11 +3376,9 @@ static inline void expect_stsc_eq(const MuTFFSampleToChunkAtom *a,
   }
 }
 
-TEST(MuTFF, ReadSampleToChunkAtom) {
+TEST_F(UnitTest, ReadSampleToChunkAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFSampleToChunkAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(stsc_test_data, stsc_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_sample_to_chunk_atom(fd, &bytes, &atom);
@@ -3568,9 +3388,9 @@ TEST(MuTFF, ReadSampleToChunkAtom) {
   expect_stsc_eq(&atom, &stsc_test_struct);
   EXPECT_EQ(ftell(fd), stsc_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 sample size atom unit tests
+// {{{2 sample size atom unit tests
 static const uint32_t stsz_test_data_size = 24;
 // clang-format off
 #define STSZ_TEST_DATA                                  \
@@ -3598,10 +3418,8 @@ static const MuTFFSampleSizeAtom stsz_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteSampleSizeAtom) {
+TEST_F(UnitTest, WriteSampleSizeAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_sample_size_atom(fd, &bytes, &stsz_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -3631,11 +3449,9 @@ static inline void expect_stsz_eq(const MuTFFSampleSizeAtom *a,
   }
 }
 
-TEST(MuTFF, ReadSampleSizeAtom) {
+TEST_F(UnitTest, ReadSampleSizeAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFSampleSizeAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(stsz_test_data, stsz_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_sample_size_atom(fd, &bytes, &atom);
@@ -3645,9 +3461,9 @@ TEST(MuTFF, ReadSampleSizeAtom) {
   expect_stsz_eq(&atom, &stsz_test_struct);
   EXPECT_EQ(ftell(fd), stsz_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 chunk offset atom unit tests
+// {{{2 chunk offset atom unit tests
 static const uint32_t stco_test_data_size = 20;
 // clang-format off
 #define STCO_TEST_DATA                                  \
@@ -3673,10 +3489,8 @@ static const MuTFFChunkOffsetAtom stco_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteChunkOffsetAtom) {
+TEST_F(UnitTest, WriteChunkOffsetAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_chunk_offset_atom(fd, &bytes, &stco_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -3705,11 +3519,9 @@ static inline void expect_stco_eq(const MuTFFChunkOffsetAtom *a,
   }
 }
 
-TEST(MuTFF, ReadChunkOffsetAtom) {
+TEST_F(UnitTest, ReadChunkOffsetAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFChunkOffsetAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(stco_test_data, stco_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_chunk_offset_atom(fd, &bytes, &atom);
@@ -3719,9 +3531,9 @@ TEST(MuTFF, ReadChunkOffsetAtom) {
   expect_stco_eq(&atom, &stco_test_struct);
   EXPECT_EQ(ftell(fd), stco_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 sample dependency flags atom unit tests
+// {{{2 sample dependency flags atom unit tests
 static const uint32_t sdtp_test_data_size = 14;
 // clang-format off
 #define SDTP_TEST_DATA                                  \
@@ -3747,10 +3559,8 @@ static const MuTFFSampleDependencyFlagsAtom sdtp_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteSampleDependencyFlagsAtom) {
+TEST_F(UnitTest, WriteSampleDependencyFlagsAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_sample_dependency_flags_atom(fd, &bytes, &sdtp_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -3779,11 +3589,9 @@ static inline void expect_sdtp_eq(const MuTFFSampleDependencyFlagsAtom *a,
   }
 }
 
-TEST(MuTFF, ReadSampleDependencyFlagsAtom) {
+TEST_F(UnitTest, ReadSampleDependencyFlagsAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFSampleDependencyFlagsAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(sdtp_test_data, sdtp_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_sample_dependency_flags_atom(fd, &bytes, &atom);
@@ -3793,9 +3601,9 @@ TEST(MuTFF, ReadSampleDependencyFlagsAtom) {
   expect_sdtp_eq(&atom, &sdtp_test_struct);
   EXPECT_EQ(ftell(fd), sdtp_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 sample table atom unit tests
+// {{{2 sample table atom unit tests
 static const uint32_t stbl_test_data_size =
     8 + stsd_test_data_size + stts_test_data_size + ctts_test_data_size +
     cslg_test_data_size + stss_test_data_size + stps_test_data_size +
@@ -3844,10 +3652,8 @@ static const MuTFFSampleTableAtom stbl_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteSampleTableAtom) {
+TEST_F(UnitTest, WriteSampleTableAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_sample_table_atom(fd, &bytes, &stbl_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -3921,11 +3727,9 @@ static inline void expect_stbl_eq(const MuTFFSampleTableAtom *a,
   }
 }
 
-TEST(MuTFF, ReadSampleTableAtom) {
+TEST_F(UnitTest, ReadSampleTableAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFSampleTableAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(stbl_test_data, stbl_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_sample_table_atom(fd, &bytes, &atom);
@@ -3935,9 +3739,9 @@ TEST(MuTFF, ReadSampleTableAtom) {
   expect_stbl_eq(&atom, &stbl_test_struct);
   EXPECT_EQ(ftell(fd), stbl_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 video media information header atom unit tests
+// {{{2 video media information header atom unit tests
 static const uint32_t vmhd_test_data_size = 20;
 // clang-format off
 #define VMHD_TEST_DATA                              \
@@ -3966,10 +3770,8 @@ static const MuTFFVideoMediaInformationHeaderAtom vmhd_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteVideoMediaInformationHeaderAtom) {
+TEST_F(UnitTest, WriteVideoMediaInformationHeaderAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_video_media_information_header_atom(
       fd, &bytes, &vmhd_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -3996,11 +3798,9 @@ static inline void expect_vmhd_eq(
   EXPECT_EQ(a->opcolor[2], b->opcolor[2]);
 }
 
-TEST(MuTFF, ReadVideoMediaInformationHeaderAtom) {
+TEST_F(UnitTest, ReadVideoMediaInformationHeaderAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFVideoMediaInformationHeaderAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(vmhd_test_data, vmhd_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_video_media_information_header_atom(fd, &bytes, &atom);
@@ -4010,9 +3810,9 @@ TEST(MuTFF, ReadVideoMediaInformationHeaderAtom) {
   expect_vmhd_eq(&atom, &vmhd_test_struct);
   EXPECT_EQ(ftell(fd), vmhd_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 video media information atom unit tests
+// {{{2 video media information atom unit tests
 static const uint32_t video_minf_test_data_size =
     8 + vmhd_test_data_size + hdlr_test_data_size + dinf_test_data_size +
     stbl_test_data_size;
@@ -4041,10 +3841,8 @@ static const MuTFFVideoMediaInformationAtom video_minf_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteVideoMediaInformationAtom) {
+TEST_F(UnitTest, WriteVideoMediaInformationAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_video_media_information_atom(
       fd, &bytes, &video_minf_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -4080,11 +3878,9 @@ static inline void expect_video_minf_eq(
   }
 }
 
-TEST(MuTFF, ReadVideoMediaInformationAtom) {
+TEST_F(UnitTest, ReadVideoMediaInformationAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFVideoMediaInformationAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(video_minf_test_data, video_minf_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_video_media_information_atom(fd, &bytes, &atom);
@@ -4094,9 +3890,9 @@ TEST(MuTFF, ReadVideoMediaInformationAtom) {
   expect_video_minf_eq(&atom, &video_minf_test_struct);
   EXPECT_EQ(ftell(fd), video_minf_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 sound media information header atom unit tests
+// {{{2 sound media information header atom unit tests
 static const uint32_t smhd_test_data_size = 16;
 // clang-format off
 #define SMHD_TEST_DATA                         \
@@ -4120,10 +3916,8 @@ static const MuTFFSoundMediaInformationHeaderAtom smhd_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteSoundMediaInformationHeaderAtom) {
+TEST_F(UnitTest, WriteSoundMediaInformationHeaderAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_sound_media_information_header_atom(
       fd, &bytes, &smhd_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -4147,11 +3941,9 @@ static inline void expect_smhd_eq(
   EXPECT_EQ(a->balance, b->balance);
 }
 
-TEST(MuTFF, ReadSoundMediaInformationHeaderAtom) {
+TEST_F(UnitTest, ReadSoundMediaInformationHeaderAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFSoundMediaInformationHeaderAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(smhd_test_data, smhd_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_sound_media_information_header_atom(fd, &bytes, &atom);
@@ -4161,9 +3953,9 @@ TEST(MuTFF, ReadSoundMediaInformationHeaderAtom) {
   expect_smhd_eq(&atom, &smhd_test_struct);
   EXPECT_EQ(ftell(fd), smhd_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 sound media information atom unit tests
+// {{{2 sound media information atom unit tests
 static const uint32_t sound_minf_test_data_size =
     8 + smhd_test_data_size + hdlr_test_data_size + dinf_test_data_size +
     stbl_test_data_size;
@@ -4192,10 +3984,8 @@ static const MuTFFSoundMediaInformationAtom sound_minf_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteSoundMediaInformationAtom) {
+TEST_F(UnitTest, WriteSoundMediaInformationAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_sound_media_information_atom(
       fd, &bytes, &sound_minf_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -4231,11 +4021,9 @@ static inline void expect_sound_minf_eq(
   }
 }
 
-TEST(MuTFF, ReadSoundMediaInformationAtom) {
+TEST_F(UnitTest, ReadSoundMediaInformationAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFSoundMediaInformationAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(sound_minf_test_data, sound_minf_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_sound_media_information_atom(fd, &bytes, &atom);
@@ -4245,9 +4033,9 @@ TEST(MuTFF, ReadSoundMediaInformationAtom) {
   expect_sound_minf_eq(&atom, &sound_minf_test_struct);
   EXPECT_EQ(ftell(fd), sound_minf_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 base media info atom unit tests
+// {{{2 base media info atom unit tests
 static const uint32_t gmin_test_data_size = 24;
 // clang-format off
 #define GMIN_TEST_DATA                              \
@@ -4279,10 +4067,8 @@ static const MuTFFBaseMediaInfoAtom gmin_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteBaseMediaInfoAtom) {
+TEST_F(UnitTest, WriteBaseMediaInfoAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_base_media_info_atom(fd, &bytes, &gmin_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -4309,11 +4095,9 @@ static inline void expect_gmin_eq(const MuTFFBaseMediaInfoAtom *a,
   EXPECT_EQ(a->balance, b->balance);
 }
 
-TEST(MuTFF, ReadBaseMediaInfoAtom) {
+TEST_F(UnitTest, ReadBaseMediaInfoAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFBaseMediaInfoAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(gmin_test_data, gmin_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_base_media_info_atom(fd, &bytes, &atom);
@@ -4323,9 +4107,9 @@ TEST(MuTFF, ReadBaseMediaInfoAtom) {
   expect_gmin_eq(&atom, &gmin_test_struct);
   EXPECT_EQ(ftell(fd), gmin_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 text media information atom unit tests
+// {{{2 text media information atom unit tests
 static const uint32_t text_test_data_size = 44;
 // clang-format off
 #define TEXT_TEST_DATA                                 \
@@ -4361,10 +4145,8 @@ static const MuTFFTextMediaInformationAtom text_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteTextMediaInformationAtom) {
+TEST_F(UnitTest, WriteTextMediaInformationAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err =
       mutff_write_text_media_information_atom(fd, &bytes, &text_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -4385,11 +4167,9 @@ static inline void expect_text_eq(const MuTFFTextMediaInformationAtom *a,
   expect_matrix_eq(&a->matrix_structure, &b->matrix_structure);
 }
 
-TEST(MuTFF, ReadTextMediaInformationAtom) {
+TEST_F(UnitTest, ReadTextMediaInformationAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFTextMediaInformationAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(text_test_data, text_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_text_media_information_atom(fd, &bytes, &atom);
@@ -4399,9 +4179,9 @@ TEST(MuTFF, ReadTextMediaInformationAtom) {
   expect_text_eq(&atom, &text_test_struct);
   EXPECT_EQ(ftell(fd), text_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 base media information header atom unit tests
+// {{{2 base media information header atom unit tests
 static const uint32_t gmhd_test_data_size =
     8 + gmin_test_data_size + text_test_data_size;
 // clang-format off
@@ -4424,10 +4204,8 @@ static const MuTFFBaseMediaInformationHeaderAtom gmhd_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteBaseMediaInformationHeaderAtom) {
+TEST_F(UnitTest, WriteBaseMediaInformationHeaderAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_base_media_information_header_atom(
       fd, &bytes, &gmhd_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -4456,11 +4234,9 @@ static inline void expect_gmhd_eq(
   }
 }
 
-TEST(MuTFF, ReadBaseMediaInformationHeaderAtom) {
+TEST_F(UnitTest, ReadBaseMediaInformationHeaderAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFBaseMediaInformationHeaderAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(gmhd_test_data, gmhd_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_base_media_information_header_atom(fd, &bytes, &atom);
@@ -4470,9 +4246,9 @@ TEST(MuTFF, ReadBaseMediaInformationHeaderAtom) {
   expect_gmhd_eq(&atom, &gmhd_test_struct);
   EXPECT_EQ(ftell(fd), gmhd_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 base media information atom unit tests
+// {{{2 base media information atom unit tests
 static const uint32_t base_minf_test_data_size = 8 + gmhd_test_data_size;
 // clang-format off
 #define BASE_MINF_TEST_DATA                     \
@@ -4491,10 +4267,8 @@ static const MuTFFBaseMediaInformationAtom base_minf_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteBaseMediaInformationAtom) {
+TEST_F(UnitTest, WriteBaseMediaInformationAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_base_media_information_atom(
       fd, &bytes, &base_minf_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
@@ -4516,11 +4290,9 @@ static inline void expect_base_minf_eq(const MuTFFBaseMediaInformationAtom *a,
                  &b->base_media_information_header);
 }
 
-TEST(MuTFF, ReadBaseMediaInformationAtom) {
+TEST_F(UnitTest, ReadBaseMediaInformationAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFBaseMediaInformationAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(base_minf_test_data, base_minf_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_base_media_information_atom(fd, &bytes, &atom);
@@ -4530,9 +4302,9 @@ TEST(MuTFF, ReadBaseMediaInformationAtom) {
   expect_base_minf_eq(&atom, &base_minf_test_struct);
   EXPECT_EQ(ftell(fd), base_minf_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 media atom unit tests
+// {{{2 media atom unit tests
 static const uint32_t video_hdlr_test_data_size = 32;
 // clang-format off
 #define VIDEO_HDLR_TEST_DATA                            \
@@ -4596,10 +4368,8 @@ static const MuTFFMediaAtom mdia_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteMediaAtom) {
+TEST_F(UnitTest, WriteMediaAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_media_atom(fd, &bytes, &mdia_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, mdia_test_data_size);
@@ -4663,11 +4433,9 @@ static inline void expect_mdia_eq(const MuTFFMediaAtom *a,
   }
 }
 
-TEST(MuTFF, ReadMediaAtom) {
+TEST_F(UnitTest, ReadMediaAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFMediaAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(mdia_test_data, mdia_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_media_atom(fd, &bytes, &atom);
@@ -4677,9 +4445,9 @@ TEST(MuTFF, ReadMediaAtom) {
   expect_mdia_eq(&atom, &mdia_test_struct);
   EXPECT_EQ(ftell(fd), mdia_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 track atom unit tests
+// {{{2 track atom unit tests
 static const uint32_t trak_test_data_size =
     8 + tkhd_test_data_size + mdia_test_data_size + tapt_test_data_size +
     clip_test_data_size + matt_test_data_size + edts_test_data_size +
@@ -4731,10 +4499,8 @@ static const MuTFFTrackAtom trak_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteTrackAtom) {
+TEST_F(UnitTest, WriteTrackAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_track_atom(fd, &bytes, &trak_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, trak_test_data_size);
@@ -4812,11 +4578,9 @@ static inline void expect_trak_eq(const MuTFFTrackAtom *a,
   }
 }
 
-TEST(MuTFF, ReadTrackAtom) {
+TEST_F(UnitTest, ReadTrackAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFTrackAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(trak_test_data, trak_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_track_atom(fd, &bytes, &atom);
@@ -4826,9 +4590,9 @@ TEST(MuTFF, ReadTrackAtom) {
   expect_trak_eq(&atom, &trak_test_struct);
   EXPECT_EQ(ftell(fd), trak_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 movie atom unit tests
+// {{{2 movie atom unit tests
 static const uint32_t moov_test_data_size =
     8 + mvhd_test_data_size + trak_test_data_size + clip_test_data_size +
     ctab_test_data_size + udta_test_data_size;
@@ -4863,10 +4627,8 @@ static const MuTFFMovieAtom moov_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteMovieAtom) {
+TEST_F(UnitTest, WriteMovieAtom) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_movie_atom(fd, &bytes, &moov_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, moov_test_data_size);
@@ -4908,11 +4670,9 @@ static inline void expect_moov_eq(const MuTFFMovieAtom *a,
   }
 }
 
-TEST(MuTFF, ReadMovieAtom) {
+TEST_F(UnitTest, ReadMovieAtom) {
   MuTFFError err;
-  size_t bytes;
   MuTFFMovieAtom atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(moov_test_data, moov_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_movie_atom(fd, &bytes, &atom);
@@ -4922,9 +4682,9 @@ TEST(MuTFF, ReadMovieAtom) {
   expect_moov_eq(&atom, &moov_test_struct);
   EXPECT_EQ(ftell(fd), moov_test_data_size);
 }
-// }}}1
+// }}}2
 
-// {{{1 movie file unit tests
+// {{{2 movie file unit tests
 static const uint32_t file_test_data_size =
     ftyp_test_data_size + wide_test_data_size + mdat_test_data_size +
     free_test_data_size + skip_test_data_size + moov_test_data_size +
@@ -4966,10 +4726,8 @@ static const MuTFFMovieFile file_test_struct = {
 };
 // clang-format on
 
-TEST(MuTFF, WriteMovieFile) {
+TEST_F(UnitTest, WriteMovieFile) {
   // clang-format on
-  FILE *fd = fopen("temp.mov", "w+b");
-  size_t bytes;
   const MuTFFError err = mutff_write_movie_file(fd, &bytes, &file_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, file_test_data_size);
@@ -5024,11 +4782,9 @@ static inline void expect_file_eq(const MuTFFMovieFile *a,
   }
 }
 
-TEST(MuTFF, ReadMovieFile) {
+TEST_F(UnitTest, ReadMovieFile) {
   MuTFFError err;
-  size_t bytes;
   MuTFFMovieFile atom;
-  FILE *fd = fopen("temp.mov", "w+b");
   fwrite(file_test_data, file_test_data_size, 1, fd);
   rewind(fd);
   err = mutff_read_movie_file(fd, &bytes, &atom);
@@ -5038,6 +4794,7 @@ TEST(MuTFF, ReadMovieFile) {
   expect_file_eq(&atom, &file_test_struct);
   EXPECT_EQ(ftell(fd), file_test_data_size);
 }
+// }}}2
 // }}}1
 
 // {{{1 test.mov tests
@@ -5048,7 +4805,13 @@ class TestMov : public ::testing::Test {
   size_t size;
 
   // @TODO: check test.mov opened correctly
-  void SetUp() override { fd = fopen("test.mov", "rb"); }
+  void SetUp() override {
+    fd = fopen("test.mov", "rb");
+    mutff_set_read_fn(mutff_read_stdlib);
+    mutff_set_write_fn(mutff_write_stdlib);
+    mutff_set_tell_fn(mutff_tell_stdlib);
+    mutff_set_seek_fn(mutff_seek_stdlib);
+  }
 
   void TearDown() override { fclose(fd); }
 };
