@@ -27,6 +27,8 @@ MuTFFError mutff_tell_stdlib(mutff_file_t *file, unsigned int *location);
 
 MuTFFError mutff_seek_stdlib(mutff_file_t *file, long delta);
 
+extern MuTFFIODriver mutff_stdlib_driver;
+
 /// @} MuTFF
 
 #endif  // MUTFF_STDLIB_H_

@@ -14,8 +14,8 @@ option(${project_name_uppercase}_BUILD_COVERAGE "Build ${PROJECT_NAME} coverage 
 option(${project_name_uppercase}_BUILD_DOCS "Build ${PROJECT_NAME} documentation" OFF)
 
 add_library(${library_name}
+    src/mutff_core.c
     src/mutff_default.c
-    src/mutff_io.c
     src/mutff_stdlib.c
 )
 

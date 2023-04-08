@@ -16,19 +16,16 @@ extern "C" {
 
 class UnitTest : public ::testing::Test {
  protected:
-  FILE *fd;
+  MuTFFContext ctx;
   size_t bytes;
 
   // @TODO: check test.mov opened correctly
   void SetUp() override {
-    fd = fopen("temp.mov", "w+b");
-    mutff_set_read_fn(mutff_read_stdlib);
-    mutff_set_write_fn(mutff_write_stdlib);
-    mutff_set_tell_fn(mutff_tell_stdlib);
-    mutff_set_seek_fn(mutff_seek_stdlib);
+    ctx.file = fopen("temp.mov", "w+b");
+    ctx.io = mutff_stdlib_driver;
   }
 
-  void TearDown() override { fclose(fd); }
+  void TearDown() override { fclose((FILE *)ctx.file); }
 };
 
 // {{{2 quickdraw rect unit tests
@@ -55,14 +52,14 @@ static const MuTFFQuickDrawRect quickdraw_rect_test_struct = {
 TEST_F(UnitTest, WriteQuickDrawRect) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_quickdraw_rect(fd, &bytes, &quickdraw_rect_test_struct);
+      mutff_write_quickdraw_rect(&ctx, &bytes, &quickdraw_rect_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, quickdraw_rect_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, quickdraw_rect_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], quickdraw_rect_test_data[i]);
@@ -80,14 +77,15 @@ static inline void expect_quickdraw_rect_eq(const MuTFFQuickDrawRect *a,
 TEST_F(UnitTest, ReadQuickDrawRect) {
   MuTFFError err;
   MuTFFQuickDrawRect rect;
-  fwrite(quickdraw_rect_test_data, quickdraw_rect_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_quickdraw_rect(fd, &bytes, &rect);
+  fwrite(quickdraw_rect_test_data, quickdraw_rect_test_data_size, 1,
+         (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_quickdraw_rect(&ctx, &bytes, &rect);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, quickdraw_rect_test_data_size);
 
   expect_quickdraw_rect_eq(&rect, &quickdraw_rect_test_struct);
-  EXPECT_EQ(ftell(fd), quickdraw_rect_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), quickdraw_rect_test_data_size);
 }
 // }}}2
 
@@ -114,14 +112,14 @@ static const MuTFFQuickDrawRegion quickdraw_region_test_struct = {
 TEST_F(UnitTest, WriteQuickDrawRegion) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_quickdraw_region(fd, &bytes, &quickdraw_region_test_struct);
+      mutff_write_quickdraw_region(&ctx, &bytes, &quickdraw_region_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, quickdraw_region_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, quickdraw_region_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], quickdraw_region_test_data[i]);
@@ -140,14 +138,15 @@ static inline void expect_quickdraw_region_eq(const MuTFFQuickDrawRegion *a,
 TEST_F(UnitTest, ReadQuickDrawRegion) {
   MuTFFError err;
   MuTFFQuickDrawRegion region;
-  fwrite(quickdraw_region_test_data, quickdraw_region_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_quickdraw_region(fd, &bytes, &region);
+  fwrite(quickdraw_region_test_data, quickdraw_region_test_data_size, 1,
+         (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_quickdraw_region(&ctx, &bytes, &region);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, quickdraw_region_test_data_size);
 
   expect_quickdraw_region_eq(&region, &quickdraw_region_test_struct);
-  EXPECT_EQ(ftell(fd), quickdraw_region_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), quickdraw_region_test_data_size);
 }
 // }}}2
 
@@ -177,14 +176,14 @@ static const MuTFFFileTypeAtom ftyp_test_struct = {
 
 TEST_F(UnitTest, WriteFileTypeAtom) {
   const MuTFFError err =
-      mutff_write_file_type_atom(fd, &bytes, &ftyp_test_struct);
+      mutff_write_file_type_atom(&ctx, &bytes, &ftyp_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, ftyp_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, ftyp_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], ftyp_test_data[i]);
@@ -210,14 +209,14 @@ static inline void expect_filetype_eq(const MuTFFFileTypeAtom *a,
 TEST_F(UnitTest, ReadFileTypeAtom) {
   MuTFFError err;
   MuTFFFileTypeAtom atom;
-  fwrite(ftyp_test_data, ftyp_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_file_type_atom(fd, &bytes, &atom);
+  fwrite(ftyp_test_data, ftyp_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_file_type_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, ftyp_test_data_size);
 
   expect_filetype_eq(&atom, &ftyp_test_struct);
-  EXPECT_EQ(ftell(fd), ftyp_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), ftyp_test_data_size);
 }
 // }}}2
 
@@ -241,14 +240,14 @@ static const MuTFFMovieDataAtom mdat_test_struct = {
 
 TEST_F(UnitTest, WriteMovieDataAtom) {
   const MuTFFError err =
-      mutff_write_movie_data_atom(fd, &bytes, &mdat_test_struct);
+      mutff_write_movie_data_atom(&ctx, &bytes, &mdat_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, mdat_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, mdat_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], mdat_test_data[i]);
@@ -263,14 +262,14 @@ static inline void expect_mdat_eq(const MuTFFMovieDataAtom *a,
 TEST_F(UnitTest, ReadMovieDataAtom) {
   MuTFFError err;
   MuTFFMovieDataAtom atom;
-  fwrite(mdat_test_data, mdat_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_movie_data_atom(fd, &bytes, &atom);
+  fwrite(mdat_test_data, mdat_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_movie_data_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, mdat_test_data_size);
 
   expect_mdat_eq(&atom, &mdat_test_struct);
-  EXPECT_EQ(ftell(fd), mdat_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), mdat_test_data_size);
 }
 // }}}2
 
@@ -295,14 +294,14 @@ static const MuTFFFreeAtom free_test_struct = {
 // clang-format on
 
 TEST_F(UnitTest, WriteFreeAtom) {
-  const MuTFFError err = mutff_write_free_atom(fd, &bytes, &free_test_struct);
+  const MuTFFError err = mutff_write_free_atom(&ctx, &bytes, &free_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, free_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, free_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], free_test_data[i]);
@@ -317,14 +316,14 @@ static inline void expect_free_eq(const MuTFFFreeAtom *a,
 TEST_F(UnitTest, ReadFreeAtom) {
   MuTFFError err;
   MuTFFFreeAtom atom;
-  fwrite(free_test_data, free_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_free_atom(fd, &bytes, &atom);
+  fwrite(free_test_data, free_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_free_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, free_test_data_size);
 
   expect_free_eq(&atom, &free_test_struct);
-  EXPECT_EQ(ftell(fd), free_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), free_test_data_size);
 }
 // }}}2
 
@@ -349,14 +348,14 @@ static const MuTFFSkipAtom skip_test_struct = {
 // clang-format on
 
 TEST_F(UnitTest, WriteSkipAtom) {
-  const MuTFFError err = mutff_write_skip_atom(fd, &bytes, &skip_test_struct);
+  const MuTFFError err = mutff_write_skip_atom(&ctx, &bytes, &skip_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, skip_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, skip_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], skip_test_data[i]);
@@ -371,14 +370,14 @@ static inline void expect_skip_eq(const MuTFFSkipAtom *a,
 TEST_F(UnitTest, ReadSkipAtom) {
   MuTFFError err;
   MuTFFSkipAtom atom;
-  fwrite(skip_test_data, skip_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_skip_atom(fd, &bytes, &atom);
+  fwrite(skip_test_data, skip_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_skip_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, skip_test_data_size);
 
   expect_skip_eq(&atom, &skip_test_struct);
-  EXPECT_EQ(ftell(fd), skip_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), skip_test_data_size);
 }
 // }}}2
 
@@ -403,14 +402,14 @@ static const MuTFFWideAtom wide_test_struct = {
 // clang-format on
 
 TEST_F(UnitTest, WriteWideAtom) {
-  const MuTFFError err = mutff_write_wide_atom(fd, &bytes, &wide_test_struct);
+  const MuTFFError err = mutff_write_wide_atom(&ctx, &bytes, &wide_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, wide_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, wide_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], wide_test_data[i]);
@@ -425,14 +424,14 @@ static inline void expect_wide_eq(const MuTFFWideAtom *a,
 TEST_F(UnitTest, ReadWideAtom) {
   MuTFFError err;
   MuTFFWideAtom atom;
-  fwrite(wide_test_data, wide_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_wide_atom(fd, &bytes, &atom);
+  fwrite(wide_test_data, wide_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_wide_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, wide_test_data_size);
 
   expect_wide_eq(&atom, &wide_test_struct);
-  EXPECT_EQ(ftell(fd), wide_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), wide_test_data_size);
 }
 // }}}2
 
@@ -463,14 +462,14 @@ static const MuTFFPreviewAtom pnot_test_struct = {
 
 TEST_F(UnitTest, WritePreviewAtom) {
   const MuTFFError err =
-      mutff_write_preview_atom(fd, &bytes, &pnot_test_struct);
+      mutff_write_preview_atom(&ctx, &bytes, &pnot_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, pnot_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, pnot_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], pnot_test_data[i]);
@@ -488,14 +487,14 @@ static inline void expect_pnot_eq(const MuTFFPreviewAtom *a,
 TEST_F(UnitTest, ReadPreviewAtom) {
   MuTFFError err;
   MuTFFPreviewAtom atom;
-  fwrite(pnot_test_data, pnot_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_preview_atom(fd, &bytes, &atom);
+  fwrite(pnot_test_data, pnot_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_preview_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, pnot_test_data_size);
 
   expect_pnot_eq(&atom, &pnot_test_struct);
-  EXPECT_EQ(ftell(fd), pnot_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), pnot_test_data_size);
 }
 // }}}2
 
@@ -570,14 +569,14 @@ static const MuTFFMovieHeaderAtom mvhd_test_struct = {
 
 TEST_F(UnitTest, WriteMovieHeaderAtom) {
   const MuTFFError err =
-      mutff_write_movie_header_atom(fd, &bytes, &mvhd_test_struct);
+      mutff_write_movie_header_atom(&ctx, &bytes, &mvhd_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, mvhd_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, mvhd_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], mvhd_test_data[i]);
@@ -631,14 +630,14 @@ static inline void expect_mvhd_eq(const MuTFFMovieHeaderAtom *a,
 TEST_F(UnitTest, ReadMovieHeaderAtom) {
   MuTFFError err;
   MuTFFMovieHeaderAtom atom;
-  fwrite(mvhd_test_data, mvhd_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_movie_header_atom(fd, &bytes, &atom);
+  fwrite(mvhd_test_data, mvhd_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_movie_header_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, mvhd_test_data_size);
 
   expect_mvhd_eq(&atom, &mvhd_test_struct);
-  EXPECT_EQ(ftell(fd), mvhd_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), mvhd_test_data_size);
 }
 // }}}2
 
@@ -663,14 +662,14 @@ static const MuTFFClippingRegionAtom crgn_test_struct = {
 
 TEST_F(UnitTest, WriteClippingRegionAtom) {
   const MuTFFError err =
-      mutff_write_clipping_region_atom(fd, &bytes, &crgn_test_struct);
+      mutff_write_clipping_region_atom(&ctx, &bytes, &crgn_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, crgn_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, crgn_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], crgn_test_data[i]);
@@ -685,14 +684,14 @@ static inline void expect_crgn_eq(const MuTFFClippingRegionAtom *a,
 TEST_F(UnitTest, ReadClippingRegionAtom) {
   MuTFFError err;
   MuTFFClippingRegionAtom atom;
-  fwrite(crgn_test_data, crgn_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_clipping_region_atom(fd, &bytes, &atom);
+  fwrite(crgn_test_data, crgn_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_clipping_region_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, crgn_test_data_size);
 
   expect_crgn_eq(&atom, &crgn_test_struct);
-  EXPECT_EQ(ftell(fd), crgn_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), crgn_test_data_size);
 }
 // }}}2
 
@@ -717,14 +716,14 @@ static const MuTFFClippingAtom clip_test_struct = {
 
 TEST_F(UnitTest, WriteClippingAtom) {
   const MuTFFError err =
-      mutff_write_clipping_atom(fd, &bytes, &clip_test_struct);
+      mutff_write_clipping_atom(&ctx, &bytes, &clip_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, clip_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, clip_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], clip_test_data[i]);
@@ -739,14 +738,14 @@ static inline void expect_clip_eq(const MuTFFClippingAtom *a,
 TEST_F(UnitTest, ReadClippingAtom) {
   MuTFFError err;
   MuTFFClippingAtom atom;
-  fwrite(clip_test_data, clip_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_clipping_atom(fd, &bytes, &atom);
+  fwrite(clip_test_data, clip_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_clipping_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, clip_test_data_size);
 
   expect_clip_eq(&atom, &clip_test_struct);
-  EXPECT_EQ(ftell(fd), clip_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), clip_test_data_size);
 }
 // }}}2
 
@@ -785,14 +784,14 @@ static const MuTFFColorTableAtom ctab_test_struct = {
 
 TEST_F(UnitTest, WriteColorTableAtom) {
   const MuTFFError err =
-      mutff_write_color_table_atom(fd, &bytes, &ctab_test_struct);
+      mutff_write_color_table_atom(&ctx, &bytes, &ctab_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, ctab_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, ctab_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], ctab_test_data[i]);
@@ -815,14 +814,14 @@ static inline void expect_ctab_eq(const MuTFFColorTableAtom *a,
 TEST_F(UnitTest, ReadColorTableAtom) {
   MuTFFError err;
   MuTFFColorTableAtom atom;
-  fwrite(ctab_test_data, ctab_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_color_table_atom(fd, &bytes, &atom);
+  fwrite(ctab_test_data, ctab_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_color_table_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, ctab_test_data_size);
 
   expect_ctab_eq(&atom, &ctab_test_struct);
-  EXPECT_EQ(ftell(fd), ctab_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), ctab_test_data_size);
 }
 // }}}2
 
@@ -854,14 +853,14 @@ static const MuTFFUserDataListEntry udta_entry_test_struct = {
 TEST_F(UnitTest, WriteUserDataListEntry) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_user_data_list_entry(fd, &bytes, &udta_entry_test_struct);
+      mutff_write_user_data_list_entry(&ctx, &bytes, &udta_entry_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, udta_entry_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, udta_entry_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], udta_entry_test_data[i]);
@@ -879,14 +878,14 @@ static inline void expect_udta_entry_eq(const MuTFFUserDataListEntry *a,
 TEST_F(UnitTest, ReadUserDataListEntry) {
   MuTFFError err;
   MuTFFUserDataListEntry atom;
-  fwrite(udta_entry_test_data, udta_entry_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_user_data_list_entry(fd, &bytes, &atom);
+  fwrite(udta_entry_test_data, udta_entry_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_user_data_list_entry(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, udta_entry_test_data_size);
 
   expect_udta_entry_eq(&atom, &udta_entry_test_struct);
-  EXPECT_EQ(ftell(fd), udta_entry_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), udta_entry_test_data_size);
 }
 // }}}2
 
@@ -915,14 +914,14 @@ static const MuTFFUserDataAtom udta_test_struct = {
 
 TEST_F(UnitTest, WriteUserDataAtom) {
   const MuTFFError err =
-      mutff_write_user_data_atom(fd, &bytes, &udta_test_struct);
+      mutff_write_user_data_atom(&ctx, &bytes, &udta_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, udta_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, udta_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], udta_test_data[i]);
@@ -942,14 +941,14 @@ static inline void expect_udta_eq(const MuTFFUserDataAtom *a,
 TEST_F(UnitTest, ReadUserDataAtom) {
   MuTFFError err;
   MuTFFUserDataAtom atom;
-  fwrite(udta_test_data, udta_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_user_data_atom(fd, &bytes, &atom);
+  fwrite(udta_test_data, udta_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_user_data_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, udta_test_data_size);
 
   expect_udta_eq(&atom, &udta_test_struct);
-  EXPECT_EQ(ftell(fd), udta_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), udta_test_data_size);
 }
 // }}}2
 
@@ -1019,14 +1018,14 @@ static const MuTFFTrackHeaderAtom tkhd_test_struct = {
 TEST_F(UnitTest, WriteTrackHeaderAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_track_header_atom(fd, &bytes, &tkhd_test_struct);
+      mutff_write_track_header_atom(&ctx, &bytes, &tkhd_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, tkhd_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, tkhd_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], tkhd_test_data[i]);
@@ -1054,14 +1053,14 @@ static inline void expect_tkhd_eq(const MuTFFTrackHeaderAtom *a,
 TEST_F(UnitTest, ReadTrackHeaderAtom) {
   MuTFFError err;
   MuTFFTrackHeaderAtom atom;
-  fwrite(tkhd_test_data, tkhd_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_track_header_atom(fd, &bytes, &atom);
+  fwrite(tkhd_test_data, tkhd_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_track_header_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, tkhd_test_data_size);
 
   expect_tkhd_eq(&atom, &tkhd_test_struct);
-  EXPECT_EQ(ftell(fd), tkhd_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), tkhd_test_data_size);
 }
 // }}}2
 
@@ -1093,14 +1092,14 @@ static const MuTFFTrackCleanApertureDimensionsAtom clef_test_struct = {
 TEST_F(UnitTest, WriteTrackCleanApertureDimensionsAtom) {
   // clang-format on
   const MuTFFError err = mutff_write_track_clean_aperture_dimensions_atom(
-      fd, &bytes, &clef_test_struct);
+      &ctx, &bytes, &clef_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, clef_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, clef_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], clef_test_data[i]);
@@ -1121,14 +1120,14 @@ static inline void expect_clef_eq(
 TEST_F(UnitTest, ReadTrackCleanApertureDimensionsAtom) {
   MuTFFError err;
   MuTFFTrackCleanApertureDimensionsAtom atom;
-  fwrite(clef_test_data, clef_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_track_clean_aperture_dimensions_atom(fd, &bytes, &atom);
+  fwrite(clef_test_data, clef_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_track_clean_aperture_dimensions_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, clef_test_data_size);
 
   expect_clef_eq(&atom, &clef_test_struct);
-  EXPECT_EQ(ftell(fd), clef_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), clef_test_data_size);
 }
 // }}}2
 
@@ -1160,14 +1159,14 @@ static const MuTFFTrackProductionApertureDimensionsAtom prof_test_struct = {
 TEST_F(UnitTest, WriteTrackProductionApertureDimensionsAtom) {
   // clang-format on
   const MuTFFError err = mutff_write_track_production_aperture_dimensions_atom(
-      fd, &bytes, &prof_test_struct);
+      &ctx, &bytes, &prof_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, prof_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, prof_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], prof_test_data[i]);
@@ -1188,14 +1187,15 @@ static inline void expect_prof_eq(
 TEST_F(UnitTest, ReadTrackProductionApertureDimensionsAtom) {
   MuTFFError err;
   MuTFFTrackProductionApertureDimensionsAtom atom;
-  fwrite(prof_test_data, prof_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_track_production_aperture_dimensions_atom(fd, &bytes, &atom);
+  fwrite(prof_test_data, prof_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err =
+      mutff_read_track_production_aperture_dimensions_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, prof_test_data_size);
 
   expect_prof_eq(&atom, &prof_test_struct);
-  EXPECT_EQ(ftell(fd), prof_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), prof_test_data_size);
 }
 // }}}2
 
@@ -1227,14 +1227,14 @@ static const MuTFFTrackEncodedPixelsDimensionsAtom enof_test_struct = {
 TEST_F(UnitTest, WriteTrackEncodedPixelsDimensionsAtom) {
   // clang-format on
   const MuTFFError err = mutff_write_track_encoded_pixels_dimensions_atom(
-      fd, &bytes, &enof_test_struct);
+      &ctx, &bytes, &enof_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, enof_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, enof_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], enof_test_data[i]);
@@ -1255,14 +1255,14 @@ static inline void expect_enof_eq(
 TEST_F(UnitTest, ReadTrackEncodedPixelsDimensionsAtom) {
   MuTFFError err;
   MuTFFTrackEncodedPixelsDimensionsAtom atom;
-  fwrite(enof_test_data, enof_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_track_encoded_pixels_dimensions_atom(fd, &bytes, &atom);
+  fwrite(enof_test_data, enof_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_track_encoded_pixels_dimensions_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, enof_test_data_size);
 
   expect_enof_eq(&atom, &enof_test_struct);
-  EXPECT_EQ(ftell(fd), enof_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), enof_test_data_size);
 }
 // }}}2
 
@@ -1292,14 +1292,14 @@ static const MuTFFTrackApertureModeDimensionsAtom tapt_test_struct = {
 TEST_F(UnitTest, WriteTrackApertureModeDimensionsAtom) {
   // clang-format on
   const MuTFFError err = mutff_write_track_aperture_mode_dimensions_atom(
-      fd, &bytes, &tapt_test_struct);
+      &ctx, &bytes, &tapt_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, tapt_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, tapt_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], tapt_test_data[i]);
@@ -1320,14 +1320,14 @@ static inline void expect_tapt_eq(
 TEST_F(UnitTest, ReadTrackApertureModeDimensionsAtom) {
   MuTFFError err;
   MuTFFTrackApertureModeDimensionsAtom atom;
-  fwrite(tapt_test_data, tapt_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_track_aperture_mode_dimensions_atom(fd, &bytes, &atom);
+  fwrite(tapt_test_data, tapt_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_track_aperture_mode_dimensions_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, tapt_test_data_size);
 
   expect_tapt_eq(&atom, &tapt_test_struct);
-  EXPECT_EQ(ftell(fd), tapt_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), tapt_test_data_size);
 }
 // }}}2
 
@@ -1382,14 +1382,14 @@ static const MuTFFVideoSampleDescription video_sample_desc_test_struct = {
 TEST_F(UnitTest, WriteVideoSampleDescription) {
   // clang-format on
   const MuTFFError err = mutff_write_video_sample_description(
-      fd, &bytes, &video_sample_desc_test_struct);
+      &ctx, &bytes, &video_sample_desc_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, video_sample_desc_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, video_sample_desc_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], video_sample_desc_test_data[i]);
@@ -1423,14 +1423,15 @@ static inline void expect_video_sample_desc_eq(
 TEST_F(UnitTest, ReadVideoSampleDescription) {
   MuTFFError err;
   MuTFFVideoSampleDescription atom;
-  fwrite(video_sample_desc_test_data, video_sample_desc_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_video_sample_description(fd, &bytes, &atom);
+  fwrite(video_sample_desc_test_data, video_sample_desc_test_data_size, 1,
+         (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_video_sample_description(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, video_sample_desc_test_data_size);
 
   expect_video_sample_desc_eq(&atom, &video_sample_desc_test_struct);
-  EXPECT_EQ(ftell(fd), video_sample_desc_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), video_sample_desc_test_data_size);
 }
 // }}}2
 
@@ -1461,14 +1462,14 @@ static const MuTFFSampleDescription sample_desc_test_struct = {
 TEST_F(UnitTest, WriteSampleDescription) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_sample_description(fd, &bytes, &sample_desc_test_struct);
+      mutff_write_sample_description(&ctx, &bytes, &sample_desc_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, sample_desc_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, sample_desc_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], sample_desc_test_data[i]);
@@ -1485,14 +1486,15 @@ static inline void expect_sample_desc_eq(const MuTFFSampleDescription *a,
 TEST_F(UnitTest, ReadSampleDescription) {
   MuTFFError err;
   MuTFFSampleDescription atom;
-  fwrite(sample_desc_test_data, sample_desc_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_sample_description(fd, &bytes, &atom);
+  fwrite(sample_desc_test_data, sample_desc_test_data_size, 1,
+         (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_sample_description(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, sample_desc_test_data_size);
 
   expect_sample_desc_eq(&atom, &sample_desc_test_struct);
-  EXPECT_EQ(ftell(fd), sample_desc_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), sample_desc_test_data_size);
 }
 // }}}2
 
@@ -1527,14 +1529,14 @@ static const MuTFFCompressedMatteAtom kmat_test_struct = {
 TEST_F(UnitTest, WriteCompressedMatteAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_compressed_matte_atom(fd, &bytes, &kmat_test_struct);
+      mutff_write_compressed_matte_atom(&ctx, &bytes, &kmat_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, kmat_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, kmat_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], kmat_test_data[i]);
@@ -1559,14 +1561,14 @@ static inline void expect_kmat_eq(const MuTFFCompressedMatteAtom *a,
 TEST_F(UnitTest, ReadCompressedMatteAtom) {
   MuTFFError err;
   MuTFFCompressedMatteAtom atom;
-  fwrite(kmat_test_data, kmat_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_compressed_matte_atom(fd, &bytes, &atom);
+  fwrite(kmat_test_data, kmat_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_compressed_matte_atom(&ctx, &bytes, &atom);
   /* ASSERT_EQ(err, MuTFFErrorNone); */
   /* EXPECT_EQ(bytes, kmat_test_data_size); */
 
   /* expect_kmat_eq(&atom, &kmat_test_struct); */
-  /* EXPECT_EQ(ftell(fd), kmat_test_data_size); */
+  /* EXPECT_EQ(ftell((FILE *)ctx.file), kmat_test_data_size); */
 }
 // }}}2
 
@@ -1592,14 +1594,14 @@ static const MuTFFTrackMatteAtom matt_test_struct = {
 TEST_F(UnitTest, WriteTrackMatteAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_track_matte_atom(fd, &bytes, &matt_test_struct);
+      mutff_write_track_matte_atom(&ctx, &bytes, &matt_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, matt_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, matt_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], matt_test_data[i]);
@@ -1614,14 +1616,14 @@ static inline void expect_matt_eq(const MuTFFTrackMatteAtom *a,
 TEST_F(UnitTest, ReadTrackMatteAtom) {
   MuTFFError err;
   MuTFFTrackMatteAtom atom;
-  fwrite(matt_test_data, matt_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_track_matte_atom(fd, &bytes, &atom);
+  fwrite(matt_test_data, matt_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_track_matte_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, matt_test_data_size);
 
   expect_matt_eq(&atom, &matt_test_struct);
-  EXPECT_EQ(ftell(fd), matt_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), matt_test_data_size);
 }
 // }}}2
 
@@ -1647,14 +1649,14 @@ static const MuTFFEditListEntry edit_list_entry_test_struct = {
 TEST_F(UnitTest, WriteEditListEntry) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_edit_list_entry(fd, &bytes, &edit_list_entry_test_struct);
+      mutff_write_edit_list_entry(&ctx, &bytes, &edit_list_entry_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, edit_list_entry_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, edit_list_entry_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], edit_list_entry_test_data[i]);
@@ -1672,14 +1674,15 @@ static inline void expect_edit_list_entry_eq(const MuTFFEditListEntry *a,
 TEST_F(UnitTest, ReadEditListEntry) {
   MuTFFError err;
   MuTFFEditListEntry atom;
-  fwrite(edit_list_entry_test_data, edit_list_entry_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_edit_list_entry(fd, &bytes, &atom);
+  fwrite(edit_list_entry_test_data, edit_list_entry_test_data_size, 1,
+         (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_edit_list_entry(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, edit_list_entry_test_data_size);
 
   expect_edit_list_entry_eq(&atom, &edit_list_entry_test_struct);
-  EXPECT_EQ(ftell(fd), edit_list_entry_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), edit_list_entry_test_data_size);
 }
 // }}}2
 
@@ -1714,14 +1717,14 @@ static const MuTFFEditListAtom elst_test_struct = {
 TEST_F(UnitTest, WriteEditListAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_edit_list_atom(fd, &bytes, &elst_test_struct);
+      mutff_write_edit_list_atom(&ctx, &bytes, &elst_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, elst_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, elst_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], elst_test_data[i]);
@@ -1744,13 +1747,13 @@ static inline void expect_elst_eq(const MuTFFEditListAtom *a,
 TEST_F(UnitTest, ReadEditListAtom) {
   MuTFFError err;
   MuTFFEditListAtom atom;
-  fwrite(elst_test_data, elst_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_edit_list_atom(fd, &bytes, &atom);
+  fwrite(elst_test_data, elst_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_edit_list_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, elst_test_data_size);
 
-  EXPECT_EQ(ftell(fd), elst_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), elst_test_data_size);
 }
 // }}}2
 
@@ -1775,14 +1778,14 @@ static const MuTFFEditAtom edts_test_struct = {
 
 TEST_F(UnitTest, WriteEditAtom) {
   // clang-format on
-  const MuTFFError err = mutff_write_edit_atom(fd, &bytes, &edts_test_struct);
+  const MuTFFError err = mutff_write_edit_atom(&ctx, &bytes, &edts_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, edts_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, edts_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], edts_test_data[i]);
@@ -1797,14 +1800,14 @@ static inline void expect_edts_eq(const MuTFFEditAtom *a,
 TEST_F(UnitTest, ReadEditAtom) {
   MuTFFError err;
   MuTFFEditAtom atom;
-  fwrite(edts_test_data, edts_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_edit_atom(fd, &bytes, &atom);
+  fwrite(edts_test_data, edts_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_edit_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, edts_test_data_size);
 
   expect_edts_eq(&atom, &edts_test_struct);
-  EXPECT_EQ(ftell(fd), edts_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), edts_test_data_size);
 }
 // }}}2
 
@@ -1835,14 +1838,14 @@ static const MuTFFTrackReferenceTypeAtom track_ref_atom_test_struct = {
 TEST_F(UnitTest, WriteTrackReferenceTypeAtom) {
   // clang-format on
   const MuTFFError err = mutff_write_track_reference_type_atom(
-      fd, &bytes, &track_ref_atom_test_struct);
+      &ctx, &bytes, &track_ref_atom_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, track_ref_atom_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, track_ref_atom_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], track_ref_atom_test_data[i]);
@@ -1864,14 +1867,15 @@ static inline void expect_track_ref_eq(const MuTFFTrackReferenceTypeAtom *a,
 TEST_F(UnitTest, ReadTrackReferenceTypeAtom) {
   MuTFFError err;
   MuTFFTrackReferenceTypeAtom atom;
-  fwrite(track_ref_atom_test_data, track_ref_atom_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_track_reference_type_atom(fd, &bytes, &atom);
+  fwrite(track_ref_atom_test_data, track_ref_atom_test_data_size, 1,
+         (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_track_reference_type_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, track_ref_atom_test_data_size);
 
   expect_track_ref_eq(&atom, &track_ref_atom_test_struct);
-  EXPECT_EQ(ftell(fd), track_ref_atom_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), track_ref_atom_test_data_size);
 }
 // }}}2
 
@@ -1901,14 +1905,14 @@ static const MuTFFTrackReferenceAtom tref_test_struct = {
 TEST_F(UnitTest, WriteTrackReferenceAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_track_reference_atom(fd, &bytes, &tref_test_struct);
+      mutff_write_track_reference_atom(&ctx, &bytes, &tref_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, tref_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, tref_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], tref_test_data[i]);
@@ -1931,14 +1935,14 @@ static inline void expect_tref_eq(const MuTFFTrackReferenceAtom *a,
 TEST_F(UnitTest, ReadTrackReferenceAtom) {
   MuTFFError err;
   MuTFFTrackReferenceAtom atom;
-  fwrite(tref_test_data, tref_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_track_reference_atom(fd, &bytes, &atom);
+  fwrite(tref_test_data, tref_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_track_reference_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, tref_test_data_size);
 
   expect_tref_eq(&atom, &tref_test_struct);
-  EXPECT_EQ(ftell(fd), tref_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), tref_test_data_size);
 }
 // }}}2
 
@@ -1962,14 +1966,14 @@ static const MuTFFTrackExcludeFromAutoselectionAtom txas_test_struct = {
 TEST_F(UnitTest, WriteTrackExcludeFromAutoselectionAtom) {
   // clang-format on
   const MuTFFError err = mutff_write_track_exclude_from_autoselection_atom(
-      fd, &bytes, &txas_test_struct);
+      &ctx, &bytes, &txas_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, txas_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, txas_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], txas_test_data[i]);
@@ -1983,14 +1987,14 @@ static inline void expect_txas_eq(
 TEST_F(UnitTest, ReadTrackExcludeFromAutoselectionAtom) {
   MuTFFError err;
   MuTFFTrackExcludeFromAutoselectionAtom atom;
-  fwrite(txas_test_data, txas_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_track_exclude_from_autoselection_atom(fd, &bytes, &atom);
+  fwrite(txas_test_data, txas_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_track_exclude_from_autoselection_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, txas_test_data_size);
 
   expect_txas_eq(&atom, &txas_test_struct);
-  EXPECT_EQ(ftell(fd), txas_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), txas_test_data_size);
 }
 // }}}2
 
@@ -2022,14 +2026,14 @@ static const MuTFFTrackLoadSettingsAtom load_test_struct = {
 TEST_F(UnitTest, WriteTrackLoadSettingsAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_track_load_settings_atom(fd, &bytes, &load_test_struct);
+      mutff_write_track_load_settings_atom(&ctx, &bytes, &load_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, load_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, load_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], load_test_data[i]);
@@ -2047,14 +2051,14 @@ static inline void expect_load_eq(const MuTFFTrackLoadSettingsAtom *a,
 TEST_F(UnitTest, ReadTrackLoadSettingsAtom) {
   MuTFFError err;
   MuTFFTrackLoadSettingsAtom atom;
-  fwrite(load_test_data, load_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_track_load_settings_atom(fd, &bytes, &atom);
+  fwrite(load_test_data, load_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_track_load_settings_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, load_test_data_size);
 
   expect_load_eq(&atom, &load_test_struct);
-  EXPECT_EQ(ftell(fd), load_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), load_test_data_size);
 }
 // }}}2
 
@@ -2080,14 +2084,14 @@ static const MuTFFObjectIDAtom obid_test_struct = {
 TEST_F(UnitTest, WriteObjectIDAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_object_id_atom(fd, &bytes, &obid_test_struct);
+      mutff_write_object_id_atom(&ctx, &bytes, &obid_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, obid_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, obid_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], obid_test_data[i]);
@@ -2102,14 +2106,14 @@ static inline void expect_obid_eq(const MuTFFObjectIDAtom *a,
 TEST_F(UnitTest, ReadObjectIDAtom) {
   MuTFFError err;
   MuTFFObjectIDAtom atom;
-  fwrite(obid_test_data, obid_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_object_id_atom(fd, &bytes, &atom);
+  fwrite(obid_test_data, obid_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_object_id_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, obid_test_data_size);
 
   expect_obid_eq(&atom, &obid_test_struct);
-  EXPECT_EQ(ftell(fd), obid_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), obid_test_data_size);
 }
 // }}}2
 
@@ -2134,14 +2138,14 @@ static const MuTFFInputTypeAtom ty_test_struct = {
 TEST_F(UnitTest, WriteInputTypeAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_input_type_atom(fd, &bytes, &ty_test_struct);
+      mutff_write_input_type_atom(&ctx, &bytes, &ty_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, ty_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, ty_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], ty_test_data[i]);
@@ -2156,14 +2160,14 @@ static inline void expect_ty_eq(const MuTFFInputTypeAtom *a,
 TEST_F(UnitTest, ReadInputTypeAtom) {
   MuTFFError err;
   MuTFFInputTypeAtom atom;
-  fwrite(ty_test_data, ty_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_input_type_atom(fd, &bytes, &atom);
+  fwrite(ty_test_data, ty_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_input_type_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, ty_test_data_size);
 
   expect_ty_eq(&atom, &ty_test_struct);
-  EXPECT_EQ(ftell(fd), ty_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), ty_test_data_size);
 }
 // }}}2
 
@@ -2198,14 +2202,14 @@ static const MuTFFTrackInputAtom in_test_struct = {
 TEST_F(UnitTest, WriteTrackInputAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_track_input_atom(fd, &bytes, &in_test_struct);
+      mutff_write_track_input_atom(&ctx, &bytes, &in_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, in_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, in_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], in_test_data[i]);
@@ -2228,14 +2232,14 @@ static inline void expect_in_eq(const MuTFFTrackInputAtom *a,
 TEST_F(UnitTest, ReadTrackInputAtom) {
   MuTFFError err;
   MuTFFTrackInputAtom atom;
-  fwrite(in_test_data, in_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_track_input_atom(fd, &bytes, &atom);
+  fwrite(in_test_data, in_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_track_input_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, in_test_data_size);
 
   expect_in_eq(&atom, &in_test_struct);
-  EXPECT_EQ(ftell(fd), in_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), in_test_data_size);
 }
 // }}}2
 
@@ -2265,14 +2269,14 @@ static const MuTFFTrackInputMapAtom imap_test_struct = {
 TEST_F(UnitTest, WriteTrackInputMapAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_track_input_map_atom(fd, &bytes, &imap_test_struct);
+      mutff_write_track_input_map_atom(&ctx, &bytes, &imap_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, imap_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, imap_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], imap_test_data[i]);
@@ -2294,14 +2298,14 @@ static inline void expect_imap_eq(const MuTFFTrackInputMapAtom *a,
 TEST_F(UnitTest, ReadTrackInputMapAtom) {
   MuTFFError err;
   MuTFFTrackInputMapAtom atom;
-  fwrite(imap_test_data, imap_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_track_input_map_atom(fd, &bytes, &atom);
+  fwrite(imap_test_data, imap_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_track_input_map_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, imap_test_data_size);
 
   expect_imap_eq(&atom, &imap_test_struct);
-  EXPECT_EQ(ftell(fd), imap_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), imap_test_data_size);
 }
 // }}}2
 
@@ -2341,14 +2345,14 @@ static const MuTFFMediaHeaderAtom mdhd_test_struct = {
 TEST_F(UnitTest, WriteMediaHeaderAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_media_header_atom(fd, &bytes, &mdhd_test_struct);
+      mutff_write_media_header_atom(&ctx, &bytes, &mdhd_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, mdhd_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, mdhd_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], mdhd_test_data[i]);
@@ -2370,14 +2374,14 @@ static inline void expect_mdhd_eq(const MuTFFMediaHeaderAtom *a,
 TEST_F(UnitTest, ReadMediaHeaderAtom) {
   MuTFFError err;
   MuTFFMediaHeaderAtom atom;
-  fwrite(mdhd_test_data, mdhd_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_media_header_atom(fd, &bytes, &atom);
+  fwrite(mdhd_test_data, mdhd_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_media_header_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, mdhd_test_data_size);
 
   expect_mdhd_eq(&atom, &mdhd_test_struct);
-  EXPECT_EQ(ftell(fd), mdhd_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), mdhd_test_data_size);
 }
 // }}}2
 
@@ -2407,14 +2411,14 @@ static const MuTFFExtendedLanguageTagAtom elng_test_struct = {
 TEST_F(UnitTest, WriteExtendedLanguageTagAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_extended_language_tag_atom(fd, &bytes, &elng_test_struct);
+      mutff_write_extended_language_tag_atom(&ctx, &bytes, &elng_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, elng_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, elng_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], elng_test_data[i]);
@@ -2431,14 +2435,14 @@ static inline void expect_elng_eq(const MuTFFExtendedLanguageTagAtom *a,
 TEST_F(UnitTest, ReadExtendedLanguageTagAtom) {
   MuTFFError err;
   MuTFFExtendedLanguageTagAtom atom;
-  fwrite(elng_test_data, elng_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_extended_language_tag_atom(fd, &bytes, &atom);
+  fwrite(elng_test_data, elng_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_extended_language_tag_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, elng_test_data_size);
 
   expect_elng_eq(&atom, &elng_test_struct);
-  EXPECT_EQ(ftell(fd), elng_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), elng_test_data_size);
 }
 // }}}2
 
@@ -2478,14 +2482,14 @@ static const MuTFFHandlerReferenceAtom hdlr_test_struct = {
 TEST_F(UnitTest, WriteHandlerReferenceAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_handler_reference_atom(fd, &bytes, &hdlr_test_struct);
+      mutff_write_handler_reference_atom(&ctx, &bytes, &hdlr_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, hdlr_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, hdlr_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], hdlr_test_data[i]);
@@ -2507,14 +2511,14 @@ static inline void expect_hdlr_eq(const MuTFFHandlerReferenceAtom *a,
 TEST_F(UnitTest, ReadHandlerReferenceAtom) {
   MuTFFError err;
   MuTFFHandlerReferenceAtom atom;
-  fwrite(hdlr_test_data, hdlr_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_handler_reference_atom(fd, &bytes, &atom);
+  fwrite(hdlr_test_data, hdlr_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_handler_reference_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, hdlr_test_data_size);
 
   expect_hdlr_eq(&atom, &hdlr_test_struct);
-  EXPECT_EQ(ftell(fd), hdlr_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), hdlr_test_data_size);
 }
 // }}}2
 
@@ -2548,14 +2552,14 @@ static const MuTFFDataReference data_ref_test_struct = {
 TEST_F(UnitTest, WriteDataReference) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_data_reference(fd, &bytes, &data_ref_test_struct);
+      mutff_write_data_reference(&ctx, &bytes, &data_ref_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, data_ref_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, data_ref_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], data_ref_test_data[i]);
@@ -2578,14 +2582,14 @@ static inline void expect_data_ref_eq(const MuTFFDataReference *a,
 TEST_F(UnitTest, ReadDataReference) {
   MuTFFError err;
   MuTFFDataReference ref;
-  fwrite(data_ref_test_data, data_ref_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_data_reference(fd, &bytes, &ref);
+  fwrite(data_ref_test_data, data_ref_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_data_reference(&ctx, &bytes, &ref);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, data_ref_test_data_size);
 
   expect_data_ref_eq(&ref, &data_ref_test_struct);
-  EXPECT_EQ(ftell(fd), data_ref_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), data_ref_test_data_size);
 }
 // }}}2
 
@@ -2620,14 +2624,14 @@ static const MuTFFDataReferenceAtom dref_test_struct = {
 TEST_F(UnitTest, WriteDataReferenceAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_data_reference_atom(fd, &bytes, &dref_test_struct);
+      mutff_write_data_reference_atom(&ctx, &bytes, &dref_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, dref_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, dref_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], dref_test_data[i]);
@@ -2650,14 +2654,14 @@ static inline void expect_dref_eq(const MuTFFDataReferenceAtom *a,
 TEST_F(UnitTest, ReadDataReferenceAtom) {
   MuTFFError err;
   MuTFFDataReferenceAtom atom;
-  fwrite(dref_test_data, dref_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_data_reference_atom(fd, &bytes, &atom);
+  fwrite(dref_test_data, dref_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_data_reference_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, dref_test_data_size);
 
   expect_dref_eq(&atom, &dref_test_struct);
-  EXPECT_EQ(ftell(fd), dref_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), dref_test_data_size);
 }
 // }}}2
 
@@ -2683,14 +2687,14 @@ static const MuTFFDataInformationAtom dinf_test_struct = {
 TEST_F(UnitTest, WriteDataInformationAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_data_information_atom(fd, &bytes, &dinf_test_struct);
+      mutff_write_data_information_atom(&ctx, &bytes, &dinf_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, dinf_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, dinf_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], dinf_test_data[i]);
@@ -2705,14 +2709,14 @@ static inline void expect_dinf_eq(const MuTFFDataInformationAtom *a,
 TEST_F(UnitTest, ReadDataInformationAtom) {
   MuTFFError err;
   MuTFFDataInformationAtom atom;
-  fwrite(dinf_test_data, dinf_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_data_information_atom(fd, &bytes, &atom);
+  fwrite(dinf_test_data, dinf_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_data_information_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, dinf_test_data_size);
 
   expect_dinf_eq(&atom, &dinf_test_struct);
-  EXPECT_EQ(ftell(fd), dinf_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), dinf_test_data_size);
 }
 // }}}2
 
@@ -2747,14 +2751,14 @@ static const MuTFFSampleDescriptionAtom stsd_test_struct = {
 TEST_F(UnitTest, WriteSampleDescriptionAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_sample_description_atom(fd, &bytes, &stsd_test_struct);
+      mutff_write_sample_description_atom(&ctx, &bytes, &stsd_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stsd_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, stsd_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], stsd_test_data[i]);
@@ -2778,14 +2782,14 @@ static inline void expect_stsd_eq(const MuTFFSampleDescriptionAtom *a,
 TEST_F(UnitTest, ReadSampleDescriptionAtom) {
   MuTFFError err;
   MuTFFSampleDescriptionAtom atom;
-  fwrite(stsd_test_data, stsd_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_sample_description_atom(fd, &bytes, &atom);
+  fwrite(stsd_test_data, stsd_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_sample_description_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stsd_test_data_size);
 
   expect_stsd_eq(&atom, &stsd_test_struct);
-  EXPECT_EQ(ftell(fd), stsd_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), stsd_test_data_size);
 }
 // }}}2
 
@@ -2808,14 +2812,14 @@ static const MuTFFTimeToSampleTableEntry stts_entry_test_struct = {
 TEST_F(UnitTest, WriteTimeToSampleTableEntry) {
   // clang-format on
   const MuTFFError err = mutff_write_time_to_sample_table_entry(
-      fd, &bytes, &stts_entry_test_struct);
+      &ctx, &bytes, &stts_entry_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stts_entry_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, stts_entry_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], stts_entry_test_data[i]);
@@ -2831,14 +2835,14 @@ static inline void expect_stts_entry_eq(const MuTFFTimeToSampleTableEntry *a,
 TEST_F(UnitTest, ReadTimeToSampleTableEntry) {
   MuTFFError err;
   MuTFFTimeToSampleTableEntry entry;
-  fwrite(stts_entry_test_data, stts_entry_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_time_to_sample_table_entry(fd, &bytes, &entry);
+  fwrite(stts_entry_test_data, stts_entry_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_time_to_sample_table_entry(&ctx, &bytes, &entry);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stts_entry_test_data_size);
 
   expect_stts_entry_eq(&entry, &stts_entry_test_struct);
-  EXPECT_EQ(ftell(fd), stts_entry_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), stts_entry_test_data_size);
 }
 // }}}2
 
@@ -2873,14 +2877,14 @@ static const MuTFFTimeToSampleAtom stts_test_struct = {
 TEST_F(UnitTest, WriteTimeToSampleAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_time_to_sample_atom(fd, &bytes, &stts_test_struct);
+      mutff_write_time_to_sample_atom(&ctx, &bytes, &stts_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stts_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, stts_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], stts_test_data[i]);
@@ -2904,14 +2908,14 @@ static inline void expect_stts_eq(const MuTFFTimeToSampleAtom *a,
 TEST_F(UnitTest, ReadTimeToSampleAtom) {
   MuTFFError err;
   MuTFFTimeToSampleAtom atom;
-  fwrite(stts_test_data, stts_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_time_to_sample_atom(fd, &bytes, &atom);
+  fwrite(stts_test_data, stts_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_time_to_sample_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stts_test_data_size);
 
   expect_stts_eq(&atom, &stts_test_struct);
-  EXPECT_EQ(ftell(fd), stts_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), stts_test_data_size);
 }
 // }}}2
 
@@ -2934,14 +2938,14 @@ static const MuTFFCompositionOffsetTableEntry ctts_entry_test_struct = {
 TEST_F(UnitTest, WriteCompositionOffsetTableEntry) {
   // clang-format on
   const MuTFFError err = mutff_write_composition_offset_table_entry(
-      fd, &bytes, &ctts_entry_test_struct);
+      &ctx, &bytes, &ctts_entry_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, ctts_entry_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, ctts_entry_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], ctts_entry_test_data[i]);
@@ -2958,14 +2962,14 @@ static inline void expect_ctts_entry_eq(
 TEST_F(UnitTest, ReadCompositionOffsetTableEntry) {
   MuTFFError err;
   MuTFFCompositionOffsetTableEntry entry;
-  fwrite(ctts_entry_test_data, ctts_entry_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_composition_offset_table_entry(fd, &bytes, &entry);
+  fwrite(ctts_entry_test_data, ctts_entry_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_composition_offset_table_entry(&ctx, &bytes, &entry);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, ctts_entry_test_data_size);
 
   expect_ctts_entry_eq(&entry, &ctts_entry_test_struct);
-  EXPECT_EQ(ftell(fd), ctts_entry_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), ctts_entry_test_data_size);
 }
 // }}}2
 
@@ -3000,14 +3004,14 @@ static const MuTFFCompositionOffsetAtom ctts_test_struct = {
 TEST_F(UnitTest, WriteCompositionOffsetAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_composition_offset_atom(fd, &bytes, &ctts_test_struct);
+      mutff_write_composition_offset_atom(&ctx, &bytes, &ctts_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, ctts_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, ctts_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], ctts_test_data[i]);
@@ -3030,14 +3034,14 @@ static inline void expect_ctts_eq(const MuTFFCompositionOffsetAtom *a,
 TEST_F(UnitTest, ReadCompositionOffsetAtom) {
   MuTFFError err;
   MuTFFCompositionOffsetAtom atom;
-  fwrite(ctts_test_data, ctts_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_composition_offset_atom(fd, &bytes, &atom);
+  fwrite(ctts_test_data, ctts_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_composition_offset_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, ctts_test_data_size);
 
   expect_ctts_eq(&atom, &ctts_test_struct);
-  EXPECT_EQ(ftell(fd), ctts_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), ctts_test_data_size);
 }
 // }}}2
 
@@ -3075,14 +3079,14 @@ static const MuTFFCompositionShiftLeastGreatestAtom cslg_test_struct = {
 TEST_F(UnitTest, WriteCompositionShiftLeastGreatestAtom) {
   // clang-format on
   const MuTFFError err = mutff_write_composition_shift_least_greatest_atom(
-      fd, &bytes, &cslg_test_struct);
+      &ctx, &bytes, &cslg_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, cslg_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, cslg_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], cslg_test_data[i]);
@@ -3105,14 +3109,14 @@ static inline void expect_cslg_eq(
 TEST_F(UnitTest, ReadCompositionShiftLeastGreatestAtom) {
   MuTFFError err;
   MuTFFCompositionShiftLeastGreatestAtom atom;
-  fwrite(cslg_test_data, cslg_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_composition_shift_least_greatest_atom(fd, &bytes, &atom);
+  fwrite(cslg_test_data, cslg_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_composition_shift_least_greatest_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, cslg_test_data_size);
 
   expect_cslg_eq(&atom, &cslg_test_struct);
-  EXPECT_EQ(ftell(fd), cslg_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), cslg_test_data_size);
 }
 // }}}2
 
@@ -3148,14 +3152,14 @@ static const MuTFFSyncSampleAtom stss_test_struct = {
 TEST_F(UnitTest, WriteSyncSampleAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_sync_sample_atom(fd, &bytes, &stss_test_struct);
+      mutff_write_sync_sample_atom(&ctx, &bytes, &stss_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stss_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, stss_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], stss_test_data[i]);
@@ -3178,14 +3182,14 @@ static inline void expect_stss_eq(const MuTFFSyncSampleAtom *a,
 TEST_F(UnitTest, ReadSyncSampleAtom) {
   MuTFFError err;
   MuTFFSyncSampleAtom atom;
-  fwrite(stss_test_data, stss_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_sync_sample_atom(fd, &bytes, &atom);
+  fwrite(stss_test_data, stss_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_sync_sample_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stss_test_data_size);
 
   expect_stss_eq(&atom, &stss_test_struct);
-  EXPECT_EQ(ftell(fd), stss_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), stss_test_data_size);
 }
 // }}}2
 
@@ -3221,14 +3225,14 @@ static const MuTFFPartialSyncSampleAtom stps_test_struct = {
 TEST_F(UnitTest, WritePartialSyncSampleAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_partial_sync_sample_atom(fd, &bytes, &stps_test_struct);
+      mutff_write_partial_sync_sample_atom(&ctx, &bytes, &stps_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stps_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, stps_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], stps_test_data[i]);
@@ -3250,14 +3254,14 @@ static inline void expect_stps_eq(const MuTFFPartialSyncSampleAtom *a,
 TEST_F(UnitTest, ReadPartialSyncSampleAtom) {
   MuTFFError err;
   MuTFFPartialSyncSampleAtom atom;
-  fwrite(stps_test_data, stps_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_partial_sync_sample_atom(fd, &bytes, &atom);
+  fwrite(stps_test_data, stps_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_partial_sync_sample_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stps_test_data_size);
 
   expect_stps_eq(&atom, &stps_test_struct);
-  EXPECT_EQ(ftell(fd), stps_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), stps_test_data_size);
 }
 // }}}2
 
@@ -3282,14 +3286,14 @@ static const MuTFFSampleToChunkTableEntry stsc_entry_test_struct = {
 TEST_F(UnitTest, WriteSampleToChunkTableEntry) {
   // clang-format on
   const MuTFFError err = mutff_write_sample_to_chunk_table_entry(
-      fd, &bytes, &stsc_entry_test_struct);
+      &ctx, &bytes, &stsc_entry_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stsc_entry_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, stsc_entry_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], stsc_entry_test_data[i]);
@@ -3306,14 +3310,14 @@ static inline void expect_stsc_entry_eq(const MuTFFSampleToChunkTableEntry *a,
 TEST_F(UnitTest, ReadSampleToChunkTableEntry) {
   MuTFFError err;
   MuTFFSampleToChunkTableEntry entry;
-  fwrite(stsc_entry_test_data, stsc_entry_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_sample_to_chunk_table_entry(fd, &bytes, &entry);
+  fwrite(stsc_entry_test_data, stsc_entry_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_sample_to_chunk_table_entry(&ctx, &bytes, &entry);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stsc_entry_test_data_size);
 
   expect_stsc_entry_eq(&entry, &stsc_entry_test_struct);
-  EXPECT_EQ(ftell(fd), stsc_entry_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), stsc_entry_test_data_size);
 }
 // }}}2
 
@@ -3348,14 +3352,14 @@ static const MuTFFSampleToChunkAtom stsc_test_struct = {
 TEST_F(UnitTest, WriteSampleToChunkAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_sample_to_chunk_atom(fd, &bytes, &stsc_test_struct);
+      mutff_write_sample_to_chunk_atom(&ctx, &bytes, &stsc_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stsc_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, stsc_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], stsc_test_data[i]);
@@ -3379,14 +3383,14 @@ static inline void expect_stsc_eq(const MuTFFSampleToChunkAtom *a,
 TEST_F(UnitTest, ReadSampleToChunkAtom) {
   MuTFFError err;
   MuTFFSampleToChunkAtom atom;
-  fwrite(stsc_test_data, stsc_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_sample_to_chunk_atom(fd, &bytes, &atom);
+  fwrite(stsc_test_data, stsc_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_sample_to_chunk_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stsc_test_data_size);
 
   expect_stsc_eq(&atom, &stsc_test_struct);
-  EXPECT_EQ(ftell(fd), stsc_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), stsc_test_data_size);
 }
 // }}}2
 
@@ -3421,14 +3425,14 @@ static const MuTFFSampleSizeAtom stsz_test_struct = {
 TEST_F(UnitTest, WriteSampleSizeAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_sample_size_atom(fd, &bytes, &stsz_test_struct);
+      mutff_write_sample_size_atom(&ctx, &bytes, &stsz_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stsz_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, stsz_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], stsz_test_data[i]);
@@ -3452,14 +3456,14 @@ static inline void expect_stsz_eq(const MuTFFSampleSizeAtom *a,
 TEST_F(UnitTest, ReadSampleSizeAtom) {
   MuTFFError err;
   MuTFFSampleSizeAtom atom;
-  fwrite(stsz_test_data, stsz_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_sample_size_atom(fd, &bytes, &atom);
+  fwrite(stsz_test_data, stsz_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_sample_size_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stsz_test_data_size);
 
   expect_stsz_eq(&atom, &stsz_test_struct);
-  EXPECT_EQ(ftell(fd), stsz_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), stsz_test_data_size);
 }
 // }}}2
 
@@ -3492,14 +3496,14 @@ static const MuTFFChunkOffsetAtom stco_test_struct = {
 TEST_F(UnitTest, WriteChunkOffsetAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_chunk_offset_atom(fd, &bytes, &stco_test_struct);
+      mutff_write_chunk_offset_atom(&ctx, &bytes, &stco_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stco_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, stco_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], stco_test_data[i]);
@@ -3522,14 +3526,14 @@ static inline void expect_stco_eq(const MuTFFChunkOffsetAtom *a,
 TEST_F(UnitTest, ReadChunkOffsetAtom) {
   MuTFFError err;
   MuTFFChunkOffsetAtom atom;
-  fwrite(stco_test_data, stco_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_chunk_offset_atom(fd, &bytes, &atom);
+  fwrite(stco_test_data, stco_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_chunk_offset_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stco_test_data_size);
 
   expect_stco_eq(&atom, &stco_test_struct);
-  EXPECT_EQ(ftell(fd), stco_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), stco_test_data_size);
 }
 // }}}2
 
@@ -3562,14 +3566,14 @@ static const MuTFFSampleDependencyFlagsAtom sdtp_test_struct = {
 TEST_F(UnitTest, WriteSampleDependencyFlagsAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_sample_dependency_flags_atom(fd, &bytes, &sdtp_test_struct);
+      mutff_write_sample_dependency_flags_atom(&ctx, &bytes, &sdtp_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, sdtp_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, sdtp_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], sdtp_test_data[i]);
@@ -3592,14 +3596,14 @@ static inline void expect_sdtp_eq(const MuTFFSampleDependencyFlagsAtom *a,
 TEST_F(UnitTest, ReadSampleDependencyFlagsAtom) {
   MuTFFError err;
   MuTFFSampleDependencyFlagsAtom atom;
-  fwrite(sdtp_test_data, sdtp_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_sample_dependency_flags_atom(fd, &bytes, &atom);
+  fwrite(sdtp_test_data, sdtp_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_sample_dependency_flags_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, sdtp_test_data_size);
 
   expect_sdtp_eq(&atom, &sdtp_test_struct);
-  EXPECT_EQ(ftell(fd), sdtp_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), sdtp_test_data_size);
 }
 // }}}2
 
@@ -3655,14 +3659,14 @@ static const MuTFFSampleTableAtom stbl_test_struct = {
 TEST_F(UnitTest, WriteSampleTableAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_sample_table_atom(fd, &bytes, &stbl_test_struct);
+      mutff_write_sample_table_atom(&ctx, &bytes, &stbl_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stbl_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, stbl_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], stbl_test_data[i]);
@@ -3730,14 +3734,14 @@ static inline void expect_stbl_eq(const MuTFFSampleTableAtom *a,
 TEST_F(UnitTest, ReadSampleTableAtom) {
   MuTFFError err;
   MuTFFSampleTableAtom atom;
-  fwrite(stbl_test_data, stbl_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_sample_table_atom(fd, &bytes, &atom);
+  fwrite(stbl_test_data, stbl_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_sample_table_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, stbl_test_data_size);
 
   expect_stbl_eq(&atom, &stbl_test_struct);
-  EXPECT_EQ(ftell(fd), stbl_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), stbl_test_data_size);
 }
 // }}}2
 
@@ -3773,14 +3777,14 @@ static const MuTFFVideoMediaInformationHeaderAtom vmhd_test_struct = {
 TEST_F(UnitTest, WriteVideoMediaInformationHeaderAtom) {
   // clang-format on
   const MuTFFError err = mutff_write_video_media_information_header_atom(
-      fd, &bytes, &vmhd_test_struct);
+      &ctx, &bytes, &vmhd_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, vmhd_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, vmhd_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], vmhd_test_data[i]);
@@ -3801,14 +3805,14 @@ static inline void expect_vmhd_eq(
 TEST_F(UnitTest, ReadVideoMediaInformationHeaderAtom) {
   MuTFFError err;
   MuTFFVideoMediaInformationHeaderAtom atom;
-  fwrite(vmhd_test_data, vmhd_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_video_media_information_header_atom(fd, &bytes, &atom);
+  fwrite(vmhd_test_data, vmhd_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_video_media_information_header_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, vmhd_test_data_size);
 
   expect_vmhd_eq(&atom, &vmhd_test_struct);
-  EXPECT_EQ(ftell(fd), vmhd_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), vmhd_test_data_size);
 }
 // }}}2
 
@@ -3844,14 +3848,14 @@ static const MuTFFVideoMediaInformationAtom video_minf_test_struct = {
 TEST_F(UnitTest, WriteVideoMediaInformationAtom) {
   // clang-format on
   const MuTFFError err = mutff_write_video_media_information_atom(
-      fd, &bytes, &video_minf_test_struct);
+      &ctx, &bytes, &video_minf_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, video_minf_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, video_minf_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], video_minf_test_data[i]);
@@ -3881,14 +3885,14 @@ static inline void expect_video_minf_eq(
 TEST_F(UnitTest, ReadVideoMediaInformationAtom) {
   MuTFFError err;
   MuTFFVideoMediaInformationAtom atom;
-  fwrite(video_minf_test_data, video_minf_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_video_media_information_atom(fd, &bytes, &atom);
+  fwrite(video_minf_test_data, video_minf_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_video_media_information_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, video_minf_test_data_size);
 
   expect_video_minf_eq(&atom, &video_minf_test_struct);
-  EXPECT_EQ(ftell(fd), video_minf_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), video_minf_test_data_size);
 }
 // }}}2
 
@@ -3919,14 +3923,14 @@ static const MuTFFSoundMediaInformationHeaderAtom smhd_test_struct = {
 TEST_F(UnitTest, WriteSoundMediaInformationHeaderAtom) {
   // clang-format on
   const MuTFFError err = mutff_write_sound_media_information_header_atom(
-      fd, &bytes, &smhd_test_struct);
+      &ctx, &bytes, &smhd_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, smhd_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, smhd_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], smhd_test_data[i]);
@@ -3944,14 +3948,14 @@ static inline void expect_smhd_eq(
 TEST_F(UnitTest, ReadSoundMediaInformationHeaderAtom) {
   MuTFFError err;
   MuTFFSoundMediaInformationHeaderAtom atom;
-  fwrite(smhd_test_data, smhd_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_sound_media_information_header_atom(fd, &bytes, &atom);
+  fwrite(smhd_test_data, smhd_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_sound_media_information_header_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, smhd_test_data_size);
 
   expect_smhd_eq(&atom, &smhd_test_struct);
-  EXPECT_EQ(ftell(fd), smhd_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), smhd_test_data_size);
 }
 // }}}2
 
@@ -3987,14 +3991,14 @@ static const MuTFFSoundMediaInformationAtom sound_minf_test_struct = {
 TEST_F(UnitTest, WriteSoundMediaInformationAtom) {
   // clang-format on
   const MuTFFError err = mutff_write_sound_media_information_atom(
-      fd, &bytes, &sound_minf_test_struct);
+      &ctx, &bytes, &sound_minf_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, sound_minf_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, sound_minf_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], sound_minf_test_data[i]);
@@ -4024,14 +4028,14 @@ static inline void expect_sound_minf_eq(
 TEST_F(UnitTest, ReadSoundMediaInformationAtom) {
   MuTFFError err;
   MuTFFSoundMediaInformationAtom atom;
-  fwrite(sound_minf_test_data, sound_minf_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_sound_media_information_atom(fd, &bytes, &atom);
+  fwrite(sound_minf_test_data, sound_minf_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_sound_media_information_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, sound_minf_test_data_size);
 
   expect_sound_minf_eq(&atom, &sound_minf_test_struct);
-  EXPECT_EQ(ftell(fd), sound_minf_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), sound_minf_test_data_size);
 }
 // }}}2
 
@@ -4070,14 +4074,14 @@ static const MuTFFBaseMediaInfoAtom gmin_test_struct = {
 TEST_F(UnitTest, WriteBaseMediaInfoAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_base_media_info_atom(fd, &bytes, &gmin_test_struct);
+      mutff_write_base_media_info_atom(&ctx, &bytes, &gmin_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, gmin_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, gmin_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], gmin_test_data[i]);
@@ -4098,14 +4102,14 @@ static inline void expect_gmin_eq(const MuTFFBaseMediaInfoAtom *a,
 TEST_F(UnitTest, ReadBaseMediaInfoAtom) {
   MuTFFError err;
   MuTFFBaseMediaInfoAtom atom;
-  fwrite(gmin_test_data, gmin_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_base_media_info_atom(fd, &bytes, &atom);
+  fwrite(gmin_test_data, gmin_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_base_media_info_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, gmin_test_data_size);
 
   expect_gmin_eq(&atom, &gmin_test_struct);
-  EXPECT_EQ(ftell(fd), gmin_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), gmin_test_data_size);
 }
 // }}}2
 
@@ -4148,14 +4152,14 @@ static const MuTFFTextMediaInformationAtom text_test_struct = {
 TEST_F(UnitTest, WriteTextMediaInformationAtom) {
   // clang-format on
   const MuTFFError err =
-      mutff_write_text_media_information_atom(fd, &bytes, &text_test_struct);
+      mutff_write_text_media_information_atom(&ctx, &bytes, &text_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, text_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, text_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], text_test_data[i]);
@@ -4170,14 +4174,14 @@ static inline void expect_text_eq(const MuTFFTextMediaInformationAtom *a,
 TEST_F(UnitTest, ReadTextMediaInformationAtom) {
   MuTFFError err;
   MuTFFTextMediaInformationAtom atom;
-  fwrite(text_test_data, text_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_text_media_information_atom(fd, &bytes, &atom);
+  fwrite(text_test_data, text_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_text_media_information_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, text_test_data_size);
 
   expect_text_eq(&atom, &text_test_struct);
-  EXPECT_EQ(ftell(fd), text_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), text_test_data_size);
 }
 // }}}2
 
@@ -4207,14 +4211,14 @@ static const MuTFFBaseMediaInformationHeaderAtom gmhd_test_struct = {
 TEST_F(UnitTest, WriteBaseMediaInformationHeaderAtom) {
   // clang-format on
   const MuTFFError err = mutff_write_base_media_information_header_atom(
-      fd, &bytes, &gmhd_test_struct);
+      &ctx, &bytes, &gmhd_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, gmhd_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, gmhd_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], gmhd_test_data[i]);
@@ -4237,14 +4241,14 @@ static inline void expect_gmhd_eq(
 TEST_F(UnitTest, ReadBaseMediaInformationHeaderAtom) {
   MuTFFError err;
   MuTFFBaseMediaInformationHeaderAtom atom;
-  fwrite(gmhd_test_data, gmhd_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_base_media_information_header_atom(fd, &bytes, &atom);
+  fwrite(gmhd_test_data, gmhd_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_base_media_information_header_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, gmhd_test_data_size);
 
   expect_gmhd_eq(&atom, &gmhd_test_struct);
-  EXPECT_EQ(ftell(fd), gmhd_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), gmhd_test_data_size);
 }
 // }}}2
 
@@ -4270,14 +4274,14 @@ static const MuTFFBaseMediaInformationAtom base_minf_test_struct = {
 TEST_F(UnitTest, WriteBaseMediaInformationAtom) {
   // clang-format on
   const MuTFFError err = mutff_write_base_media_information_atom(
-      fd, &bytes, &base_minf_test_struct);
+      &ctx, &bytes, &base_minf_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, base_minf_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, base_minf_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], base_minf_test_data[i]);
@@ -4293,14 +4297,14 @@ static inline void expect_base_minf_eq(const MuTFFBaseMediaInformationAtom *a,
 TEST_F(UnitTest, ReadBaseMediaInformationAtom) {
   MuTFFError err;
   MuTFFBaseMediaInformationAtom atom;
-  fwrite(base_minf_test_data, base_minf_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_base_media_information_atom(fd, &bytes, &atom);
+  fwrite(base_minf_test_data, base_minf_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_base_media_information_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, base_minf_test_data_size);
 
   expect_base_minf_eq(&atom, &base_minf_test_struct);
-  EXPECT_EQ(ftell(fd), base_minf_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), base_minf_test_data_size);
 }
 // }}}2
 
@@ -4370,14 +4374,15 @@ static const MuTFFMediaAtom mdia_test_struct = {
 
 TEST_F(UnitTest, WriteMediaAtom) {
   // clang-format on
-  const MuTFFError err = mutff_write_media_atom(fd, &bytes, &mdia_test_struct);
+  const MuTFFError err =
+      mutff_write_media_atom(&ctx, &bytes, &mdia_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, mdia_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, mdia_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], mdia_test_data[i]);
@@ -4436,14 +4441,14 @@ static inline void expect_mdia_eq(const MuTFFMediaAtom *a,
 TEST_F(UnitTest, ReadMediaAtom) {
   MuTFFError err;
   MuTFFMediaAtom atom;
-  fwrite(mdia_test_data, mdia_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_media_atom(fd, &bytes, &atom);
+  fwrite(mdia_test_data, mdia_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_media_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, mdia_test_data_size);
 
   expect_mdia_eq(&atom, &mdia_test_struct);
-  EXPECT_EQ(ftell(fd), mdia_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), mdia_test_data_size);
 }
 // }}}2
 
@@ -4501,14 +4506,15 @@ static const MuTFFTrackAtom trak_test_struct = {
 
 TEST_F(UnitTest, WriteTrackAtom) {
   // clang-format on
-  const MuTFFError err = mutff_write_track_atom(fd, &bytes, &trak_test_struct);
+  const MuTFFError err =
+      mutff_write_track_atom(&ctx, &bytes, &trak_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, trak_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, trak_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], trak_test_data[i]);
@@ -4581,14 +4587,14 @@ static inline void expect_trak_eq(const MuTFFTrackAtom *a,
 TEST_F(UnitTest, ReadTrackAtom) {
   MuTFFError err;
   MuTFFTrackAtom atom;
-  fwrite(trak_test_data, trak_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_track_atom(fd, &bytes, &atom);
+  fwrite(trak_test_data, trak_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_track_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, trak_test_data_size);
 
   expect_trak_eq(&atom, &trak_test_struct);
-  EXPECT_EQ(ftell(fd), trak_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), trak_test_data_size);
 }
 // }}}2
 
@@ -4629,14 +4635,15 @@ static const MuTFFMovieAtom moov_test_struct = {
 
 TEST_F(UnitTest, WriteMovieAtom) {
   // clang-format on
-  const MuTFFError err = mutff_write_movie_atom(fd, &bytes, &moov_test_struct);
+  const MuTFFError err =
+      mutff_write_movie_atom(&ctx, &bytes, &moov_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, moov_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, moov_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], moov_test_data[i]);
@@ -4673,14 +4680,14 @@ static inline void expect_moov_eq(const MuTFFMovieAtom *a,
 TEST_F(UnitTest, ReadMovieAtom) {
   MuTFFError err;
   MuTFFMovieAtom atom;
-  fwrite(moov_test_data, moov_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_movie_atom(fd, &bytes, &atom);
+  fwrite(moov_test_data, moov_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_movie_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, moov_test_data_size);
 
   expect_moov_eq(&atom, &moov_test_struct);
-  EXPECT_EQ(ftell(fd), moov_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), moov_test_data_size);
 }
 // }}}2
 
@@ -4728,14 +4735,15 @@ static const MuTFFMovieFile file_test_struct = {
 
 TEST_F(UnitTest, WriteMovieFile) {
   // clang-format on
-  const MuTFFError err = mutff_write_movie_file(fd, &bytes, &file_test_struct);
+  const MuTFFError err =
+      mutff_write_movie_file(&ctx, &bytes, &file_test_struct);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, file_test_data_size);
 
-  const size_t file_size = ftell(fd);
-  rewind(fd);
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
   unsigned char data[file_size];
-  fread(data, file_size, 1, fd);
+  fread(data, file_size, 1, (FILE *)ctx.file);
   EXPECT_EQ(file_size, file_test_data_size);
   for (size_t i = 0; i < file_size; ++i) {
     EXPECT_EQ(data[i], file_test_data[i]);
@@ -4785,14 +4793,14 @@ static inline void expect_file_eq(const MuTFFMovieFile *a,
 TEST_F(UnitTest, ReadMovieFile) {
   MuTFFError err;
   MuTFFMovieFile atom;
-  fwrite(file_test_data, file_test_data_size, 1, fd);
-  rewind(fd);
-  err = mutff_read_movie_file(fd, &bytes, &atom);
+  fwrite(file_test_data, file_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_movie_file(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, file_test_data_size);
 
   expect_file_eq(&atom, &file_test_struct);
-  EXPECT_EQ(ftell(fd), file_test_data_size);
+  EXPECT_EQ(ftell((FILE *)ctx.file), file_test_data_size);
 }
 // }}}2
 // }}}1
@@ -4801,19 +4809,16 @@ TEST_F(UnitTest, ReadMovieFile) {
 // {{{2 common
 class TestMov : public ::testing::Test {
  protected:
-  FILE *fd;
+  MuTFFContext ctx;
   size_t size;
 
   // @TODO: check test.mov opened correctly
   void SetUp() override {
-    fd = fopen("test.mov", "rb");
-    mutff_set_read_fn(mutff_read_stdlib);
-    mutff_set_write_fn(mutff_write_stdlib);
-    mutff_set_tell_fn(mutff_tell_stdlib);
-    mutff_set_seek_fn(mutff_seek_stdlib);
+    ctx.file = fopen("test.mov", "rb");
+    ctx.io = mutff_stdlib_driver;
   }
 
-  void TearDown() override { fclose(fd); }
+  void TearDown() override { fclose((FILE *)ctx.file); }
 };
 // }}}2
 
@@ -4821,7 +4826,7 @@ class TestMov : public ::testing::Test {
 TEST_F(TestMov, MovieFile) {
   MuTFFMovieFile movie_file;
   size_t bytes;
-  const MuTFFError err = mutff_read_movie_file(fd, &bytes, &movie_file);
+  const MuTFFError err = mutff_read_movie_file(&ctx, &bytes, &movie_file);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 29036);
 
@@ -4831,7 +4836,7 @@ TEST_F(TestMov, MovieFile) {
   EXPECT_EQ(movie_file.skip_count, 0);
   EXPECT_EQ(movie_file.wide_count, 1);
   EXPECT_EQ(movie_file.preview_present, false);
-  EXPECT_EQ(ftell(fd), 29036);
+  EXPECT_EQ(ftell((FILE *)ctx.file), 29036);
 }
 // }}}2
 
@@ -4839,15 +4844,15 @@ TEST_F(TestMov, MovieFile) {
 TEST_F(TestMov, MovieAtom) {
   const size_t offset = 28330;
   MuTFFMovieAtom movie_atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
-  const MuTFFError err = mutff_read_movie_atom(fd, &bytes, &movie_atom);
+  const MuTFFError err = mutff_read_movie_atom(&ctx, &bytes, &movie_atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 706);
 
   EXPECT_EQ(movie_atom.track_count, 1);
 
-  EXPECT_EQ(ftell(fd), offset + 706);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 706);
 }
 // }}}2
 
@@ -4855,10 +4860,10 @@ TEST_F(TestMov, MovieAtom) {
 TEST_F(TestMov, MovieHeaderAtom) {
   const size_t offset = 28338;
   MuTFFMovieHeaderAtom movie_header_atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
   const MuTFFError err =
-      mutff_read_movie_header_atom(fd, &bytes, &movie_header_atom);
+      mutff_read_movie_header_atom(&ctx, &bytes, &movie_header_atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 108);
 
@@ -4889,7 +4894,7 @@ TEST_F(TestMov, MovieHeaderAtom) {
   EXPECT_EQ(movie_header_atom.current_time, 0);
   EXPECT_EQ(movie_header_atom.next_track_id, 2);
 
-  EXPECT_EQ(ftell(fd), offset + 108);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 108);
 }
 // }}}2
 
@@ -4897,9 +4902,10 @@ TEST_F(TestMov, MovieHeaderAtom) {
 TEST_F(TestMov, FileTypeAtom) {
   const size_t offset = 0;
   MuTFFFileTypeAtom file_type_atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
-  const MuTFFError err = mutff_read_file_type_atom(fd, &bytes, &file_type_atom);
+  const MuTFFError err =
+      mutff_read_file_type_atom(&ctx, &bytes, &file_type_atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 20);
 
@@ -4909,7 +4915,7 @@ TEST_F(TestMov, FileTypeAtom) {
   EXPECT_EQ(file_type_atom.compatible_brands[0],
             MuTFF_FOURCC('q', 't', ' ', ' '));
 
-  EXPECT_EQ(ftell(fd), offset + 20);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 20);
 }
 // }}}2
 
@@ -4918,14 +4924,14 @@ TEST_F(TestMov, FileTypeAtom) {
 TEST_F(TestMov, MovieDataAtom) {
   const size_t offset = 28;
   MuTFFMovieDataAtom movie_data_atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
   const MuTFFError err =
-      mutff_read_movie_data_atom(fd, &bytes, &movie_data_atom);
+      mutff_read_movie_data_atom(&ctx, &bytes, &movie_data_atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 28302);
 
-  EXPECT_EQ(ftell(fd), offset + 28302);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 28302);
 }
 // }}}2
 
@@ -4933,13 +4939,13 @@ TEST_F(TestMov, MovieDataAtom) {
 TEST_F(TestMov, WideAtom) {
   const size_t offset = 20;
   MuTFFWideAtom wide_atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
-  const MuTFFError err = mutff_read_wide_atom(fd, &bytes, &wide_atom);
+  const MuTFFError err = mutff_read_wide_atom(&ctx, &bytes, &wide_atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 8);
 
-  EXPECT_EQ(ftell(fd), offset + 8);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 8);
 }
 // }}}2
 
@@ -4947,9 +4953,9 @@ TEST_F(TestMov, WideAtom) {
 TEST_F(TestMov, TrackAtom) {
   const size_t offset = 28446;
   MuTFFTrackAtom track_atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
-  const MuTFFError err = mutff_read_track_atom(fd, &bytes, &track_atom);
+  const MuTFFError err = mutff_read_track_atom(&ctx, &bytes, &track_atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 557);
 
@@ -4963,7 +4969,7 @@ TEST_F(TestMov, TrackAtom) {
   EXPECT_EQ(track_atom.track_input_map_present, false);
   EXPECT_EQ(track_atom.user_data_present, false);
 
-  EXPECT_EQ(ftell(fd), offset + 557);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 557);
 }
 // }}}2
 
@@ -4971,9 +4977,9 @@ TEST_F(TestMov, TrackAtom) {
 TEST_F(TestMov, TrackHeaderAtom) {
   const size_t offset = 28454;
   MuTFFTrackHeaderAtom atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
-  const MuTFFError err = mutff_read_track_header_atom(fd, &bytes, &atom);
+  const MuTFFError err = mutff_read_track_header_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 92);
 
@@ -5010,7 +5016,7 @@ TEST_F(TestMov, TrackHeaderAtom) {
   EXPECT_EQ(atom.track_height.integral, 480);
   EXPECT_EQ(atom.track_height.fractional, 0);
 
-  EXPECT_EQ(ftell(fd), offset + 92);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 92);
 }
 // }}}2
 
@@ -5018,9 +5024,9 @@ TEST_F(TestMov, TrackHeaderAtom) {
 TEST_F(TestMov, EditAtom) {
   const size_t offset = 28546;
   MuTFFEditAtom atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
-  const MuTFFError err = mutff_read_edit_atom(fd, &bytes, &atom);
+  const MuTFFError err = mutff_read_edit_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 36);
 
@@ -5032,7 +5038,7 @@ TEST_F(TestMov, EditAtom) {
   EXPECT_EQ(atom.edit_list_atom.edit_list_table[0].media_rate.integral, 1);
   EXPECT_EQ(atom.edit_list_atom.edit_list_table[0].media_rate.fractional, 0);
 
-  EXPECT_EQ(ftell(fd), offset + 36);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 36);
 }
 // }}}2
 
@@ -5040,9 +5046,9 @@ TEST_F(TestMov, EditAtom) {
 TEST_F(TestMov, MediaAtom) {
   const size_t offset = 28582;
   MuTFFMediaAtom atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
-  const MuTFFError err = mutff_read_media_atom(fd, &bytes, &atom);
+  const MuTFFError err = mutff_read_media_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 421);
 
@@ -5051,7 +5057,7 @@ TEST_F(TestMov, MediaAtom) {
   EXPECT_EQ(atom.media_information_present, true);
   EXPECT_EQ(atom.user_data_present, false);
 
-  EXPECT_EQ(ftell(fd), offset + 421);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 421);
 }
 // }}}2
 
@@ -5059,13 +5065,13 @@ TEST_F(TestMov, MediaAtom) {
 TEST_F(TestMov, MediaHeaderAtom) {
   const size_t offset = 28590;
   MuTFFMediaHeaderAtom atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
-  const MuTFFError err = mutff_read_media_header_atom(fd, &bytes, &atom);
+  const MuTFFError err = mutff_read_media_header_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 32);
 
-  EXPECT_EQ(ftell(fd), offset + 32);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 32);
 }
 // }}}2
 
@@ -5073,9 +5079,9 @@ TEST_F(TestMov, MediaHeaderAtom) {
 TEST_F(TestMov, MediaHandlerReferenceAtom) {
   const size_t offset = 28622;
   MuTFFHandlerReferenceAtom atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
-  const MuTFFError err = mutff_read_handler_reference_atom(fd, &bytes, &atom);
+  const MuTFFError err = mutff_read_handler_reference_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 45);
 
@@ -5091,7 +5097,7 @@ TEST_F(TestMov, MediaHandlerReferenceAtom) {
     EXPECT_EQ(atom.component_name[i], component_name[i]);
   }
 
-  EXPECT_EQ(ftell(fd), offset + 45);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 45);
 }
 // }}}2
 
@@ -5099,14 +5105,14 @@ TEST_F(TestMov, MediaHandlerReferenceAtom) {
 TEST_F(TestMov, VideoMediaInformationHeader) {
   const size_t offset = 28675;
   MuTFFVideoMediaInformationHeaderAtom atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
   const MuTFFError err =
-      mutff_read_video_media_information_header_atom(fd, &bytes, &atom);
+      mutff_read_video_media_information_header_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 20);
 
-  EXPECT_EQ(ftell(fd), offset + 20);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 20);
 }
 // }}}2
 
@@ -5114,9 +5120,9 @@ TEST_F(TestMov, VideoMediaInformationHeader) {
 TEST_F(TestMov, VideoMediaInformationHandlerReference) {
   const size_t offset = 28695;
   MuTFFHandlerReferenceAtom atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
-  const MuTFFError err = mutff_read_handler_reference_atom(fd, &bytes, &atom);
+  const MuTFFError err = mutff_read_handler_reference_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 44);
 
@@ -5132,7 +5138,7 @@ TEST_F(TestMov, VideoMediaInformationHandlerReference) {
     EXPECT_EQ(atom.component_name[i], component_name[i]);
   }
 
-  EXPECT_EQ(ftell(fd), offset + 44);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 44);
 }
 // }}}2
 
@@ -5140,13 +5146,13 @@ TEST_F(TestMov, VideoMediaInformationHandlerReference) {
 TEST_F(TestMov, VideoMediaInformationDataInformation) {
   const size_t offset = 28739;
   MuTFFDataInformationAtom atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
-  const MuTFFError err = mutff_read_data_information_atom(fd, &bytes, &atom);
+  const MuTFFError err = mutff_read_data_information_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 36);
 
-  EXPECT_EQ(ftell(fd), offset + 36);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 36);
 }
 // }}}2
 
@@ -5154,13 +5160,13 @@ TEST_F(TestMov, VideoMediaInformationDataInformation) {
 TEST_F(TestMov, VideoMediaInformationSampleTable) {
   const size_t offset = 28775;
   MuTFFSampleTableAtom atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
-  const MuTFFError err = mutff_read_sample_table_atom(fd, &bytes, &atom);
+  const MuTFFError err = mutff_read_sample_table_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 228);
 
-  EXPECT_EQ(ftell(fd), offset + 228);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 228);
 }
 // }}}2
 
@@ -5168,13 +5174,14 @@ TEST_F(TestMov, VideoMediaInformationSampleTable) {
 TEST_F(TestMov, VideoMediaInformationSampleTableDescription) {
   const size_t offset = 28783;
   MuTFFSampleDescriptionAtom atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
-  const MuTFFError err = mutff_read_sample_description_atom(fd, &bytes, &atom);
+  const MuTFFError err =
+      mutff_read_sample_description_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 128);
 
-  EXPECT_EQ(ftell(fd), offset + 128);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 128);
 }
 // }}}2
 
@@ -5182,13 +5189,13 @@ TEST_F(TestMov, VideoMediaInformationSampleTableDescription) {
 TEST_F(TestMov, TimeToSample) {
   const size_t offset = 28911;
   MuTFFTimeToSampleAtom atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
-  const MuTFFError err = mutff_read_time_to_sample_atom(fd, &bytes, &atom);
+  const MuTFFError err = mutff_read_time_to_sample_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 24);
 
-  EXPECT_EQ(ftell(fd), offset + 24);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 24);
 }
 // }}}2
 
@@ -5196,13 +5203,13 @@ TEST_F(TestMov, TimeToSample) {
 TEST_F(TestMov, SampleToChunk) {
   const size_t offset = 28935;
   MuTFFSampleToChunkAtom atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
-  const MuTFFError err = mutff_read_sample_to_chunk_atom(fd, &bytes, &atom);
+  const MuTFFError err = mutff_read_sample_to_chunk_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 28);
 
-  EXPECT_EQ(ftell(fd), offset + 28);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 28);
 }
 // }}}2
 
@@ -5210,9 +5217,9 @@ TEST_F(TestMov, SampleToChunk) {
 TEST_F(TestMov, SampleSize) {
   const size_t offset = 28963;
   MuTFFSampleSizeAtom atom;
-  fseek(fd, offset, SEEK_SET);
+  fseek((FILE *)ctx.file, offset, SEEK_SET);
   size_t bytes;
-  const MuTFFError err = mutff_read_sample_size_atom(fd, &bytes, &atom);
+  const MuTFFError err = mutff_read_sample_size_atom(&ctx, &bytes, &atom);
   ASSERT_EQ(err, MuTFFErrorNone);
   EXPECT_EQ(bytes, 20);
 
@@ -5221,7 +5228,7 @@ TEST_F(TestMov, SampleSize) {
   EXPECT_EQ(atom.sample_size, 0x07e5);
   EXPECT_EQ(atom.number_of_entries, 0x0e);
 
-  EXPECT_EQ(ftell(fd), offset + 20);
+  EXPECT_EQ(ftell((FILE *)ctx.file), offset + 20);
 }
 // }}}2
 // }}}1

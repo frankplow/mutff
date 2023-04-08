@@ -60,4 +60,11 @@ MuTFFError mutff_seek_stdlib(mutff_file_t *file, long delta) {
   return MuTFFErrorNone;
 }
 
+MuTFFIODriver mutff_stdlib_driver = {
+    mutff_read_stdlib,
+    mutff_write_stdlib,
+    mutff_tell_stdlib,
+    mutff_seek_stdlib,
+};
+
 // vi:sw=2:ts=2:et:fdm=marker

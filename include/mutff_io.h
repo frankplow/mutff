@@ -32,8 +32,6 @@ typedef void mutff_file_t;
 typedef MuTFFError (*MuTFFReadFn)(mutff_file_t *stream, void *data,
                                   unsigned int bytes);
 
-extern MuTFFReadFn mutff_read;
-
 ///
 /// @brief I/O driver function to write data
 ///
@@ -46,8 +44,6 @@ extern MuTFFReadFn mutff_read;
 typedef MuTFFError (*MuTFFWriteFn)(mutff_file_t *stream, const void *data,
                                    unsigned int bytes);
 
-extern MuTFFWriteFn mutff_write;
-
 ///
 /// @brief I/O driver function to get current position in stream
 ///
@@ -56,8 +52,6 @@ extern MuTFFWriteFn mutff_write;
 /// @return            The MuTFFError code.
 ///
 typedef MuTFFError (*MuTFFTellFn)(mutff_file_t *stream, unsigned int *pos);
-
-extern MuTFFTellFn mutff_tell;
 
 ///
 /// @brief I/O driver function to set current position in stream
@@ -68,15 +62,12 @@ extern MuTFFTellFn mutff_tell;
 ///
 typedef MuTFFError (*MuTFFSeekFn)(mutff_file_t *stream, long pos);
 
-extern MuTFFSeekFn mutff_seek;
-
-void mutff_set_read_fn(MuTFFReadFn fn);
-
-void mutff_set_write_fn(MuTFFWriteFn fn);
-
-void mutff_set_tell_fn(MuTFFTellFn fn);
-
-void mutff_set_seek_fn(MuTFFSeekFn fn);
+typedef struct {
+  MuTFFReadFn read;
+  MuTFFWriteFn write;
+  MuTFFTellFn tell;
+  MuTFFSeekFn seek;
+} MuTFFIODriver;
 
 /// @} MuTFF
 

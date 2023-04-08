@@ -96,23 +96,23 @@ typedef struct {
 ///
 /// The current file offset must be at the start of the rectangle
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out] out Output
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_quickdraw_rect(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_quickdraw_rect(MuTFFContext *ctx, size_t *n,
                                      MuTFFQuickDrawRect *out);
 
 ///
 /// @brief Write a QuickDraw rectangle
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   Input
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_quickdraw_rect(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_quickdraw_rect(MuTFFContext *ctx, size_t *n,
                                       const MuTFFQuickDrawRect *in);
 
 ///
@@ -137,23 +137,23 @@ typedef struct {
 ///
 /// The current file offset must be at the start of the region
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out] out Output
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_quickdraw_region(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_quickdraw_region(MuTFFContext *ctx, size_t *n,
                                        MuTFFQuickDrawRegion *out);
 
 ///
 /// @brief Write a QuickDraw region
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_quickdraw_region(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_quickdraw_region(MuTFFContext *ctx, size_t *n,
                                         const MuTFFQuickDrawRegion *in);
 
 ///
@@ -180,23 +180,23 @@ typedef struct {
 ///
 /// @brief Read a file type compatibility atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out]     The parsed atom
 /// @return          The MUTFFError code
 ///
-MuTFFError mutff_read_file_type_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_file_type_atom(MuTFFContext *ctx, size_t *n,
                                      MuTFFFileTypeAtom *out);
 
 ///
 /// @brief Write a file type compatibility atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MUTFFError code
 ///
-MuTFFError mutff_write_file_type_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_file_type_atom(MuTFFContext *ctx, size_t *n,
                                       const MuTFFFileTypeAtom *in);
 
 ///
@@ -217,23 +217,23 @@ typedef struct {
 ///
 /// @brief Read a movie data atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out]     The parsed atom
 /// @return          The MUTFFError code
 ///
-MuTFFError mutff_read_movie_data_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_movie_data_atom(MuTFFContext *ctx, size_t *n,
                                       MuTFFMovieDataAtom *out);
 
 ///
 /// @brief Write a movie data atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MUTFFError code
 ///
-MuTFFError mutff_write_movie_data_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_movie_data_atom(MuTFFContext *ctx, size_t *n,
                                        const MuTFFMovieDataAtom *in);
 
 ///
@@ -248,23 +248,23 @@ typedef struct {
 ///
 /// @brief Read a free atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out]     The parsed atom
 /// @return          The MUTFFError code
 ///
-MuTFFError mutff_read_free_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_free_atom(MuTFFContext *ctx, size_t *n,
                                 MuTFFFreeAtom *out);
 
 ///
 /// @brief Write a free atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MUTFFError code
 ///
-MuTFFError mutff_write_free_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_free_atom(MuTFFContext *ctx, size_t *n,
                                  const MuTFFFreeAtom *in);
 
 ///
@@ -279,23 +279,23 @@ typedef struct {
 ///
 /// @brief Read a skip atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out]     The parsed atom
 /// @return          The MUTFFError code
 ///
-MuTFFError mutff_read_skip_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_skip_atom(MuTFFContext *ctx, size_t *n,
                                 MuTFFSkipAtom *out);
 
 ///
 /// @brief Write a skip atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MUTFFError code
 ///
-MuTFFError mutff_write_skip_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_skip_atom(MuTFFContext *ctx, size_t *n,
                                  const MuTFFSkipAtom *in);
 
 ///
@@ -310,23 +310,23 @@ typedef struct {
 ///
 /// @brief Read a wide atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out]     The parsed atom
 /// @return          The MUTFFError code
 ///
-MuTFFError mutff_read_wide_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_wide_atom(MuTFFContext *ctx, size_t *n,
                                 MuTFFWideAtom *out);
 
 ///
 /// @brief Write a wide atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MUTFFError code
 ///
-MuTFFError mutff_write_wide_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_wide_atom(MuTFFContext *ctx, size_t *n,
                                  const MuTFFWideAtom *in);
 
 ///
@@ -349,23 +349,23 @@ typedef struct {
 ///
 /// @brief Read a preview atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out]     The parsed atom
 /// @return          The MUTFFError code
 ///
-MuTFFError mutff_read_preview_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_preview_atom(MuTFFContext *ctx, size_t *n,
                                    MuTFFPreviewAtom *out);
 
 ///
 /// @brief Write a preview atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MUTFFError code
 ///
-MuTFFError mutff_write_preview_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_preview_atom(MuTFFContext *ctx, size_t *n,
                                     const MuTFFPreviewAtom *in);
 
 ///
@@ -395,23 +395,23 @@ typedef struct {
 ///
 /// @brief Read a movie header atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out]     The parsed atom
 /// @return          The MUTFFError code
 ///
-MuTFFError mutff_read_movie_header_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_movie_header_atom(MuTFFContext *ctx, size_t *n,
                                         MuTFFMovieHeaderAtom *out);
 
 ///
 /// @brief Write a movie header atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MUTFFError code
 ///
-MuTFFError mutff_write_movie_header_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_movie_header_atom(MuTFFContext *ctx, size_t *n,
                                          const MuTFFMovieHeaderAtom *in);
 
 ///
@@ -430,23 +430,23 @@ typedef struct {
 ///
 /// @brief Read a clipping region atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out]     The parsed atom
 /// @return          The MUTFFError code
 ///
-MuTFFError mutff_read_clipping_region_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_clipping_region_atom(MuTFFContext *ctx, size_t *n,
                                            MuTFFClippingRegionAtom *out);
 
 ///
 /// @brief Write a clipping region atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_clipping_region_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_clipping_region_atom(MuTFFContext *ctx, size_t *n,
                                             const MuTFFClippingRegionAtom *in);
 
 ///
@@ -461,23 +461,23 @@ typedef struct {
 ///
 /// @brief Read a clipping atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_clipping_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_clipping_atom(MuTFFContext *ctx, size_t *n,
                                     MuTFFClippingAtom *out);
 
 ///
 /// @brief Write a clipping atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_clipping_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_clipping_atom(MuTFFContext *ctx, size_t *n,
                                      const MuTFFClippingAtom *in);
 
 ///
@@ -500,23 +500,23 @@ typedef struct {
 ///
 /// @brief Read a color table atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_color_table_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_color_table_atom(MuTFFContext *ctx, size_t *n,
                                        MuTFFColorTableAtom *out);
 
 ///
 /// @brief Write a color table atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_color_table_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_color_table_atom(MuTFFContext *ctx, size_t *n,
                                         const MuTFFColorTableAtom *in);
 
 ///
@@ -533,25 +533,25 @@ typedef struct {
 ///
 /// @brief Read an entry in a user data list
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out  The parsed entry
 /// @return           If the entry was read successfully, then the number of
 ///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
-MuTFFError mutff_read_user_data_list_entry(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_user_data_list_entry(MuTFFContext *ctx, size_t *n,
                                            MuTFFUserDataListEntry *out);
 
 ///
 /// @brief Write an entry in a user data list
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return           If the entry was written successfully, then the number of
 ///                   bytes written, otherwise the (negative) MuTFFError code.
 ///
-MuTFFError mutff_write_user_data_list_entry(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_user_data_list_entry(MuTFFContext *ctx, size_t *n,
                                             const MuTFFUserDataListEntry *in);
 
 ///
@@ -572,23 +572,23 @@ typedef struct {
 ///
 /// @brief Read a user data atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_user_data_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_user_data_atom(MuTFFContext *ctx, size_t *n,
                                      MuTFFUserDataAtom *out);
 
 ///
 /// @brief Write a user data atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_user_data_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_user_data_atom(MuTFFContext *ctx, size_t *n,
                                       const MuTFFUserDataAtom *in);
 
 ///
@@ -614,23 +614,23 @@ typedef struct {
 ///
 /// @brief Read a track header atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_track_header_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_track_header_atom(MuTFFContext *ctx, size_t *n,
                                         MuTFFTrackHeaderAtom *out);
 
 ///
 /// @brief Write a track header atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_track_header_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_track_header_atom(MuTFFContext *ctx, size_t *n,
                                          const MuTFFTrackHeaderAtom *in);
 
 ///
@@ -648,24 +648,24 @@ typedef struct {
 ///
 /// @brief Read a track clean aperture dimensions atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_track_clean_aperture_dimensions_atom(
-    mutff_file_t *fd, size_t *n, MuTFFTrackCleanApertureDimensionsAtom *out);
+    MuTFFContext *ctx, size_t *n, MuTFFTrackCleanApertureDimensionsAtom *out);
 
 ///
 /// @brief Write a track clean aperture dimensions atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_track_clean_aperture_dimensions_atom(
-    mutff_file_t *fd, size_t *n,
+    MuTFFContext *ctx, size_t *n,
     const MuTFFTrackCleanApertureDimensionsAtom *in);
 
 ///
@@ -683,25 +683,25 @@ typedef struct {
 ///
 /// @brief Read a track production aperture dimensions atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_track_production_aperture_dimensions_atom(
-    mutff_file_t *fd, size_t *n,
+    MuTFFContext *ctx, size_t *n,
     MuTFFTrackProductionApertureDimensionsAtom *out);
 
 ///
 /// @brief Write a track production aperture dimensions atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_track_production_aperture_dimensions_atom(
-    mutff_file_t *fd, size_t *n,
+    MuTFFContext *ctx, size_t *n,
     const MuTFFTrackProductionApertureDimensionsAtom *in);
 
 ///
@@ -719,24 +719,24 @@ typedef struct {
 ///
 /// @brief Read a track encoded pixels dimensions atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_track_encoded_pixels_dimensions_atom(
-    mutff_file_t *fd, size_t *n, MuTFFTrackEncodedPixelsDimensionsAtom *out);
+    MuTFFContext *ctx, size_t *n, MuTFFTrackEncodedPixelsDimensionsAtom *out);
 
 ///
 /// @brief Write a track encoded pixels dimensions atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_track_encoded_pixels_dimensions_atom(
-    mutff_file_t *fd, size_t *n,
+    MuTFFContext *ctx, size_t *n,
     const MuTFFTrackEncodedPixelsDimensionsAtom *in);
 
 ///
@@ -754,24 +754,24 @@ typedef struct {
 ///
 /// @brief Read a track aperture mode dimensions atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_track_aperture_mode_dimensions_atom(
-    mutff_file_t *fd, size_t *n, MuTFFTrackApertureModeDimensionsAtom *out);
+    MuTFFContext *ctx, size_t *n, MuTFFTrackApertureModeDimensionsAtom *out);
 
 ///
 /// @brief Write a track aperture mode dimensions atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_track_aperture_mode_dimensions_atom(
-    mutff_file_t *fd, size_t *n,
+    MuTFFContext *ctx, size_t *n,
     const MuTFFTrackApertureModeDimensionsAtom *in);
 
 ///
@@ -844,35 +844,35 @@ typedef struct {
 ///
 /// @brief Read a sample description
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed description
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_sample_description(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_sample_description(MuTFFContext *ctx, size_t *n,
                                          MuTFFSampleDescription *out);
 
 ///
 /// @brief Write a sample description
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_sample_description(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_sample_description(MuTFFContext *ctx, size_t *n,
                                           const MuTFFSampleDescription *in);
 
 ///
 /// @brief Read video sample description data
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed description
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_video_sample_description(
-    mutff_file_t *fd, size_t *n, MuTFFVideoSampleDescription *out);
+    MuTFFContext *ctx, size_t *n, MuTFFVideoSampleDescription *out);
 
 MuTFFError mutff_video_sample_description_size(
     uint64_t *out, const MuTFFVideoSampleDescription *desc);
@@ -880,13 +880,13 @@ MuTFFError mutff_video_sample_description_size(
 ///
 /// @brief Write video sample description data
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_video_sample_description(
-    mutff_file_t *fd, size_t *n, const MuTFFVideoSampleDescription *in);
+    MuTFFContext *ctx, size_t *n, const MuTFFVideoSampleDescription *in);
 
 ///
 /// @brief The maximum length of the data in a compressed matte atom
@@ -910,24 +910,24 @@ typedef struct {
 ///
 /// @brief Read a compressed matte atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_compressed_matte_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_compressed_matte_atom(MuTFFContext *ctx, size_t *n,
                                             MuTFFCompressedMatteAtom *out);
 
 ///
 /// @brief Write a compressed matte atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_compressed_matte_atom(
-    mutff_file_t *fd, size_t *n, const MuTFFCompressedMatteAtom *in);
+    MuTFFContext *ctx, size_t *n, const MuTFFCompressedMatteAtom *in);
 
 ///
 /// @brief Track matte atom
@@ -941,23 +941,23 @@ typedef struct {
 ///
 /// @brief Read a track matte atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_track_matte_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_track_matte_atom(MuTFFContext *ctx, size_t *n,
                                        MuTFFTrackMatteAtom *out);
 
 ///
 /// @brief Write a track matte atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_track_matte_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_track_matte_atom(MuTFFContext *ctx, size_t *n,
                                         const MuTFFTrackMatteAtom *in);
 
 ///
@@ -975,23 +975,23 @@ typedef struct {
 ///
 /// @brief Read an edit list entry
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_edit_list_entry(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_edit_list_entry(MuTFFContext *ctx, size_t *n,
                                       MuTFFEditListEntry *out);
 
 ///
 /// @brief Write a movie data atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_edit_list_entry(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_edit_list_entry(MuTFFContext *ctx, size_t *n,
                                        const MuTFFEditListEntry *in);
 
 ///
@@ -1015,23 +1015,23 @@ typedef struct {
 ///
 /// @brief Read an edit list atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_edit_list_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_edit_list_atom(MuTFFContext *ctx, size_t *n,
                                      MuTFFEditListAtom *out);
 
 ///
 /// @brief Write an edit list atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_edit_list_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_edit_list_atom(MuTFFContext *ctx, size_t *n,
                                       const MuTFFEditListAtom *in);
 
 ///
@@ -1046,23 +1046,23 @@ typedef struct {
 ///
 /// @brief Read an edit atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_edit_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_edit_atom(MuTFFContext *ctx, size_t *n,
                                 MuTFFEditAtom *out);
 
 ///
 /// @brief Write an edit atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_edit_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_edit_atom(MuTFFContext *ctx, size_t *n,
                                  const MuTFFEditAtom *in);
 
 ///
@@ -1085,24 +1085,24 @@ typedef struct {
 ///
 /// @brief Read a track reference type atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_track_reference_type_atom(
-    mutff_file_t *fd, size_t *n, MuTFFTrackReferenceTypeAtom *out);
+    MuTFFContext *ctx, size_t *n, MuTFFTrackReferenceTypeAtom *out);
 
 ///
 /// @brief Write a track reference type atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_track_reference_type_atom(
-    mutff_file_t *fd, size_t *n, const MuTFFTrackReferenceTypeAtom *in);
+    MuTFFContext *ctx, size_t *n, const MuTFFTrackReferenceTypeAtom *in);
 
 ///
 /// @brief The maximum reference type atoms in a track reference atom
@@ -1123,23 +1123,23 @@ typedef struct {
 
 /// @brief Read a track reference atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_track_reference_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_track_reference_atom(MuTFFContext *ctx, size_t *n,
                                            MuTFFTrackReferenceAtom *out);
 
 ///
 /// @brief Write a track reference atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_track_reference_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_track_reference_atom(MuTFFContext *ctx, size_t *n,
                                             const MuTFFTrackReferenceAtom *in);
 
 ///
@@ -1154,24 +1154,24 @@ typedef struct {
 
 /// @brief Read a track exclude from autoselection atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_track_exclude_from_autoselection_atom(
-    mutff_file_t *fd, size_t *n, MuTFFTrackExcludeFromAutoselectionAtom *out);
+    MuTFFContext *ctx, size_t *n, MuTFFTrackExcludeFromAutoselectionAtom *out);
 
 ///
 /// @brief Write a track exclude from autoselection atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_track_exclude_from_autoselection_atom(
-    mutff_file_t *fd, size_t *n,
+    MuTFFContext *ctx, size_t *n,
     const MuTFFTrackExcludeFromAutoselectionAtom *in);
 
 ///
@@ -1188,24 +1188,24 @@ typedef struct {
 
 /// @brief Read a track load settings atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_track_load_settings_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_track_load_settings_atom(MuTFFContext *ctx, size_t *n,
                                                MuTFFTrackLoadSettingsAtom *out);
 
 ///
 /// @brief Write a track load settings atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_track_load_settings_atom(
-    mutff_file_t *fd, size_t *n, const MuTFFTrackLoadSettingsAtom *in);
+    MuTFFContext *ctx, size_t *n, const MuTFFTrackLoadSettingsAtom *in);
 
 ///
 /// @brief Input type atom
@@ -1216,23 +1216,23 @@ typedef struct {
 
 /// @brief Read an input type atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_input_type_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_input_type_atom(MuTFFContext *ctx, size_t *n,
                                       MuTFFInputTypeAtom *out);
 
 ///
 /// @brief Write an input type atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_input_type_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_input_type_atom(MuTFFContext *ctx, size_t *n,
                                        const MuTFFInputTypeAtom *in);
 
 ///
@@ -1244,23 +1244,23 @@ typedef struct {
 
 /// @brief Read an object ID atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_object_id_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_object_id_atom(MuTFFContext *ctx, size_t *n,
                                      MuTFFObjectIDAtom *out);
 
 ///
 /// @brief Write an object ID atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_object_id_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_object_id_atom(MuTFFContext *ctx, size_t *n,
                                       const MuTFFObjectIDAtom *in);
 
 ///
@@ -1280,23 +1280,23 @@ typedef struct {
 
 /// @brief Read a track input atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_track_input_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_track_input_atom(MuTFFContext *ctx, size_t *n,
                                        MuTFFTrackInputAtom *out);
 
 ///
 /// @brief Write a track input atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_track_input_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_track_input_atom(MuTFFContext *ctx, size_t *n,
                                         const MuTFFTrackInputAtom *in);
 
 ///
@@ -1318,23 +1318,23 @@ typedef struct {
 ///
 /// @brief Read track input map atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_track_input_map_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_track_input_map_atom(MuTFFContext *ctx, size_t *n,
                                            MuTFFTrackInputMapAtom *out);
 
 ///
 /// @brief Write a track input map atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_track_input_map_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_track_input_map_atom(MuTFFContext *ctx, size_t *n,
                                             const MuTFFTrackInputMapAtom *in);
 
 ///
@@ -1356,23 +1356,23 @@ typedef struct {
 ///
 /// @brief Read media header atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_media_header_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_media_header_atom(MuTFFContext *ctx, size_t *n,
                                         MuTFFMediaHeaderAtom *out);
 
 ///
 /// @brief Write a media header atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_media_header_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_media_header_atom(MuTFFContext *ctx, size_t *n,
                                          const MuTFFMediaHeaderAtom *in);
 
 ///
@@ -1395,24 +1395,24 @@ typedef struct {
 ///
 /// @brief Read extended language tag atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_extended_language_tag_atom(
-    mutff_file_t *fd, size_t *n, MuTFFExtendedLanguageTagAtom *out);
+    MuTFFContext *ctx, size_t *n, MuTFFExtendedLanguageTagAtom *out);
 
 ///
 /// @brief Write an extended language tag atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_extended_language_tag_atom(
-    mutff_file_t *fd, size_t *n, const MuTFFExtendedLanguageTagAtom *in);
+    MuTFFContext *ctx, size_t *n, const MuTFFExtendedLanguageTagAtom *in);
 
 ///
 /// @brief Maximum component name length
@@ -1439,24 +1439,24 @@ typedef struct {
 
 /// @brief Read a handler reference atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_handler_reference_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_handler_reference_atom(MuTFFContext *ctx, size_t *n,
                                              MuTFFHandlerReferenceAtom *out);
 
 ///
 /// @brief Write a handler reference atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_handler_reference_atom(
-    mutff_file_t *fd, size_t *n, const MuTFFHandlerReferenceAtom *in);
+    MuTFFContext *ctx, size_t *n, const MuTFFHandlerReferenceAtom *in);
 
 ///
 /// @brief Video media information header atom
@@ -1472,24 +1472,24 @@ typedef struct {
 
 /// @brief Read a video media information header atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_video_media_information_header_atom(
-    mutff_file_t *fd, size_t *n, MuTFFVideoMediaInformationHeaderAtom *out);
+    MuTFFContext *ctx, size_t *n, MuTFFVideoMediaInformationHeaderAtom *out);
 
 ///
 /// @brief Write a video media information header atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_video_media_information_header_atom(
-    mutff_file_t *fd, size_t *n,
+    MuTFFContext *ctx, size_t *n,
     const MuTFFVideoMediaInformationHeaderAtom *in);
 
 ///
@@ -1514,23 +1514,23 @@ typedef struct {
 ///
 /// @brief Read a data reference
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out] out The parsed reference
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_data_reference(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_data_reference(MuTFFContext *ctx, size_t *n,
                                      MuTFFDataReference *out);
 
 ///
 /// @brief Write a data reference
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_data_reference(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_data_reference(MuTFFContext *ctx, size_t *n,
                                       const MuTFFDataReference *in);
 
 ///
@@ -1554,23 +1554,23 @@ typedef struct {
 ///
 /// @brief Read a data reference atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_data_reference_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_data_reference_atom(MuTFFContext *ctx, size_t *n,
                                           MuTFFDataReferenceAtom *out);
 
 ///
 /// @brief Write a data reference atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_data_reference_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_data_reference_atom(MuTFFContext *ctx, size_t *n,
                                            const MuTFFDataReferenceAtom *in);
 
 ///
@@ -1585,24 +1585,24 @@ typedef struct {
 ///
 /// @brief Read a data information atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_data_information_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_data_information_atom(MuTFFContext *ctx, size_t *n,
                                             MuTFFDataInformationAtom *out);
 
 ///
 /// @brief Write a data information atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_data_information_atom(
-    mutff_file_t *fd, size_t *n, const MuTFFDataInformationAtom *in);
+    MuTFFContext *ctx, size_t *n, const MuTFFDataInformationAtom *in);
 
 #define MuTFF_MAX_SAMPLE_DESCRIPTION_TABLE_LEN 8U
 
@@ -1622,24 +1622,24 @@ typedef struct {
 ///
 /// @brief Read a sample description atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_sample_description_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_sample_description_atom(MuTFFContext *ctx, size_t *n,
                                               MuTFFSampleDescriptionAtom *out);
 
 ///
 /// @brief Write a sample description atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_sample_description_atom(
-    mutff_file_t *fd, size_t *n, const MuTFFSampleDescriptionAtom *in);
+    MuTFFContext *ctx, size_t *n, const MuTFFSampleDescriptionAtom *in);
 
 ///
 /// @brief Entry in the time-to-sample table
@@ -1653,24 +1653,24 @@ typedef struct {
 ///
 /// @brief Read a time-to-sample table entry
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_time_to_sample_table_entry(
-    mutff_file_t *fd, size_t *n, MuTFFTimeToSampleTableEntry *out);
+    MuTFFContext *ctx, size_t *n, MuTFFTimeToSampleTableEntry *out);
 
 ///
 /// @brief Write a time-to-sample table entry
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_time_to_sample_table_entry(
-    mutff_file_t *fd, size_t *n, const MuTFFTimeToSampleTableEntry *in);
+    MuTFFContext *ctx, size_t *n, const MuTFFTimeToSampleTableEntry *in);
 
 ///
 /// @brief Maximum number of entries in a time-to-sample atom
@@ -1694,23 +1694,23 @@ typedef struct {
 ///
 /// @brief Read a time-to-sample atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_time_to_sample_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_time_to_sample_atom(MuTFFContext *ctx, size_t *n,
                                           MuTFFTimeToSampleAtom *out);
 
 ///
 /// @brief Write a time-to-sample atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_time_to_sample_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_time_to_sample_atom(MuTFFContext *ctx, size_t *n,
                                            const MuTFFTimeToSampleAtom *in);
 
 ///
@@ -1724,24 +1724,24 @@ typedef struct {
 ///
 /// @brief Read a composition offset table entry
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_composition_offset_table_entry(
-    mutff_file_t *fd, size_t *n, MuTFFCompositionOffsetTableEntry *out);
+    MuTFFContext *ctx, size_t *n, MuTFFCompositionOffsetTableEntry *out);
 
 ///
 /// @brief Write a composition offset table entry
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_composition_offset_table_entry(
-    mutff_file_t *fd, size_t *n, const MuTFFCompositionOffsetTableEntry *in);
+    MuTFFContext *ctx, size_t *n, const MuTFFCompositionOffsetTableEntry *in);
 
 ///
 /// @brief Maximum length of the composition offset table
@@ -1767,24 +1767,24 @@ typedef struct {
 ///
 /// @brief Read a composition offset atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_composition_offset_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_composition_offset_atom(MuTFFContext *ctx, size_t *n,
                                               MuTFFCompositionOffsetAtom *out);
 
 ///
 /// @brief Write a composition offset atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_composition_offset_atom(
-    mutff_file_t *fd, size_t *n, const MuTFFCompositionOffsetAtom *in);
+    MuTFFContext *ctx, size_t *n, const MuTFFCompositionOffsetAtom *in);
 
 ///
 /// @brief Composition shift least greatest atom
@@ -1805,24 +1805,24 @@ typedef struct {
 ///
 /// @brief Read a composition shift least greatest atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_composition_shift_least_greatest_atom(
-    mutff_file_t *fd, size_t *n, MuTFFCompositionShiftLeastGreatestAtom *out);
+    MuTFFContext *ctx, size_t *n, MuTFFCompositionShiftLeastGreatestAtom *out);
 
 ///
 /// @brief Write a composition shift least greatest atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_composition_shift_least_greatest_atom(
-    mutff_file_t *fd, size_t *n,
+    MuTFFContext *ctx, size_t *n,
     const MuTFFCompositionShiftLeastGreatestAtom *in);
 
 ///
@@ -1845,23 +1845,23 @@ typedef struct {
 ///
 /// @brief Read a sync sample atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_sync_sample_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_sync_sample_atom(MuTFFContext *ctx, size_t *n,
                                        MuTFFSyncSampleAtom *out);
 
 ///
 /// @brief Write a sync sample atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_sync_sample_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_sync_sample_atom(MuTFFContext *ctx, size_t *n,
                                         const MuTFFSyncSampleAtom *in);
 
 ///
@@ -1884,24 +1884,24 @@ typedef struct {
 ///
 /// @brief Read a partial sync sample atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_partial_sync_sample_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_partial_sync_sample_atom(MuTFFContext *ctx, size_t *n,
                                                MuTFFPartialSyncSampleAtom *out);
 
 ///
 /// @brief Write a partial sync sample atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_partial_sync_sample_atom(
-    mutff_file_t *fd, size_t *n, const MuTFFPartialSyncSampleAtom *in);
+    MuTFFContext *ctx, size_t *n, const MuTFFPartialSyncSampleAtom *in);
 
 ///
 /// @brief Entry in the sample-to-chunk table
@@ -1916,25 +1916,25 @@ typedef struct {
 ///
 /// @brief Read a sample to chunk table entry
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out  The parsed entry
 /// @return           If the entry was read successfully, then the number of
 ///                   bytes read, otherwise the (negative) MuTFFError code.
 ///
 MuTFFError mutff_read_sample_to_chunk_table_entry(
-    mutff_file_t *fd, size_t *n, MuTFFSampleToChunkTableEntry *out);
+    MuTFFContext *ctx, size_t *n, MuTFFSampleToChunkTableEntry *out);
 
 ///
 /// @brief Write a sample-to-chunk table entry
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_sample_to_chunk_table_entry(
-    mutff_file_t *fd, size_t *n, const MuTFFSampleToChunkTableEntry *in);
+    MuTFFContext *ctx, size_t *n, const MuTFFSampleToChunkTableEntry *in);
 
 ///
 /// @brief Maximum length of the sample-to-chunk table
@@ -1958,23 +1958,23 @@ typedef struct {
 ///
 /// @brief Read a sample to chunk atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_sample_to_chunk_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_sample_to_chunk_atom(MuTFFContext *ctx, size_t *n,
                                            MuTFFSampleToChunkAtom *out);
 
 ///
 /// @brief Write a sample-to-chunk atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_sample_to_chunk_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_sample_to_chunk_atom(MuTFFContext *ctx, size_t *n,
                                             const MuTFFSampleToChunkAtom *in);
 
 ///
@@ -1998,23 +1998,23 @@ typedef struct {
 ///
 /// @brief Read a sample size atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_sample_size_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_sample_size_atom(MuTFFContext *ctx, size_t *n,
                                        MuTFFSampleSizeAtom *out);
 
 ///
 /// @brief Write a sample size atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_sample_size_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_sample_size_atom(MuTFFContext *ctx, size_t *n,
                                         const MuTFFSampleSizeAtom *in);
 
 ///
@@ -2037,23 +2037,23 @@ typedef struct {
 ///
 /// @brief Read a chunk offset atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_chunk_offset_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_chunk_offset_atom(MuTFFContext *ctx, size_t *n,
                                         MuTFFChunkOffsetAtom *out);
 
 ///
 /// @brief Write a chunk offset atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_chunk_offset_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_chunk_offset_atom(MuTFFContext *ctx, size_t *n,
                                          const MuTFFChunkOffsetAtom *in);
 
 #define MuTFF_MAX_SAMPLE_DEPENDENCY_FLAGS_TABLE_LEN 4U
@@ -2074,24 +2074,24 @@ typedef struct {
 ///
 /// @brief Read a sample dependency flags atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read to read from
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_sample_dependency_flags_atom(
-    mutff_file_t *fd, size_t *n, MuTFFSampleDependencyFlagsAtom *out);
+    MuTFFContext *ctx, size_t *n, MuTFFSampleDependencyFlagsAtom *out);
 
 ///
 /// @brief Write a sample dependency flags atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_sample_dependency_flags_atom(
-    mutff_file_t *fd, size_t *n, const MuTFFSampleDependencyFlagsAtom *in);
+    MuTFFContext *ctx, size_t *n, const MuTFFSampleDependencyFlagsAtom *in);
 
 ///
 /// @brief Sample table atom
@@ -2131,23 +2131,23 @@ typedef struct {
 ///
 /// @brief Read a sample table atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_sample_table_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_sample_table_atom(MuTFFContext *ctx, size_t *n,
                                         MuTFFSampleTableAtom *out);
 
 ///
 /// @brief Write a sample table atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_sample_table_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_sample_table_atom(MuTFFContext *ctx, size_t *n,
                                          const MuTFFSampleTableAtom *in);
 
 ///
@@ -2172,24 +2172,24 @@ typedef struct {
 ///
 /// @brief Read a video media information atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_video_media_information_atom(
-    mutff_file_t *fd, size_t *n, MuTFFVideoMediaInformationAtom *out);
+    MuTFFContext *ctx, size_t *n, MuTFFVideoMediaInformationAtom *out);
 
 ///
 /// @brief Write a video media information atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_video_media_information_atom(
-    mutff_file_t *fd, size_t *n, const MuTFFVideoMediaInformationAtom *in);
+    MuTFFContext *ctx, size_t *n, const MuTFFVideoMediaInformationAtom *in);
 
 ///
 /// @brief Sound media information header atom
@@ -2205,24 +2205,24 @@ typedef struct {
 ///
 /// @brief Read a sound media information header atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_sound_media_information_header_atom(
-    mutff_file_t *fd, size_t *n, MuTFFSoundMediaInformationHeaderAtom *out);
+    MuTFFContext *ctx, size_t *n, MuTFFSoundMediaInformationHeaderAtom *out);
 
 ///
 /// @brief Write a sound media information header atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_sound_media_information_header_atom(
-    mutff_file_t *fd, size_t *n,
+    MuTFFContext *ctx, size_t *n,
     const MuTFFSoundMediaInformationHeaderAtom *in);
 
 ///
@@ -2245,24 +2245,24 @@ typedef struct {
 ///
 /// @brief Read a sound media information atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_sound_media_information_atom(
-    mutff_file_t *fd, size_t *n, MuTFFSoundMediaInformationAtom *out);
+    MuTFFContext *ctx, size_t *n, MuTFFSoundMediaInformationAtom *out);
 
 ///
 /// @brief Write a sound media information atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_sound_media_information_atom(
-    mutff_file_t *fd, size_t *n, const MuTFFSoundMediaInformationAtom *in);
+    MuTFFContext *ctx, size_t *n, const MuTFFSoundMediaInformationAtom *in);
 
 ///
 /// @brief Base media info atom
@@ -2282,23 +2282,23 @@ typedef struct {
 ///
 /// @brief Read a base media info atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_base_media_info_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_base_media_info_atom(MuTFFContext *ctx, size_t *n,
                                            MuTFFBaseMediaInfoAtom *out);
 
 ///
 /// @brief Write a base media info atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_base_media_info_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_base_media_info_atom(MuTFFContext *ctx, size_t *n,
                                             const MuTFFBaseMediaInfoAtom *in);
 
 ///
@@ -2313,24 +2313,24 @@ typedef struct {
 ///
 /// @brief Read a text media information atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_text_media_information_atom(
-    mutff_file_t *fd, size_t *n, MuTFFTextMediaInformationAtom *out);
+    MuTFFContext *ctx, size_t *n, MuTFFTextMediaInformationAtom *out);
 
 ///
 /// @brief Write a text media information atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_text_media_information_atom(
-    mutff_file_t *fd, size_t *n, const MuTFFTextMediaInformationAtom *in);
+    MuTFFContext *ctx, size_t *n, const MuTFFTextMediaInformationAtom *in);
 
 ///
 /// @brief Base media information header atom
@@ -2347,24 +2347,25 @@ typedef struct {
 ///
 /// @brief Read a base media information header atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_base_media_information_header_atom(
-    mutff_file_t *fd, size_t *n, MuTFFBaseMediaInformationHeaderAtom *out);
+    MuTFFContext *ctx, size_t *n, MuTFFBaseMediaInformationHeaderAtom *out);
 
 ///
 /// @brief Write a base media information header atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_base_media_information_header_atom(
-    mutff_file_t *fd, size_t *n, const MuTFFBaseMediaInformationHeaderAtom *in);
+    MuTFFContext *ctx, size_t *n,
+    const MuTFFBaseMediaInformationHeaderAtom *in);
 
 ///
 /// @brief Base media information atom
@@ -2378,24 +2379,24 @@ typedef struct {
 ///
 /// @brief Read a base media information atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_read_base_media_information_atom(
-    mutff_file_t *fd, size_t *n, MuTFFBaseMediaInformationAtom *out);
+    MuTFFContext *ctx, size_t *n, MuTFFBaseMediaInformationAtom *out);
 
 ///
 /// @brief Write a base media information atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
 MuTFFError mutff_write_base_media_information_atom(
-    mutff_file_t *fd, size_t *n, const MuTFFBaseMediaInformationAtom *in);
+    MuTFFContext *ctx, size_t *n, const MuTFFBaseMediaInformationAtom *in);
 
 ///
 /// @brief Media information types
@@ -2450,23 +2451,23 @@ MuTFFError mutff_media_atom_type(MuTFFMediaType *out,
 
 /// @brief Read a media atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_media_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_media_atom(MuTFFContext *ctx, size_t *n,
                                  MuTFFMediaAtom *out);
 
 ///
 /// @brief Write a media atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_media_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_media_atom(MuTFFContext *ctx, size_t *n,
                                   const MuTFFMediaAtom *in);
 
 ///
@@ -2510,23 +2511,23 @@ typedef struct {
 ///
 /// @brief Read a track atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_track_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_track_atom(MuTFFContext *ctx, size_t *n,
                                  MuTFFTrackAtom *out);
 
 ///
 /// @brief Write a track atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_track_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_track_atom(MuTFFContext *ctx, size_t *n,
                                   const MuTFFTrackAtom *in);
 
 ///
@@ -2562,23 +2563,23 @@ typedef struct {
 ///
 /// @brief Read a movie atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out] out The parsed atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_movie_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_movie_atom(MuTFFContext *ctx, size_t *n,
                                  MuTFFMovieAtom *out);
 
 ///
 /// @brief Write a movie atom
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The atom
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_movie_atom(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_movie_atom(MuTFFContext *ctx, size_t *n,
                                   const MuTFFMovieAtom *in);
 
 #define MuTFF_MAX_MOVIE_DATA_ATOMS 4U
@@ -2628,23 +2629,23 @@ typedef struct {
 ///
 /// @brief Read a QuickTime movie file
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes read
 /// @param [out] out The parsed file
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_read_movie_file(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_read_movie_file(MuTFFContext *ctx, size_t *n,
                                  MuTFFMovieFile *out);
 
 ///
 /// @brief Write a QuickTime movie file
 ///
-/// @param [in] fd   The file descriptor
+/// @param [in] ctx  The context
 /// @param [out] n   The number of bytes written
 /// @param [in] in   The file
 /// @return          The MuTFFError code
 ///
-MuTFFError mutff_write_movie_file(mutff_file_t *fd, size_t *n,
+MuTFFError mutff_write_movie_file(MuTFFContext *ctx, size_t *n,
                                   const MuTFFMovieFile *in);
 
 /// @} MuTFF
