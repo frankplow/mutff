@@ -4716,6 +4716,8 @@ static const MuTFFMovieFile file_test_struct = {
   {
     mdat_test_struct,
   },
+  0,
+  {},
   1,
   {
     free_test_struct,

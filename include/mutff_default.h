@@ -592,6 +592,105 @@ MuTFFError mutff_write_user_data_atom(MuTFFContext *ctx, size_t *n,
                                       const MuTFFUserDataAtom *in);
 
 ///
+/// @brief Movie extends header atom
+///
+typedef struct {
+  uint8_t version;
+  mutff_uint24_t flags;
+  uint64_t size;
+} MuTFFMovieExtendsHeaderAtom;
+
+///
+/// @brief Read a movie extends header atom
+///
+/// @param [in] ctx  The context
+/// @param [out] n   The number of bytes read to read from
+/// @param [out] out The parsed atom
+/// @return          The MuTFFError code
+///
+MuTFFError mutff_read_movie_extends_header_atom(
+    MuTFFContext *ctx, size_t *n, MuTFFMovieExtendsHeaderAtom *out);
+
+///
+/// @brief Write a movie extends header atom
+///
+/// @param [in] ctx  The context
+/// @param [out] n   The number of bytes written
+/// @param [in] in   The atom
+/// @return          The MuTFFError code
+///
+MuTFFError mutff_write_movie_extends_header_atom(
+    MuTFFContext *ctx, size_t *n, const MuTFFMovieExtendsHeaderAtom *in);
+
+///
+/// @brief Track extends atom
+///
+typedef struct {
+  uint8_t version;
+  mutff_uint24_t flags;
+  uint32_t track_id;
+  uint32_t default_sample_description_index;
+  uint32_t default_sample_duration;
+  uint32_t default_sample_size;
+  uint32_t default_sample_flags;
+} MuTFFTrackExtendsAtom;
+
+///
+/// @brief Read a track extends atom
+///
+/// @param [in] ctx  The context
+/// @param [out] n   The number of bytes read to read from
+/// @param [out] out The parsed atom
+/// @return          The MuTFFError code
+///
+MuTFFError mutff_read_track_extends_atom(MuTFFContext *ctx, size_t *n,
+                                         MuTFFTrackExtendsAtom *out);
+
+///
+/// @brief Write a track extends atom
+///
+/// @param [in] ctx  The context
+/// @param [out] n   The number of bytes written
+/// @param [in] in   The atom
+/// @return          The MuTFFError code
+///
+MuTFFError mutff_write_track_extends_atom(MuTFFContext *ctx, size_t *n,
+                                          const MuTFFTrackExtendsAtom *in);
+
+///
+/// @brief Movie extends atom
+///
+typedef struct {
+  bool movie_extends_header_present;
+  MuTFFMovieExtendsHeaderAtom movie_extends_header;
+
+  bool track_extends_present;
+  MuTFFTrackExtendsAtom track_extends;
+} MuTFFMovieExtendsAtom;
+
+///
+/// @brief Read a movie extends atom
+///
+/// @param [in] ctx  The context
+/// @param [out] n   The number of bytes read to read from
+/// @param [out] out The parsed atom
+/// @return          The MuTFFError code
+///
+MuTFFError mutff_read_movie_extends_atom(MuTFFContext *ctx, size_t *n,
+                                         MuTFFMovieExtendsAtom *out);
+
+///
+/// @brief Write a movie extends atom
+///
+/// @param [in] ctx  The context
+/// @param [out] n   The number of bytes written
+/// @param [in] in   The atom
+/// @return          The MuTFFError code
+///
+MuTFFError mutff_write_movie_extends_atom(MuTFFContext *ctx, size_t *n,
+                                          const MuTFFMovieExtendsAtom *in);
+
+///
 /// @brief Track header atom
 /// @see
 /// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-BBCEIDFA
@@ -2582,7 +2681,255 @@ MuTFFError mutff_read_movie_atom(MuTFFContext *ctx, size_t *n,
 MuTFFError mutff_write_movie_atom(MuTFFContext *ctx, size_t *n,
                                   const MuTFFMovieAtom *in);
 
-#define MuTFF_MAX_MOVIE_DATA_ATOMS 4U
+///
+/// @brief Movie fragment header atom.
+///
+typedef struct {
+  uint8_t version;
+  mutff_uint24_t flags;
+  uint32_t sequence_number;
+} MuTFFMovieFragmentHeaderAtom;
+
+///
+/// @brief Read a movie fragment header atom
+///
+/// @param [in] ctx  The context
+/// @param [out] n   The number of bytes read to read from
+/// @param [out]     The parsed atom
+/// @return          The MUTFFError code
+///
+MuTFFError mutff_read_movie_fragment_header_atom(
+    MuTFFContext *ctx, size_t *n, MuTFFMovieFragmentHeaderAtom *out);
+
+///
+/// @brief Write a movie fragment header atom
+///
+/// @param [in] ctx  The context
+/// @param [out] n   The number of bytes written
+/// @param [in] in   The atom
+/// @return          The MUTFFError code
+///
+MuTFFError mutff_write_movie_fragment_header_atom(
+    MuTFFContext *ctx, size_t *n, const MuTFFMovieFragmentHeaderAtom *in);
+
+///
+/// @brief Track fragment header atom.
+///
+typedef struct {
+  uint32_t track_id;
+  bool duration_is_empty;
+  bool default_base_is_moof;
+
+  bool base_data_offset_present;
+  uint64_t base_data_offset;
+
+  bool sample_description_index_present;
+  uint32_t sample_description_index;
+
+  bool default_sample_duration_present;
+  uint32_t default_sample_duration;
+
+  bool default_sample_size_present;
+  uint32_t default_sample_size;
+
+  bool default_sample_flags_present;
+  uint32_t default_sample_flags;
+} MuTFFTrackFragmentHeaderAtom;
+
+///
+/// @brief Read a track fragment header atom
+///
+/// @param [in] ctx  The context
+/// @param [out] n   The number of bytes read to read from
+/// @param [out]     The parsed atom
+/// @return          The MUTFFError code
+///
+MuTFFError mutff_read_track_fragment_header_atom(
+    MuTFFContext *ctx, size_t *n, MuTFFTrackFragmentHeaderAtom *out);
+
+///
+/// @brief Write a track fragment header atom
+///
+/// @param [in] ctx  The context
+/// @param [out] n   The number of bytes written
+/// @param [in] in   The atom
+/// @return          The MUTFFError code
+///
+MuTFFError mutff_write_track_fragment_header_atom(
+    MuTFFContext *ctx, size_t *n, const MuTFFTrackFragmentHeaderAtom *in);
+
+///
+/// @brief Record in a track fragment run atom
+///
+typedef struct {
+  uint32_t sample_duration;
+  uint32_t sample_size;
+  uint32_t sample_flags;
+  int32_t sample_composition_time_offset;
+} MuTFFTrackFragmentRunRecord;
+
+///
+/// @brief Maximum records in a track fragment run atom
+///
+#define MUTFF_MAX_TRACK_FRAGMENT_RUN_RECORDS 30
+
+///
+/// @brief Track fragment run atom.
+///
+typedef struct {
+  uint8_t version;
+
+  bool data_offset_present;
+  int32_t data_offset;
+  bool first_sample_flags_present;
+  uint32_t first_sample_flags;
+  bool sample_duration_present;
+  bool sample_size_present;
+  bool sample_flags_present;
+  bool sample_composition_time_offset_present;
+
+  uint32_t sample_count;
+  MuTFFTrackFragmentRunRecord records[MUTFF_MAX_TRACK_FRAGMENT_RUN_RECORDS];
+} MuTFFTrackFragmentRunAtom;
+
+///
+/// @brief Read a track fragment run atom
+///
+/// @param [in] ctx  The context
+/// @param [out] n   The number of bytes read to read from
+/// @param [out]     The parsed atom
+/// @return          The MUTFFError code
+///
+MuTFFError mutff_read_track_fragment_run_atom(MuTFFContext *ctx, size_t *n,
+                                              MuTFFTrackFragmentRunAtom *out);
+
+///
+/// @brief Write a track fragment run atom
+///
+/// @param [in] ctx  The context
+/// @param [out] n   The number of bytes written
+/// @param [in] in   The atom
+/// @return          The MUTFFError code
+///
+MuTFFError mutff_write_track_fragment_run_atom(
+    MuTFFContext *ctx, size_t *n, const MuTFFTrackFragmentRunAtom *in);
+
+///
+/// @brief Track fragment decode time atom
+///
+typedef struct {
+  uint8_t version;
+  uint64_t base_media_decode_time;
+} MuTFFTrackFragmentDecodeTimeAtom;
+
+///
+/// @brief Read a track fragment decode time atom
+///
+/// @param [in] ctx  The context
+/// @param [out] n   The number of bytes read to read from
+/// @param [out]     The parsed atom
+/// @return          The MUTFFError code
+///
+MuTFFError mutff_read_track_fragment_decode_time_atom(
+    MuTFFContext *ctx, size_t *n, MuTFFTrackFragmentDecodeTimeAtom *out);
+
+///
+/// @brief Write a track fragment decode time atom
+///
+/// @param [in] ctx  The context
+/// @param [out] n   The number of bytes written
+/// @param [in] in   The atom
+/// @return          The MUTFFError code
+///
+MuTFFError mutff_write_track_fragment_decode_time_atom(
+    MuTFFContext *ctx, size_t *n, const MuTFFTrackFragmentDecodeTimeAtom *in);
+
+///
+/// @brief Maximum records in a track fragment run atom
+///
+#define MuTFF_MAX_TRACK_FRAGMENT_RUN_ATOMS 4U
+
+///
+/// @brief Track fragment atom
+///
+typedef struct {
+  MuTFFTrackFragmentHeaderAtom track_fragment_header;
+
+  size_t track_fragment_run_count;
+  MuTFFTrackFragmentRunAtom
+      track_fragment_run[MuTFF_MAX_TRACK_FRAGMENT_RUN_ATOMS];
+
+  bool track_fragment_decode_time_present;
+  MuTFFTrackFragmentDecodeTimeAtom track_fragment_decode_time;
+
+  bool user_data_present;
+  MuTFFUserDataAtom user_data;
+} MuTFFTrackFragmentAtom;
+
+///
+/// @brief Read a track fragment atom
+///
+/// @param [in] ctx  The context
+/// @param [out] n   The number of bytes read
+/// @param [out] out The parsed atom
+/// @return          The MuTFFError code
+///
+MuTFFError mutff_read_track_fragment_atom(MuTFFContext *ctx, size_t *n,
+                                          MuTFFTrackFragmentAtom *out);
+
+///
+/// @brief Write a track fragment atom
+///
+/// @param [in] ctx  The context
+/// @param [out] n   The number of bytes written
+/// @param [in] in   The atom
+/// @return          The MuTFFError code
+///
+MuTFFError mutff_write_track_fragment_atom(MuTFFContext *ctx, size_t *n,
+                                           const MuTFFTrackFragmentAtom *in);
+
+///
+/// @brief The maximum number of track fragment atoms in a movie fragment atom
+///
+#define MuTFF_MAX_TRACK_FRAGMENT_ATOMS 4U
+
+///
+/// @brief Movie fragment atom
+///
+typedef struct {
+  MuTFFMovieFragmentHeaderAtom movie_fragment_header;
+
+  size_t track_fragment_count;
+  MuTFFTrackFragmentAtom track_fragment[MuTFF_MAX_TRACK_FRAGMENT_ATOMS];
+
+  bool user_data_present;
+  MuTFFUserDataAtom user_data;
+} MuTFFMovieFragmentAtom;
+
+///
+/// @brief Read a movie fragment atom
+///
+/// @param [in] ctx  The context
+/// @param [out] n   The number of bytes read
+/// @param [out] out The parsed atom
+/// @return          The MuTFFError code
+///
+MuTFFError mutff_read_movie_fragment_atom(MuTFFContext *ctx, size_t *n,
+                                          MuTFFMovieFragmentAtom *out);
+
+///
+/// @brief Write a movie fragment atom
+///
+/// @param [in] ctx  The context
+/// @param [out] n   The number of bytes written
+/// @param [in] in   The atom
+/// @return          The MuTFFError code
+///
+MuTFFError mutff_write_movie_fragment_atom(MuTFFContext *ctx, size_t *n,
+                                           const MuTFFMovieFragmentAtom *in);
+
+#define MuTFF_MAX_MOVIE_DATA_ATOMS 8U
+#define MuTFF_MAX_MOVIE_FRAGMENT_ATOMS 8U
 #define MuTFF_MAX_FREE_ATOMS 4U
 #define MuTFF_MAX_SKIP_ATOMS 4U
 #define MuTFF_MAX_WIDE_ATOMS 4U
@@ -2612,6 +2959,9 @@ typedef struct {
 
   size_t movie_data_count;
   MuTFFMovieDataAtom movie_data[MuTFF_MAX_MOVIE_DATA_ATOMS];
+
+  size_t movie_fragment_count;
+  MuTFFMovieFragmentAtom movie_fragment[MuTFF_MAX_MOVIE_FRAGMENT_ATOMS];
 
   size_t free_count;
   MuTFFFreeAtom free[MuTFF_MAX_FREE_ATOMS];
