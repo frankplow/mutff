@@ -658,14 +658,19 @@ MuTFFError mutff_write_track_extends_atom(MuTFFContext *ctx, size_t *n,
                                           const MuTFFTrackExtendsAtom *in);
 
 ///
+/// @brief The maximum number of track atoms in a movie atom
+///
+#define MuTFF_MAX_TRACK_ATOMS 4U
+
+///
 /// @brief Movie extends atom
 ///
 typedef struct {
   bool movie_extends_header_present;
   MuTFFMovieExtendsHeaderAtom movie_extends_header;
 
-  bool track_extends_present;
-  MuTFFTrackExtendsAtom track_extends;
+  size_t track_extends_count;
+  MuTFFTrackExtendsAtom track_extends[MuTFF_MAX_TRACK_ATOMS];
 } MuTFFMovieExtendsAtom;
 
 ///
@@ -2628,11 +2633,6 @@ MuTFFError mutff_read_track_atom(MuTFFContext *ctx, size_t *n,
 ///
 MuTFFError mutff_write_track_atom(MuTFFContext *ctx, size_t *n,
                                   const MuTFFTrackAtom *in);
-
-///
-/// @brief The maximum number of track atoms in a movie atom
-///
-#define MuTFF_MAX_TRACK_ATOMS 4U
 
 ///
 /// @brief Movie atom

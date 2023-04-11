@@ -1241,7 +1241,7 @@ MuTFFError mutff_read_movie_extends_atom(MuTFFContext *ctx, size_t *n,
   uint32_t child_type;
 
   out->movie_extends_header_present = false;
-  out->track_extends_present = false;
+  out->track_extends_count = 0;
 
   MuTFF_FN(mutff_read_header, &size, &type);
   if (type != MuTFF_FOURCC('m', 'v', 'e', 'x')) {
@@ -1263,8 +1263,12 @@ MuTFFError mutff_read_movie_extends_atom(MuTFFContext *ctx, size_t *n,
                          out->movie_extends_header_present);
         break;
       case MuTFF_FOURCC('t', 'r', 'e', 'x'):
-        MuTFF_READ_CHILD(mutff_read_track_extends_atom, &out->track_extends,
-                         out->track_extends_present);
+        if (out->track_extends_count >= MuTFF_MAX_TRACK_ATOMS) {
+          return MuTFFErrorOutOfMemory;
+        }
+        MuTFF_FN(mutff_read_track_extends_atom,
+                 &out->track_extends[out->track_extends_count]);
+        out->track_extends_count++;
         break;
       default:
         MuTFF_SEEK_CUR(child_size);
@@ -1287,8 +1291,8 @@ static inline MuTFFError mutff_movie_extends_atom_size(
     }
     *out += child_size;
   }
-  if (atom->track_extends_present) {
-    err = mutff_track_extends_atom_size(&child_size, &atom->track_extends);
+  for (size_t i = 0; i < atom->track_extends_count; ++i) {
+    err = mutff_track_extends_atom_size(&child_size, &atom->track_extends[i]);
     if (err != MuTFFErrorNone) {
       return err;
     }
@@ -1312,8 +1316,8 @@ MuTFFError mutff_write_movie_extends_atom(MuTFFContext *ctx, size_t *n,
   if (in->movie_extends_header_present) {
     MuTFF_FN(mutff_write_movie_extends_header_atom, &in->movie_extends_header);
   }
-  if (in->track_extends_present) {
-    MuTFF_FN(mutff_write_track_extends_atom, &in->track_extends);
+  for (size_t i = 0; i < in->track_extends_count; ++i) {
+    MuTFF_FN(mutff_write_track_extends_atom, &in->track_extends[i]);
   }
   return MuTFFErrorNone;
 }

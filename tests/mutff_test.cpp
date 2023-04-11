@@ -1133,9 +1133,12 @@ static inline void expect_mvex_eq(const MuTFFMovieExtendsAtom *a,
   if (a->movie_extends_header_present && b->movie_extends_header_present) {
     expect_mehd_eq(&a->movie_extends_header, &b->movie_extends_header);
   }
-  EXPECT_EQ(a->track_extends_present, b->track_extends_present);
-  if (a->track_extends_present && b->track_extends_present) {
-    expect_trex_eq(&a->track_extends, &b->track_extends);
+  EXPECT_EQ(a->track_extends_count, b->track_extends_count);
+  const size_t track_extends_count =
+      a->track_extends_count > b->track_extends_count ? b->track_extends_count
+                                                      : a->track_extends_count;
+  for (size_t i = 0; i < track_extends_count; ++i) {
+    expect_trex_eq(&a->track_extends[i], &b->track_extends[i]);
   }
 }
 
