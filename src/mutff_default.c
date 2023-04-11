@@ -268,7 +268,7 @@ static inline MuTFFError mutff_write_i32(MuTFFContext *ctx, size_t *n,
   return mutff_write_u32(ctx, n, x >= 0 ? x : ~abs(x) + 1);
 }
 
-static MuTFFError mutff_write_u64(MuTFFContext *ctx, size_t *n, uint32_t x) {
+static MuTFFError mutff_write_u64(MuTFFContext *ctx, size_t *n, uint64_t x) {
   unsigned char data[8];
   mutff_hton_64(data, x);
   const MuTFFError err = mutff_write(ctx, &data, 8);
