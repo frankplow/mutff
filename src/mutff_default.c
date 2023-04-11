@@ -4820,6 +4820,7 @@ MuTFFError mutff_read_movie_atom(MuTFFContext *ctx, size_t *n,
   out->clipping_present = false;
   out->color_table_present = false;
   out->user_data_present = false;
+  out->movie_extends_present = false;
 
   MuTFF_FN(mutff_read_header, &size, &type);
   if (type != MuTFF_FOURCC('m', 'o', 'o', 'v')) {
@@ -4865,6 +4866,11 @@ MuTFFError mutff_read_movie_atom(MuTFFContext *ctx, size_t *n,
       case MuTFF_FOURCC('c', 't', 'a', 'b'):
         MuTFF_READ_CHILD(mutff_read_color_table_atom, &out->color_table,
                          out->color_table_present);
+        break;
+
+      case MuTFF_FOURCC('m', 'v', 'e', 'x'):
+        MuTFF_READ_CHILD(mutff_read_movie_extends_atom, &out->movie_extends,
+                         out->movie_extends_present);
         break;
 
       default:
@@ -4918,6 +4924,13 @@ static inline MuTFFError mutff_movie_atom_size(uint64_t *out,
     }
     size += child_size;
   }
+  if (atom->movie_extends_present) {
+    err = mutff_movie_extends_atom_size(&child_size, &atom->movie_extends);
+    if (err != MuTFFErrorNone) {
+      return err;
+    }
+    size += child_size;
+  }
   *out = mutff_atom_size(size);
   return MuTFFErrorNone;
 }
@@ -4946,6 +4959,9 @@ MuTFFError mutff_write_movie_atom(MuTFFContext *ctx, size_t *n,
   }
   if (in->user_data_present) {
     MuTFF_FN(mutff_write_user_data_atom, &in->user_data);
+  }
+  if (in->movie_extends_present) {
+    MuTFF_FN(mutff_write_movie_extends_atom, &in->movie_extends);
   }
 
   return MuTFFErrorNone;

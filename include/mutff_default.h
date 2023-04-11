@@ -2657,6 +2657,9 @@ typedef struct {
 
   bool user_data_present;
   MuTFFUserDataAtom user_data;
+
+  bool movie_extends_present;
+  MuTFFMovieExtendsAtom movie_extends;
 } MuTFFMovieAtom;
 
 ///

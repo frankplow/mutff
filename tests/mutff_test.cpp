@@ -4802,7 +4802,7 @@ TEST_F(UnitTest, ReadTrackAtom) {
 // {{{2 movie atom unit tests
 static const uint32_t moov_test_data_size =
     8 + mvhd_test_data_size + trak_test_data_size + clip_test_data_size +
-    ctab_test_data_size + udta_test_data_size;
+    ctab_test_data_size + udta_test_data_size + mvex_test_data_size;
 // clang-format off
 #define MOOV_TEST_DATA                            \
     moov_test_data_size >> 24 & 0xFF,  /* size */ \
@@ -4814,7 +4814,8 @@ static const uint32_t moov_test_data_size =
     TRAK_TEST_DATA,                               \
     CLIP_TEST_DATA,                               \
     CTAB_TEST_DATA,                               \
-    UDTA_TEST_DATA
+    UDTA_TEST_DATA,                               \
+    MVEX_TEST_DATA
 // clang-format on
 static const unsigned char moov_test_data[moov_test_data_size] =
     ARR(MOOV_TEST_DATA);
@@ -4831,6 +4832,8 @@ static const MuTFFMovieAtom moov_test_struct = {
   ctab_test_struct,
   true,
   udta_test_struct,
+  true,
+  mvex_test_struct,
 };
 // clang-format on
 
@@ -4875,6 +4878,12 @@ static inline void expect_moov_eq(const MuTFFMovieAtom *a,
   const bool user_data_present = a->user_data_present && b->user_data_present;
   if (user_data_present) {
     expect_udta_eq(&a->user_data, &b->user_data);
+  }
+  EXPECT_EQ(a->movie_extends_present, b->movie_extends_present);
+  const bool movie_extends_present =
+      a->movie_extends_present && b->movie_extends_present;
+  if (movie_extends_present) {
+    expect_mvex_eq(&a->movie_extends, &b->movie_extends);
   }
 }
 
