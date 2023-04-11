@@ -1122,13 +1122,13 @@ MuTFFError mutff_read_movie_extends_header_atom(
   MuTFF_FN(mutff_read_u24, &out->flags);
   switch (out->version) {
     case 0: {
-      uint32_t size;
-      MuTFF_FN(mutff_read_u32, &size);
-      out->size = size;
+      uint32_t fragment_duration;
+      MuTFF_FN(mutff_read_u32, &fragment_duration);
+      out->fragment_duration = fragment_duration;
       break;
     }
     case 1:
-      MuTFF_FN(mutff_read_u64, &out->size);
+      MuTFF_FN(mutff_read_u64, &out->fragment_duration);
       break;
     default:
       return MuTFFErrorBadFormat;
@@ -1167,13 +1167,13 @@ MuTFFError mutff_write_movie_extends_header_atom(
   switch (in->version) {
     case 0:
       // @TODO: should version be deduced from size so this never happens?
-      if (in->size > UINT32_MAX) {
+      if (in->fragment_duration > UINT32_MAX) {
         return MuTFFErrorBadFormat;
       }
-      MuTFF_FN(mutff_write_u32, in->size);
+      MuTFF_FN(mutff_write_u32, in->fragment_duration);
       break;
     case 1:
-      MuTFF_FN(mutff_write_u64, in->size);
+      MuTFF_FN(mutff_write_u64, in->fragment_duration);
       break;
     default:
       return MuTFFErrorBadFormat;
@@ -1196,6 +1196,7 @@ MuTFFError mutff_read_track_extends_atom(MuTFFContext *ctx, size_t *n,
   MuTFF_FN(mutff_read_u24, &out->flags);
   MuTFF_FN(mutff_read_u32, &out->track_id);
   MuTFF_FN(mutff_read_u32, &out->default_sample_description_index);
+  MuTFF_FN(mutff_read_u32, &out->default_sample_duration);
   MuTFF_FN(mutff_read_u32, &out->default_sample_size);
   MuTFF_FN(mutff_read_u32, &out->default_sample_flags);
   MuTFF_SEEK_CUR(size - *n);
@@ -1221,10 +1222,11 @@ MuTFFError mutff_write_track_extends_atom(MuTFFContext *ctx, size_t *n,
   MuTFF_FN(mutff_write_header, size, MuTFF_FOURCC('t', 'r', 'e', 'x'));
   MuTFF_FN(mutff_write_u8, in->version);
   MuTFF_FN(mutff_write_u24, in->flags);
+  MuTFF_FN(mutff_write_u32, in->track_id);
   MuTFF_FN(mutff_write_u32, in->default_sample_description_index);
   MuTFF_FN(mutff_write_u32, in->default_sample_duration);
   MuTFF_FN(mutff_write_u32, in->default_sample_size);
-  MuTFF_FN(mutff_write_u32, in->default_sample_size);
+  MuTFF_FN(mutff_write_u32, in->default_sample_flags);
   return MuTFFErrorNone;
 }
 
@@ -1237,6 +1239,10 @@ MuTFFError mutff_read_movie_extends_atom(MuTFFContext *ctx, size_t *n,
   uint32_t type;
   uint64_t child_size;
   uint32_t child_type;
+
+  out->movie_extends_header_present = false;
+  out->track_extends_present = false;
+
   MuTFF_FN(mutff_read_header, &size, &type);
   if (type != MuTFF_FOURCC('m', 'v', 'e', 'x')) {
     return MuTFFErrorBadFormat;
@@ -1302,7 +1308,7 @@ MuTFFError mutff_write_movie_extends_atom(MuTFFContext *ctx, size_t *n,
   if (err != MuTFFErrorNone) {
     return err;
   }
-  MuTFF_FN(mutff_write_header, size, MuTFF_FOURCC('t', 'r', 'e', 'x'));
+  MuTFF_FN(mutff_write_header, size, MuTFF_FOURCC('m', 'v', 'e', 'x'));
   if (in->movie_extends_header_present) {
     MuTFF_FN(mutff_write_movie_extends_header_atom, &in->movie_extends_header);
   }
@@ -5156,24 +5162,24 @@ MuTFFError mutff_read_track_fragment_run_atom(MuTFFContext *ctx, size_t *n,
   }
   for (uint32_t i = 0U; i < out->sample_count; ++i) {
     if (out->sample_duration_present) {
-      MuTFF_FN(mutff_write_u32, out->records[i].sample_duration);
+      MuTFF_FN(mutff_read_u32, &out->records[i].sample_duration);
     }
     if (out->sample_size_present) {
-      MuTFF_FN(mutff_write_u32, out->records[i].sample_size);
+      MuTFF_FN(mutff_read_u32, &out->records[i].sample_size);
     }
     if (out->sample_flags_present) {
-      MuTFF_FN(mutff_write_u32, out->records[i].sample_flags);
+      MuTFF_FN(mutff_read_u32, &out->records[i].sample_flags);
     }
     if (out->sample_composition_time_offset_present) {
       if (out->version == 0U) {
         if (out->records[i].sample_composition_time_offset < 0) {
           return MuTFFErrorBadFormat;
         }
-        MuTFF_FN(mutff_write_u32,
-                 out->records[i].sample_composition_time_offset);
+        MuTFF_FN(mutff_read_u32,
+                 (uint32_t *)&out->records[i].sample_composition_time_offset);
       } else {
-        MuTFF_FN(mutff_write_i32,
-                 out->records[i].sample_composition_time_offset);
+        MuTFF_FN(mutff_read_i32,
+                 &out->records[i].sample_composition_time_offset);
       }
     }
   }
@@ -5243,6 +5249,7 @@ MuTFFError mutff_write_track_fragment_run_atom(
     flags |= 0x800U;
   }
   MuTFF_FN(mutff_write_u24, flags);
+  MuTFF_FN(mutff_write_u32, in->sample_count);
 
   if (in->data_offset_present) {
     MuTFF_FN(mutff_write_u32, in->data_offset);
@@ -5285,12 +5292,17 @@ MuTFFError mutff_read_track_fragment_decode_time_atom(
   *n = 0;
   uint64_t size;
   uint32_t type;
+  mutff_uint24_t flags;
 
   MuTFF_FN(mutff_read_header, &size, &type);
   if (type != MuTFF_FOURCC('t', 'f', 'd', 't')) {
     return MuTFFErrorBadFormat;
   }
-
+  MuTFF_FN(mutff_read_u8, &out->version);
+  MuTFF_FN(mutff_read_u24, &flags);
+  if (flags != 0U) {
+    // @TODO: should this be an error?
+  }
   if (out->version == 1U) {
     MuTFF_FN(mutff_read_u64, &out->base_media_decode_time);
   } else {
@@ -5460,7 +5472,7 @@ MuTFFError mutff_write_track_fragment_atom(MuTFFContext *ctx, size_t *n,
   if (err != MuTFFErrorNone) {
     return err;
   }
-  MuTFF_FN(mutff_write_header, size, MuTFF_FOURCC('m', 'o', 'o', 'f'));
+  MuTFF_FN(mutff_write_header, size, MuTFF_FOURCC('t', 'r', 'a', 'f'));
   MuTFF_FN(mutff_write_track_fragment_header_atom, &in->track_fragment_header);
   for (size_t i = 0; i < in->track_fragment_run_count; ++i) {
     MuTFF_FN(mutff_write_track_fragment_run_atom, &in->track_fragment_run[i]);

@@ -597,7 +597,7 @@ MuTFFError mutff_write_user_data_atom(MuTFFContext *ctx, size_t *n,
 typedef struct {
   uint8_t version;
   mutff_uint24_t flags;
-  uint64_t size;
+  uint64_t fragment_duration;
 } MuTFFMovieExtendsHeaderAtom;
 
 ///

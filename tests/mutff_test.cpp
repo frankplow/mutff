@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -949,6 +950,206 @@ TEST_F(UnitTest, ReadUserDataAtom) {
 
   expect_udta_eq(&atom, &udta_test_struct);
   EXPECT_EQ(ftell((FILE *)ctx.file), udta_test_data_size);
+}
+// }}}2
+
+// {{{2 movie extends header atom unit tests
+static const uint32_t mehd_test_data_size = 20;
+// clang-format off
+#define MEHD_TEST_DATA                                      \
+    mehd_test_data_size >> 24,     /* size */               \
+    mehd_test_data_size >> 16,                              \
+    mehd_test_data_size >> 8,                               \
+    mehd_test_data_size,                                    \
+    'm', 'e', 'h', 'd',            /* type */               \
+    0x01,                          /* version */            \
+    0x00, 0x00, 0x00,              /* flags */              \
+    0x00, 0x01, 0x02, 0x03,        /* fragment_duration */  \
+    0x04, 0x05, 0x06, 0x07
+// clang-format on
+static const unsigned char mehd_test_data[mehd_test_data_size] =
+    ARR(MEHD_TEST_DATA);
+// clang-format off
+static const MuTFFMovieExtendsHeaderAtom mehd_test_struct = {
+    1,                  // version
+    0,                  // flags
+    0x0001020304050607  // fragment_duration
+};
+// clang-format on
+
+TEST_F(UnitTest, WriteMovieExtendsHeaderAtom) {
+  const MuTFFError err =
+      mutff_write_movie_extends_header_atom(&ctx, &bytes, &mehd_test_struct);
+  ASSERT_EQ(err, MuTFFErrorNone);
+  EXPECT_EQ(bytes, mehd_test_data_size);
+
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  unsigned char data[file_size];
+  fread(data, file_size, 1, (FILE *)ctx.file);
+  EXPECT_EQ(file_size, mehd_test_data_size);
+  for (size_t i = 0; i < file_size; ++i) {
+    EXPECT_EQ(data[i], mehd_test_data[i]);
+  }
+}
+
+static inline void expect_mehd_eq(const MuTFFMovieExtendsHeaderAtom *a,
+                                  const MuTFFMovieExtendsHeaderAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->fragment_duration, b->fragment_duration);
+}
+
+TEST_F(UnitTest, ReadMovieExtendsHeaderAtom) {
+  MuTFFError err;
+  MuTFFMovieExtendsHeaderAtom atom;
+  fwrite(mehd_test_data, mehd_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_movie_extends_header_atom(&ctx, &bytes, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+  EXPECT_EQ(bytes, mehd_test_data_size);
+
+  expect_mehd_eq(&atom, &mehd_test_struct);
+  EXPECT_EQ(ftell((FILE *)ctx.file), mehd_test_data_size);
+}
+// }}}2
+
+// {{{2 track extends header atom unit tests
+static const uint32_t trex_test_data_size = 32;
+// clang-format off
+#define TREX_TEST_DATA                                                     \
+    trex_test_data_size >> 24,     /* size */                              \
+    trex_test_data_size >> 16,                                             \
+    trex_test_data_size >> 8,                                              \
+    trex_test_data_size,                                                   \
+    't', 'r', 'e', 'x',            /* type */                              \
+    0x00,                          /* version */                           \
+    0x00, 0x00, 0x00,              /* flags */                             \
+    0x00, 0x01, 0x02, 0x03,        /* track_id */                          \
+    0x10, 0x11, 0x12, 0x13,        /* default_sample_description_index */  \
+    0x20, 0x21, 0x22, 0x23,        /* default_sample_duration */           \
+    0x30, 0x31, 0x32, 0x33,        /* default_sample_size */               \
+    0x40, 0x41, 0x42, 0x43         /* default_sample_flags */
+// clang-format on
+static const unsigned char trex_test_data[trex_test_data_size] =
+    ARR(TREX_TEST_DATA);
+// clang-format off
+static const MuTFFTrackExtendsAtom trex_test_struct = {
+    0,           // version
+    0,           // flags
+    0x00010203,  // track_id
+    0x10111213,  // default_sample_description_index
+    0x20212223,  // default_sample_duration
+    0x30313233,  // default_sample_size
+    0x40414243,  // default_sample_flags
+};
+// clang-format on
+
+TEST_F(UnitTest, WriteTrackExtendsAtom) {
+  const MuTFFError err =
+      mutff_write_track_extends_atom(&ctx, &bytes, &trex_test_struct);
+  ASSERT_EQ(err, MuTFFErrorNone);
+  EXPECT_EQ(bytes, trex_test_data_size);
+
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  unsigned char data[file_size];
+  fread(data, file_size, 1, (FILE *)ctx.file);
+  EXPECT_EQ(file_size, trex_test_data_size);
+  for (size_t i = 0; i < file_size; ++i) {
+    EXPECT_EQ(data[i], trex_test_data[i]);
+  }
+}
+
+static inline void expect_trex_eq(const MuTFFTrackExtendsAtom *a,
+                                  const MuTFFTrackExtendsAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->track_id, b->track_id);
+  EXPECT_EQ(a->default_sample_description_index,
+            b->default_sample_description_index);
+  EXPECT_EQ(a->default_sample_duration, b->default_sample_duration);
+  EXPECT_EQ(a->default_sample_size, b->default_sample_size);
+  EXPECT_EQ(a->default_sample_flags, b->default_sample_flags);
+}
+
+TEST_F(UnitTest, ReadTrackExtendsAtom) {
+  MuTFFError err;
+  MuTFFTrackExtendsAtom atom;
+  fwrite(trex_test_data, trex_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_track_extends_atom(&ctx, &bytes, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+  EXPECT_EQ(bytes, trex_test_data_size);
+
+  expect_trex_eq(&atom, &trex_test_struct);
+  EXPECT_EQ(ftell((FILE *)ctx.file), trex_test_data_size);
+}
+// }}}2
+
+// {{{2 movie extends header atom unit tests
+static const uint32_t mvex_test_data_size =
+    mehd_test_data_size + trex_test_data_size + 8;
+// clang-format off
+#define MVEX_TEST_DATA                         \
+    mvex_test_data_size >> 24,     /* size */  \
+    mvex_test_data_size >> 16,                 \
+    mvex_test_data_size >> 8,                  \
+    mvex_test_data_size,                       \
+    'm', 'v', 'e', 'x',            /* type */  \
+    MEHD_TEST_DATA,                            \
+    TREX_TEST_DATA
+// clang-format on
+static const unsigned char mvex_test_data[mvex_test_data_size] =
+    ARR(MVEX_TEST_DATA);
+// clang-format off
+static const MuTFFMovieExtendsAtom mvex_test_struct = {
+  true,
+  mehd_test_struct,
+  true,
+  trex_test_struct
+};
+// clang-format on
+
+TEST_F(UnitTest, WriteMovieExtendsAtom) {
+  const MuTFFError err =
+      mutff_write_movie_extends_atom(&ctx, &bytes, &mvex_test_struct);
+  ASSERT_EQ(err, MuTFFErrorNone);
+  EXPECT_EQ(bytes, mvex_test_data_size);
+
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  unsigned char data[file_size];
+  fread(data, file_size, 1, (FILE *)ctx.file);
+  EXPECT_EQ(file_size, mvex_test_data_size);
+  for (size_t i = 0; i < file_size; ++i) {
+    EXPECT_EQ(data[i], mvex_test_data[i]);
+  }
+}
+
+static inline void expect_mvex_eq(const MuTFFMovieExtendsAtom *a,
+                                  const MuTFFMovieExtendsAtom *b) {
+  EXPECT_EQ(a->movie_extends_header_present, b->movie_extends_header_present);
+  if (a->movie_extends_header_present && b->movie_extends_header_present) {
+    expect_mehd_eq(&a->movie_extends_header, &b->movie_extends_header);
+  }
+  EXPECT_EQ(a->track_extends_present, b->track_extends_present);
+  if (a->track_extends_present && b->track_extends_present) {
+    expect_trex_eq(&a->track_extends, &b->track_extends);
+  }
+}
+
+TEST_F(UnitTest, ReadMovieExtendsAtom) {
+  MuTFFError err;
+  MuTFFMovieExtendsAtom atom;
+  fwrite(mvex_test_data, mvex_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_movie_extends_atom(&ctx, &bytes, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+  EXPECT_EQ(bytes, mvex_test_data_size);
+
+  expect_mvex_eq(&atom, &mvex_test_struct);
+  EXPECT_EQ(ftell((FILE *)ctx.file), mvex_test_data_size);
 }
 // }}}2
 
@@ -4688,6 +4889,497 @@ TEST_F(UnitTest, ReadMovieAtom) {
 
   expect_moov_eq(&atom, &moov_test_struct);
   EXPECT_EQ(ftell((FILE *)ctx.file), moov_test_data_size);
+}
+// }}}2
+
+// {{{2 movie fragment header atom unit tests
+static const uint32_t mfhd_test_data_size = 16;
+// clang-format off
+#define MFHD_TEST_DATA                                      \
+    mfhd_test_data_size >> 24,     /* size */               \
+    mfhd_test_data_size >> 16,                              \
+    mfhd_test_data_size >> 8,                               \
+    mfhd_test_data_size,                                    \
+    'm', 'f', 'h', 'd',            /* type */               \
+    0x00,                          /* version */            \
+    0x00, 0x00, 0x00,              /* flags */              \
+    0x01, 0x02, 0x03, 0x04         /* sequence_number */
+// clang-format on
+static const unsigned char mfhd_test_data[mfhd_test_data_size] =
+    ARR(MFHD_TEST_DATA);
+// clang-format off
+static const MuTFFMovieFragmentHeaderAtom mfhd_test_struct = {
+    0,          // version
+    0,          // flags
+    0x01020304  // sequence_number
+};
+// clang-format on
+
+TEST_F(UnitTest, WriteMovieFragmentHeaderAtom) {
+  const MuTFFError err =
+      mutff_write_movie_fragment_header_atom(&ctx, &bytes, &mfhd_test_struct);
+  ASSERT_EQ(err, MuTFFErrorNone);
+  EXPECT_EQ(bytes, mfhd_test_data_size);
+
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  unsigned char data[file_size];
+  fread(data, file_size, 1, (FILE *)ctx.file);
+  EXPECT_EQ(file_size, mfhd_test_data_size);
+  for (size_t i = 0; i < file_size; ++i) {
+    EXPECT_EQ(data[i], mfhd_test_data[i]);
+  }
+}
+
+static inline void expect_mfhd_eq(const MuTFFMovieFragmentHeaderAtom *a,
+                                  const MuTFFMovieFragmentHeaderAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->flags, b->flags);
+  EXPECT_EQ(a->sequence_number, b->sequence_number);
+}
+
+TEST_F(UnitTest, ReadMovieFragmentHeaderAtom) {
+  MuTFFError err;
+  MuTFFMovieFragmentHeaderAtom atom;
+  fwrite(mfhd_test_data, mfhd_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_movie_fragment_header_atom(&ctx, &bytes, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+  EXPECT_EQ(bytes, mfhd_test_data_size);
+
+  expect_mfhd_eq(&atom, &mfhd_test_struct);
+  EXPECT_EQ(ftell((FILE *)ctx.file), mfhd_test_data_size);
+}
+// }}}2
+
+// {{{2 track fragment header atom unit tests
+static const uint32_t tfhd_test_data_size = 40;
+// clang-format off
+#define TFHD_TEST_DATA                                                              \
+    tfhd_test_data_size >> 24,                       /* size */                     \
+    tfhd_test_data_size >> 16,                                                      \
+    tfhd_test_data_size >> 8,                                                       \
+    tfhd_test_data_size,                                                            \
+    't', 'f', 'h', 'd',                              /* type */                     \
+    0x00,                                            /* version */                  \
+    0x00, 0x00, 0x3b,                                /* flags */                    \
+    0x01, 0x02, 0x03, 0x04,                          /* track id */                 \
+    0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,  /* base data offset */         \
+    0x21, 0x22, 0x23, 0x24,                          /* sample description index */ \
+    0x31, 0x32, 0x33, 0x34,                          /* default sample duration */  \
+    0x41, 0x42, 0x43, 0x44,                          /* default sample size */      \
+    0x51, 0x52, 0x53, 0x54                           /* default sample flags */
+// clang-format on
+static const unsigned char tfhd_test_data[tfhd_test_data_size] =
+    ARR(TFHD_TEST_DATA);
+// clang-format off
+static const MuTFFTrackFragmentHeaderAtom tfhd_test_struct = {
+  0x01020304,
+  false,
+  false,
+  true,
+  0x1112131415161718,
+  true,
+  0x21222324,
+  true,
+  0x31323334,
+  true,
+  0x41424344,
+  true,
+  0x51525354
+};
+// clang-format on
+
+TEST_F(UnitTest, WriteTrackFragmentHeaderAtom) {
+  const MuTFFError err =
+      mutff_write_track_fragment_header_atom(&ctx, &bytes, &tfhd_test_struct);
+  ASSERT_EQ(err, MuTFFErrorNone);
+  EXPECT_EQ(bytes, tfhd_test_data_size);
+
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  unsigned char data[file_size];
+  fread(data, file_size, 1, (FILE *)ctx.file);
+  EXPECT_EQ(file_size, tfhd_test_data_size);
+  for (size_t i = 0; i < file_size; ++i) {
+    EXPECT_EQ(data[i], tfhd_test_data[i]);
+  }
+}
+
+static inline void expect_tfhd_eq(const MuTFFTrackFragmentHeaderAtom *a,
+                                  const MuTFFTrackFragmentHeaderAtom *b) {
+  EXPECT_EQ(a->track_id, b->track_id);
+  EXPECT_EQ(a->duration_is_empty, b->duration_is_empty);
+  EXPECT_EQ(a->default_base_is_moof, b->default_base_is_moof);
+  EXPECT_EQ(a->base_data_offset_present, b->base_data_offset_present);
+  if (a->base_data_offset_present && b->base_data_offset_present) {
+    EXPECT_EQ(a->base_data_offset, b->base_data_offset);
+  }
+  EXPECT_EQ(a->sample_description_index_present,
+            b->sample_description_index_present);
+  if (a->sample_description_index_present &&
+      b->sample_description_index_present) {
+    EXPECT_EQ(a->sample_description_index, b->sample_description_index);
+  }
+  EXPECT_EQ(a->default_sample_duration_present,
+            b->default_sample_duration_present);
+  if (a->default_sample_duration_present &&
+      b->default_sample_duration_present) {
+    EXPECT_EQ(a->default_sample_duration, b->default_sample_duration);
+  }
+  EXPECT_EQ(a->default_sample_size_present, b->default_sample_size_present);
+  if (a->default_sample_size_present && b->default_sample_size_present) {
+    EXPECT_EQ(a->default_sample_size, b->default_sample_size);
+  }
+  EXPECT_EQ(a->default_sample_flags_present, b->default_sample_flags_present);
+  if (a->default_sample_flags_present && b->default_sample_flags_present) {
+    EXPECT_EQ(a->default_sample_flags, b->default_sample_flags);
+  }
+}
+
+TEST_F(UnitTest, ReadTrackFragmentHeaderAtom) {
+  MuTFFError err;
+  MuTFFTrackFragmentHeaderAtom atom;
+  fwrite(tfhd_test_data, tfhd_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_track_fragment_header_atom(&ctx, &bytes, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+  EXPECT_EQ(bytes, tfhd_test_data_size);
+
+  expect_tfhd_eq(&atom, &tfhd_test_struct);
+  EXPECT_EQ(ftell((FILE *)ctx.file), tfhd_test_data_size);
+}
+// }}}2
+
+// {{{2 track fragment run atom unit tests
+static const uint32_t trun_test_data_size = 40;
+// clang-format off
+#define TRUN_TEST_DATA                                                                     \
+    trun_test_data_size >> 24,                       /* size */                            \
+    trun_test_data_size >> 16,                                                             \
+    trun_test_data_size >> 8,                                                              \
+    trun_test_data_size,                                                                   \
+    't', 'r', 'u', 'n',                              /* type */                            \
+    0x01,                                            /* version */                         \
+    0x00, 0x0f, 0x05,                                /* flags */                           \
+    0x00, 0x00, 0x00, 0x01,                          /* sample count */                    \
+    0xff, 0xff, 0xff, 0xff,                          /* data offset */                     \
+    0x00, 0x00, 0x00, 0x02,                          /* first_sample_flags */              \
+    0x00, 0x00, 0x00, 0x03,                          /* sample_duration */                 \
+    0x00, 0x00, 0x00, 0x04,                          /* sample_size */                     \
+    0x00, 0x00, 0x00, 0x05,                          /* sample_flags */                    \
+    0xff, 0xff, 0xff, 0xfe                           /* sample_composition_time_offset */
+// clang-format on
+static const unsigned char trun_test_data[trun_test_data_size] =
+    ARR(TRUN_TEST_DATA);
+// clang-format off
+static const MuTFFTrackFragmentRunAtom trun_test_struct = {
+  1,
+  true,
+  -1,
+  true,
+  2,
+  true,
+  true,
+  true,
+  true,
+  1,
+  {
+    {
+      3,
+      4,
+      5,
+      -2,
+    }
+  }
+};
+// clang-format on
+
+TEST_F(UnitTest, WriteTrackFragmentRunAtom) {
+  const MuTFFError err =
+      mutff_write_track_fragment_run_atom(&ctx, &bytes, &trun_test_struct);
+  ASSERT_EQ(err, MuTFFErrorNone);
+  EXPECT_EQ(bytes, trun_test_data_size);
+
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  unsigned char data[file_size];
+  fread(data, file_size, 1, (FILE *)ctx.file);
+  EXPECT_EQ(file_size, trun_test_data_size);
+  for (size_t i = 0; i < file_size; ++i) {
+    EXPECT_EQ(data[i], trun_test_data[i]);
+  }
+}
+
+static inline void expect_trun_eq(const MuTFFTrackFragmentRunAtom *a,
+                                  const MuTFFTrackFragmentRunAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->data_offset_present, b->data_offset_present);
+  if (a->data_offset_present && b->data_offset_present) {
+    EXPECT_EQ(a->data_offset, b->data_offset);
+  }
+  EXPECT_EQ(a->first_sample_flags_present, b->first_sample_flags_present);
+  if (a->first_sample_flags_present && b->first_sample_flags_present) {
+    EXPECT_EQ(a->first_sample_flags, b->first_sample_flags);
+  }
+  EXPECT_EQ(a->sample_duration_present, b->sample_duration_present);
+  EXPECT_EQ(a->sample_size_present, b->sample_size_present);
+  EXPECT_EQ(a->sample_flags_present, b->sample_flags_present);
+  EXPECT_EQ(a->sample_composition_time_offset_present,
+            b->sample_composition_time_offset_present);
+  EXPECT_EQ(a->sample_count, b->sample_count);
+  const uint32_t sample_count =
+      a->sample_count > b->sample_count ? b->sample_count : a->sample_count;
+  for (uint32_t i = 0; i < sample_count; ++i) {
+    if (a->sample_duration_present && b->sample_duration_present) {
+      EXPECT_EQ(a->records[i].sample_duration, b->records[i].sample_duration);
+    }
+    if (a->sample_size_present && b->sample_size_present) {
+      EXPECT_EQ(a->records[i].sample_size, b->records[i].sample_size);
+    }
+    if (a->sample_flags_present && b->sample_flags_present) {
+      EXPECT_EQ(a->records[i].sample_flags, b->records[i].sample_flags);
+    }
+    if (a->sample_composition_time_offset_present &&
+        b->sample_composition_time_offset_present) {
+      EXPECT_EQ(a->records[i].sample_composition_time_offset,
+                b->records[i].sample_composition_time_offset);
+    }
+  }
+}
+
+TEST_F(UnitTest, ReadTrackFragmentRunAtom) {
+  MuTFFError err;
+  MuTFFTrackFragmentRunAtom atom;
+  fwrite(trun_test_data, trun_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_track_fragment_run_atom(&ctx, &bytes, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+  EXPECT_EQ(bytes, trun_test_data_size);
+
+  expect_trun_eq(&atom, &trun_test_struct);
+  EXPECT_EQ(ftell((FILE *)ctx.file), trun_test_data_size);
+}
+// }}}2
+
+// {{{2 track fragment decode time atom unit tests
+static const uint32_t tfdt_test_data_size = 20;
+// clang-format off
+#define TFDT_TEST_DATA                                           \
+    tfdt_test_data_size >> 24,     /* size */                    \
+    tfdt_test_data_size >> 16,                                   \
+    tfdt_test_data_size >> 8,                                    \
+    tfdt_test_data_size,                                         \
+    't', 'f', 'd', 't',            /* type */                    \
+    0x01,                          /* version */                 \
+    0x00, 0x00, 0x00,              /* flags */                   \
+    0x00, 0x00, 0x00, 0x00,        /* base_media_decode_time */  \
+    0x00, 0x00, 0x00, 0x02
+// clang-format on
+static const unsigned char tfdt_test_data[tfdt_test_data_size] =
+    ARR(TFDT_TEST_DATA);
+// clang-format off
+static const MuTFFTrackFragmentDecodeTimeAtom tfdt_test_struct = {
+    1,  // version
+    2,  // base_media_decode_time
+};
+// clang-format on
+
+TEST_F(UnitTest, WriteTrackFragmentDecodeTimeAtom) {
+  const MuTFFError err = mutff_write_track_fragment_decode_time_atom(
+      &ctx, &bytes, &tfdt_test_struct);
+  ASSERT_EQ(err, MuTFFErrorNone);
+  EXPECT_EQ(bytes, tfdt_test_data_size);
+
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  unsigned char data[file_size];
+  fread(data, file_size, 1, (FILE *)ctx.file);
+  EXPECT_EQ(file_size, tfdt_test_data_size);
+  for (size_t i = 0; i < file_size; ++i) {
+    EXPECT_EQ(data[i], tfdt_test_data[i]);
+  }
+}
+
+static inline void expect_tfdt_eq(const MuTFFTrackFragmentDecodeTimeAtom *a,
+                                  const MuTFFTrackFragmentDecodeTimeAtom *b) {
+  EXPECT_EQ(a->version, b->version);
+  EXPECT_EQ(a->base_media_decode_time, b->base_media_decode_time);
+}
+
+TEST_F(UnitTest, ReadTrackFragmentDecodeTimeAtom) {
+  MuTFFError err;
+  MuTFFTrackFragmentDecodeTimeAtom atom;
+  fwrite(tfdt_test_data, tfdt_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_track_fragment_decode_time_atom(&ctx, &bytes, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+  EXPECT_EQ(bytes, tfdt_test_data_size);
+
+  expect_tfdt_eq(&atom, &tfdt_test_struct);
+  EXPECT_EQ(ftell((FILE *)ctx.file), tfdt_test_data_size);
+}
+// }}}2
+
+// {{{2 track fragment atom unit tests
+static const uint32_t traf_test_data_size =
+    8 + tfhd_test_data_size + trun_test_data_size + tfdt_test_data_size +
+    udta_test_data_size;
+// clang-format off
+#define TRAF_TEST_DATA                     \
+    traf_test_data_size >> 24, /* size */  \
+    traf_test_data_size >> 16,             \
+    traf_test_data_size >> 8,              \
+    traf_test_data_size,                   \
+    't', 'r', 'a', 'f',        /* type */  \
+    TFHD_TEST_DATA,                        \
+    TRUN_TEST_DATA,                        \
+    TFDT_TEST_DATA,                        \
+    UDTA_TEST_DATA
+// clang-format on
+static const unsigned char traf_test_data[traf_test_data_size] =
+    ARR(TRAF_TEST_DATA);
+// clang-format off
+static const MuTFFTrackFragmentAtom traf_test_struct = {
+  tfhd_test_struct,
+  1,
+  {
+    trun_test_struct,
+  },
+  true,
+  tfdt_test_struct,
+  true,
+  udta_test_struct
+};
+// clang-format on
+
+TEST_F(UnitTest, WriteTrackFragmentAtom) {
+  const MuTFFError err =
+      mutff_write_track_fragment_atom(&ctx, &bytes, &traf_test_struct);
+  ASSERT_EQ(err, MuTFFErrorNone);
+  EXPECT_EQ(bytes, traf_test_data_size);
+
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  unsigned char data[file_size];
+  fread(data, file_size, 1, (FILE *)ctx.file);
+  EXPECT_EQ(file_size, traf_test_data_size);
+  for (size_t i = 0; i < file_size; ++i) {
+    EXPECT_EQ(data[i], traf_test_data[i]);
+  }
+}
+
+static inline void expect_traf_eq(const MuTFFTrackFragmentAtom *a,
+                                  const MuTFFTrackFragmentAtom *b) {
+  expect_tfhd_eq(&a->track_fragment_header, &b->track_fragment_header);
+  EXPECT_EQ(a->track_fragment_run_count, b->track_fragment_run_count);
+  const size_t track_fragment_run_count =
+      a->track_fragment_run_count > b->track_fragment_run_count
+          ? b->track_fragment_run_count
+          : a->track_fragment_run_count;
+  for (size_t i = 0; i < track_fragment_run_count; ++i) {
+    expect_trun_eq(&a->track_fragment_run[i], &b->track_fragment_run[i]);
+  }
+  EXPECT_EQ(a->track_fragment_decode_time_present,
+            b->track_fragment_decode_time_present);
+  if (a->track_fragment_decode_time_present &&
+      b->track_fragment_decode_time_present) {
+    expect_tfdt_eq(&a->track_fragment_decode_time,
+                   &b->track_fragment_decode_time);
+  }
+  EXPECT_EQ(a->user_data_present, b->user_data_present);
+  if (a->user_data_present && b->user_data_present) {
+    expect_udta_eq(&a->user_data, &b->user_data);
+  }
+}
+
+TEST_F(UnitTest, ReadTrackFragmentAtom) {
+  MuTFFError err;
+  MuTFFTrackFragmentAtom atom;
+  fwrite(traf_test_data, traf_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_track_fragment_atom(&ctx, &bytes, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+  EXPECT_EQ(bytes, traf_test_data_size);
+
+  expect_traf_eq(&atom, &traf_test_struct);
+  EXPECT_EQ(ftell((FILE *)ctx.file), traf_test_data_size);
+}
+// }}}2
+
+// {{{2 track fragment atom unit tests
+static const uint32_t moof_test_data_size =
+    8 + mfhd_test_data_size + traf_test_data_size + udta_test_data_size;
+// clang-format off
+#define MOOF_TEST_DATA                     \
+    moof_test_data_size >> 24, /* size */  \
+    moof_test_data_size >> 16,             \
+    moof_test_data_size >> 8,              \
+    moof_test_data_size,                   \
+    'm', 'o', 'o', 'f',        /* type */  \
+    MFHD_TEST_DATA,                        \
+    TRAF_TEST_DATA,                        \
+    UDTA_TEST_DATA
+
+// clang-format on
+static const unsigned char moof_test_data[moof_test_data_size] =
+    ARR(MOOF_TEST_DATA);
+// clang-format off
+static const MuTFFMovieFragmentAtom moof_test_struct = {
+  mfhd_test_struct,
+  1,
+  {
+    traf_test_struct,
+  },
+  true,
+  udta_test_struct
+};
+// clang-format on
+
+TEST_F(UnitTest, WriteMovieFragmentAtom) {
+  const MuTFFError err =
+      mutff_write_movie_fragment_atom(&ctx, &bytes, &moof_test_struct);
+  ASSERT_EQ(err, MuTFFErrorNone);
+  EXPECT_EQ(bytes, moof_test_data_size);
+
+  const size_t file_size = ftell((FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  unsigned char data[file_size];
+  fread(data, file_size, 1, (FILE *)ctx.file);
+  EXPECT_EQ(file_size, moof_test_data_size);
+  for (size_t i = 0; i < file_size; ++i) {
+    EXPECT_EQ(data[i], moof_test_data[i]);
+  }
+}
+
+static inline void expect_moof_eq(const MuTFFMovieFragmentAtom *a,
+                                  const MuTFFMovieFragmentAtom *b) {
+  expect_mfhd_eq(&a->movie_fragment_header, &b->movie_fragment_header);
+  EXPECT_EQ(a->track_fragment_count, b->track_fragment_count);
+  const size_t track_fragment_count =
+      a->track_fragment_count > b->track_fragment_count
+          ? b->track_fragment_count
+          : a->track_fragment_count;
+  for (size_t i = 0; i < track_fragment_count; ++i) {
+    expect_traf_eq(&a->track_fragment[i], &b->track_fragment[i]);
+  }
+  EXPECT_EQ(a->user_data_present, b->user_data_present);
+  if (a->user_data_present && b->user_data_present) {
+    expect_udta_eq(&a->user_data, &b->user_data);
+  }
+}
+
+TEST_F(UnitTest, ReadMovieFragmentAtom) {
+  MuTFFError err;
+  MuTFFMovieFragmentAtom atom;
+  fwrite(moof_test_data, moof_test_data_size, 1, (FILE *)ctx.file);
+  rewind((FILE *)ctx.file);
+  err = mutff_read_movie_fragment_atom(&ctx, &bytes, &atom);
+  ASSERT_EQ(err, MuTFFErrorNone);
+  EXPECT_EQ(bytes, moof_test_data_size);
+
+  expect_moof_eq(&atom, &moof_test_struct);
+  EXPECT_EQ(ftell((FILE *)ctx.file), moof_test_data_size);
 }
 // }}}2
 
