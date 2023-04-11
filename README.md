@@ -11,14 +11,20 @@ This library came out of a project I was doing where I needed a simple QTFF libr
 Here is an example of how to use the library to find the duration of a movie:
 ```c
 #include <stdio.h>
-#include <mutff.h>
+
+#include "mutff.h"
+#include "mutff_stdlib.h"
 
 int movie_duration(FILE *file) {
+  MuTFFContext ctx;
+  ctx.io = mutff_stdlib_driver;
+  ctx.file = file;
+
   MuTFFMovieFile movie_file;
   int time_scale;
   int duration;
 
-  if (mutff_read_movie_file(file, &movie_file) < 0) {
+  if (mutff_read_movie_file(ctx, &movie_file) < 0) {
     fprintf(stderr, "Failed to parse movie file.");
     return -1;
   }
