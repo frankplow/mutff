@@ -2931,11 +2931,11 @@ MuTFFError mutff_read_movie_fragment_atom(MuTFFContext *ctx, size_t *n,
 MuTFFError mutff_write_movie_fragment_atom(MuTFFContext *ctx, size_t *n,
                                            const MuTFFMovieFragmentAtom *in);
 
-#define MuTFF_MAX_MOVIE_DATA_ATOMS 8U
-#define MuTFF_MAX_MOVIE_FRAGMENT_ATOMS 8U
-#define MuTFF_MAX_FREE_ATOMS 4U
-#define MuTFF_MAX_SKIP_ATOMS 4U
-#define MuTFF_MAX_WIDE_ATOMS 4U
+#define MuTFF_MAX_MOVIE_DATA_ATOMS 1U
+#define MuTFF_MAX_MOVIE_FRAGMENT_ATOMS 0U
+#define MuTFF_MAX_FREE_ATOMS 0U
+#define MuTFF_MAX_SKIP_ATOMS 0U
+#define MuTFF_MAX_WIDE_ATOMS 0U
 
 ///
 /// @brief A QuickTime movie file
