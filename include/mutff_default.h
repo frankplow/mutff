@@ -557,7 +557,7 @@ MuTFFError mutff_write_user_data_list_entry(MuTFFContext *ctx, size_t *n,
 ///
 /// @brief The maximum number of entries in the user data list
 ///
-#define MuTFF_MAX_USER_DATA_ITEMS 16U
+#define MuTFF_MAX_USER_DATA_ITEMS 1U
 
 ///
 /// @brief User data atom
@@ -660,7 +660,7 @@ MuTFFError mutff_write_track_extends_atom(MuTFFContext *ctx, size_t *n,
 ///
 /// @brief The maximum number of track atoms in a movie atom
 ///
-#define MuTFF_MAX_TRACK_ATOMS 4U
+#define MuTFF_MAX_TRACK_ATOMS 1U
 
 ///
 /// @brief Movie extends atom
